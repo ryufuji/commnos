@@ -6,6 +6,11 @@ import { Hono } from 'hono'
 import type { AppContext } from '../types'
 import { tenantMiddleware } from '../middleware/auth'
 import { hashPassword } from '../lib/password'
+import { 
+  sendEmail, 
+  getMemberApplicationReceivedEmail,
+  getNewApplicationNotificationEmail 
+} from '../lib/email'
 
 const members = new Hono<AppContext>()
 
@@ -89,7 +94,56 @@ members.post('/apply', tenantMiddleware, async (c) => {
       .bind(tenantId, userId, 'member', 'pending')
       .run()
 
-    // TODO: 管理者にメール通知（Phase 1 後半で実装）
+    // テナント情報取得（メール送信用）
+    const tenant = await db
+      .prepare('SELECT name FROM tenants WHERE id = ?')
+      .bind(tenantId)
+      .first<{ name: string }>()
+
+    const communityName = tenant?.name || 'コミュニティ'
+
+    // 申請者にメール送信
+    const resendApiKey = c.env.RESEND_API_KEY
+    if (resendApiKey) {
+      const emailTemplate = getMemberApplicationReceivedEmail({
+        nickname,
+        communityName
+      })
+      
+      await sendEmail({
+        to: email,
+        subject: emailTemplate.subject,
+        html: emailTemplate.html
+      }, resendApiKey)
+    }
+
+    // 管理者にメール通知（オーナーのメールアドレス取得）
+    if (resendApiKey) {
+      const owner = await db
+        .prepare(`
+          SELECT u.email, u.nickname 
+          FROM users u 
+          JOIN tenant_memberships tm ON u.id = tm.user_id 
+          WHERE tm.tenant_id = ? AND tm.role = 'owner' AND tm.status = 'active'
+        `)
+        .bind(tenantId)
+        .first<{ email: string; nickname: string }>()
+
+      if (owner) {
+        const emailTemplate = getNewApplicationNotificationEmail({
+          applicantNickname: nickname,
+          applicantEmail: email,
+          communityName,
+          dashboardUrl: `https://commons.com/members` // TODO: 実際のURLに置換
+        })
+        
+        await sendEmail({
+          to: owner.email,
+          subject: emailTemplate.subject,
+          html: emailTemplate.html
+        }, resendApiKey)
+      }
+    }
 
     return c.json({
       success: true,

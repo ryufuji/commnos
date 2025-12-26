@@ -6,6 +6,11 @@ import { Hono } from 'hono'
 import type { AppContext } from '../types'
 import { authMiddleware, requireRole } from '../middleware/auth'
 import { globalQuery } from '../lib/db'
+import { 
+  sendEmail, 
+  getMemberApprovedEmail,
+  getMemberRejectedEmail 
+} from '../lib/email'
 
 const admin = new Hono<AppContext>()
 
@@ -89,7 +94,35 @@ admin.post('/members/:id/approve', authMiddleware, requireRole('admin'), async (
       .bind(tenantId)
       .run()
 
-    // TODO: 会員にメール通知（Phase 1 後半で実装）
+    // 承認通知メール送信
+    const resendApiKey = c.env.RESEND_API_KEY
+    if (resendApiKey) {
+      // ユーザー情報とテナント情報取得
+      const user = await db
+        .prepare('SELECT email, nickname FROM users WHERE id = ?')
+        .bind(membership.user_id)
+        .first<{ email: string; nickname: string }>()
+
+      const tenant = await db
+        .prepare('SELECT name, subdomain FROM tenants WHERE id = ?')
+        .bind(tenantId)
+        .first<{ name: string; subdomain: string }>()
+
+      if (user && tenant) {
+        const emailTemplate = getMemberApprovedEmail({
+          nickname: user.nickname,
+          communityName: tenant.name,
+          memberNumber,
+          loginUrl: `https://${tenant.subdomain}.commons.com/member/login`
+        })
+        
+        await sendEmail({
+          to: user.email,
+          subject: emailTemplate.subject,
+          html: emailTemplate.html
+        }, resendApiKey)
+      }
+    }
 
     return c.json({
       success: true,
@@ -132,13 +165,37 @@ admin.post('/members/:id/reject', authMiddleware, requireRole('admin'), async (c
       return c.json({ success: false, error: 'Membership is not pending' }, 400)
     }
 
+    // ユーザー情報とテナント情報取得（メール送信用）
+    const user = await db
+      .prepare('SELECT email, nickname FROM users WHERE id = ?')
+      .bind(membership.user_id)
+      .first<{ email: string; nickname: string }>()
+
+    const tenant = await db
+      .prepare('SELECT name FROM tenants WHERE id = ?')
+      .bind(tenantId)
+      .first<{ name: string }>()
+
     // メンバーシップを削除
     await db
       .prepare('DELETE FROM tenant_memberships WHERE id = ?')
       .bind(membershipId)
       .run()
 
-    // TODO: 却下メール通知（任意）
+    // 拒否通知メール送信
+    const resendApiKey = c.env.RESEND_API_KEY
+    if (resendApiKey && user && tenant) {
+      const emailTemplate = getMemberRejectedEmail({
+        nickname: user.nickname,
+        communityName: tenant.name
+      })
+      
+      await sendEmail({
+        to: user.email,
+        subject: emailTemplate.subject,
+        html: emailTemplate.html
+      }, resendApiKey)
+    }
 
     return c.json({
       success: true,
