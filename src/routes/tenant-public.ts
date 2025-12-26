@@ -633,20 +633,33 @@ tenantPublic.get('/posts/new', async (c) => {
                 submitBtn.disabled = true
                 submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>投稿中...'
                 
-                // TODO: 画像アップロードAPIの実装後に追加
+                // 画像アップロード処理
                 let thumbnailUrl = null
                 if (thumbnail && thumbnail.size > 0) {
-                    // 画像アップロード処理（Phase 2で実装済みのAPIを使用）
-                    const uploadFormData = new FormData()
-                    uploadFormData.append('image', thumbnail)
-                    
-                    const uploadResponse = await apiRequest('/api/upload/image', {
-                        method: 'POST',
-                        body: uploadFormData
-                    })
-                    
-                    if (uploadResponse.success) {
-                        thumbnailUrl = uploadResponse.url
+                    try {
+                        const uploadFormData = new FormData()
+                        uploadFormData.append('image', thumbnail)
+                        
+                        // FormDataの場合はContent-Typeヘッダーを設定しない
+                        const token = AppState.token || ''
+                        const uploadResponse = await fetch('/api/upload/image', {
+                            method: 'POST',
+                            headers: token ? {
+                                'Authorization': 'Bearer ' + token
+                            } : {},
+                            body: uploadFormData
+                        })
+                        
+                        const uploadData = await uploadResponse.json()
+                        
+                        if (uploadData.success) {
+                            thumbnailUrl = uploadData.url
+                        } else {
+                            console.warn('画像アップロード失敗:', uploadData.message)
+                        }
+                    } catch (uploadError) {
+                        console.error('画像アップロードエラー:', uploadError)
+                        // 画像アップロードに失敗しても投稿自体は継続
                     }
                 }
                 
@@ -665,7 +678,7 @@ tenantPublic.get('/posts/new', async (c) => {
                 })
                 
                 if (response.success) {
-                    showToast(status === 'draft' ? '下書きを保存しました' : '投稿を公開しました', 'success')
+                    showToast(response.message || (status === 'draft' ? '下書きを保存しました' : '投稿を公開しました'), 'success')
                     setTimeout(() => {
                         window.location.href = '/tenant/posts?subdomain=${subdomain}'
                     }, 1500)

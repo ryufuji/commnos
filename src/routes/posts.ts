@@ -100,31 +100,37 @@ posts.get('/:id', tenantMiddleware, async (c) => {
 
 /**
  * POST /api/posts
- * 投稿作成（admin/moderator のみ）
+ * 投稿作成（認証済みの全会員）
+ * Phase 3: 会員全員が投稿できるように変更
  */
-posts.post('/', authMiddleware, roleMiddleware(['owner', 'admin']), async (c) => {
+posts.post('/', authMiddleware, async (c) => {
   const userId = c.get('userId')
   const tenantId = c.get('tenantId')
-  const { title, content, status, thumbnailUrl } = await c.req.json<{
+  const { title, content, category, status, thumbnail_url } = await c.req.json<{
     title: string
     content: string
+    category?: string | null
     status?: 'draft' | 'published'
-    thumbnailUrl?: string
+    thumbnail_url?: string | null
   }>()
   const db = c.env.DB
 
   // バリデーション
   if (!title || !content) {
-    return c.json({ success: false, error: 'Title and content are required' }, 400)
+    return c.json({ success: false, message: 'タイトルと本文は必須です' }, 400)
   }
 
   if (title.length > 200) {
-    return c.json({ success: false, error: 'Title must be 200 characters or less' }, 400)
+    return c.json({ success: false, message: 'タイトルは200文字以内にしてください' }, 400)
+  }
+
+  if (content.length > 10000) {
+    return c.json({ success: false, message: '本文は10,000文字以内にしてください' }, 400)
   }
 
   try {
-    // excerpt を生成（最初の200文字）
-    const excerpt = content.substring(0, 200).replace(/[#*`\n]/g, '')
+    // excerpt を生成（最初の150文字）
+    const excerpt = content.substring(0, 150).replace(/[#*`\n]/g, '').trim()
 
     const postStatus = status || 'published'
     const publishedAt = postStatus === 'published' ? new Date().toISOString() : null
@@ -134,9 +140,9 @@ posts.post('/', authMiddleware, roleMiddleware(['owner', 'admin']), async (c) =>
       .prepare(`
         INSERT INTO posts (
           tenant_id, author_id, title, content, excerpt, thumbnail_url, 
-          status, published_at, view_count
+          status, published_at, view_count, created_at, updated_at
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, datetime('now'), datetime('now'))
       `)
       .bind(
         tenantId,
@@ -144,7 +150,7 @@ posts.post('/', authMiddleware, roleMiddleware(['owner', 'admin']), async (c) =>
         title,
         content,
         excerpt,
-        thumbnailUrl || null,
+        thumbnail_url || null,
         postStatus,
         publishedAt
       )
@@ -156,20 +162,27 @@ posts.post('/', authMiddleware, roleMiddleware(['owner', 'admin']), async (c) =>
 
     // 作成した投稿を取得
     const post = await db
-      .prepare('SELECT * FROM posts WHERE tenant_id = ? ORDER BY id DESC LIMIT 1')
-      .bind(tenantId)
+      .prepare(`
+        SELECT p.*, u.nickname as author_name 
+        FROM posts p
+        LEFT JOIN users u ON p.author_id = u.id
+        WHERE p.tenant_id = ? AND p.author_id = ?
+        ORDER BY p.id DESC 
+        LIMIT 1
+      `)
+      .bind(tenantId, userId)
       .first<any>()
 
     return c.json({
       success: true,
       post,
-      message: 'Post created successfully'
+      message: postStatus === 'draft' ? '下書きを保存しました' : '投稿を公開しました'
     }, 201)
   } catch (error) {
     console.error('[Create Post Error]', error)
     return c.json({
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to create post'
+      message: error instanceof Error ? error.message : '投稿の作成に失敗しました'
     }, 500)
   }
 })
