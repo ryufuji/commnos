@@ -139,37 +139,91 @@ tenant.get('/', tenantMiddleware, async (c) => {
             </div>
         </nav>
 
+        <!-- ヒーローセクション -->
+        <section class="theme-bg-primary text-white py-12 md:py-20">
+            <div class="max-w-7xl mx-auto px-4">
+                <div class="max-w-3xl mx-auto text-center">
+                    <h2 class="text-3xl md:text-5xl font-bold mb-4 md:mb-6">
+                        ${tenantData.name}へようこそ
+                    </h2>
+                    ${tenantData.subtitle ? `
+                    <p class="text-lg md:text-xl text-gray-100 mb-6 md:mb-8">
+                        ${tenantData.subtitle}
+                    </p>
+                    ` : ''}
+                    <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                        <a href="/join" class="bg-white theme-text-primary px-6 md:px-8 py-3 md:py-4 rounded-lg font-bold text-base md:text-lg hover:bg-gray-100 transition shadow-lg">
+                            <i class="fas fa-user-plus mr-2"></i>
+                            今すぐ参加する
+                        </a>
+                        <a href="#posts" class="bg-white/10 backdrop-blur-sm text-white px-6 md:px-8 py-3 md:py-4 rounded-lg font-bold text-base md:text-lg hover:bg-white/20 transition border-2 border-white/30">
+                            <i class="fas fa-newspaper mr-2"></i>
+                            投稿を見る
+                        </a>
+                    </div>
+                    
+                    <!-- 統計サマリー -->
+                    <div class="grid grid-cols-3 gap-4 md:gap-8 mt-8 md:mt-12 pt-8 md:pt-12 border-t border-white/20">
+                        <div>
+                            <div class="text-2xl md:text-4xl font-bold">${tenantData.member_count}</div>
+                            <div class="text-xs md:text-sm text-gray-200 mt-1">メンバー</div>
+                        </div>
+                        <div>
+                            <div class="text-2xl md:text-4xl font-bold">${posts.length}</div>
+                            <div class="text-xs md:text-sm text-gray-200 mt-1">投稿</div>
+                        </div>
+                        <div>
+                            <div class="text-2xl md:text-4xl font-bold">${new Date().getFullYear()}</div>
+                            <div class="text-xs md:text-sm text-gray-200 mt-1">設立</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
         <!-- メインコンテンツ -->
         <main class="max-w-7xl mx-auto px-4 py-4 md:py-8">
             ${posts.length > 0 ? `
             <!-- 最新の投稿 -->
-            <section class="mb-6 md:mb-8">
+            <section id="posts" class="mb-6 md:mb-8">
                 <h2 class="text-xl md:text-2xl font-bold text-gray-900 mb-4 md:mb-6">
                     <i class="fas fa-newspaper mr-2 theme-text-primary"></i>
                     最新の投稿
                 </h2>
-                <div class="space-y-4 md:space-y-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
                     ${posts.map(post => `
-                    <article class="card hover:shadow-lg transition">
-                        ${post.thumbnail_url ? `
-                        <img src="${post.thumbnail_url}" alt="${post.title}" class="w-full h-40 md:h-48 object-cover rounded-lg mb-3 md:mb-4">
-                        ` : ''}
-                        <h3 class="text-lg md:text-xl font-bold text-gray-900 mb-2">
-                            <a href="/posts/${post.id}" class="hover:theme-text-primary transition">
-                                ${post.title}
-                            </a>
-                        </h3>
-                        <p class="text-sm md:text-base text-gray-600 mb-3 md:mb-4 line-clamp-2">${post.excerpt || post.content.substring(0, 150) + '...'}</p>
-                        <div class="flex flex-wrap items-center justify-between text-xs md:text-sm text-gray-500 gap-2">
-                            <div>
-                                <i class="fas fa-user mr-1"></i>
-                                <span class="truncate">${post.author_name}</span>
+                    <article class="card hover:shadow-xl transition-all duration-300 overflow-hidden group">
+                        <a href="/posts/${post.id}" class="block">
+                            ${post.thumbnail_url ? `
+                            <div class="relative overflow-hidden">
+                                <img src="${post.thumbnail_url}" alt="${post.title}" class="w-full h-48 md:h-56 object-cover group-hover:scale-110 transition-transform duration-300">
+                                <div class="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
                             </div>
-                            <div class="whitespace-nowrap">
-                                <i class="fas fa-clock mr-1"></i>
-                                ${new Date(post.published_at).toLocaleDateString('ja-JP')}
+                            ` : `
+                            <div class="relative h-48 md:h-56 theme-bg-primary bg-opacity-10 flex items-center justify-center">
+                                <i class="fas fa-file-alt text-6xl text-gray-300"></i>
                             </div>
-                        </div>
+                            `}
+                            <div class="p-4 md:p-6">
+                                <h3 class="text-lg md:text-xl font-bold text-gray-900 mb-2 group-hover:theme-text-primary transition line-clamp-2">
+                                    ${post.title}
+                                </h3>
+                                <p class="text-sm text-gray-600 mb-4 line-clamp-3">${post.excerpt || post.content.substring(0, 120) + '...'}</p>
+                                
+                                <div class="flex items-center justify-between text-xs text-gray-500 pt-4 border-t border-gray-100">
+                                    <div class="flex items-center gap-2">
+                                        <div class="w-6 h-6 bg-gradient-to-br from-primary-400 to-primary-600 rounded-full flex items-center justify-center text-white text-xs font-bold">
+                                            ${post.author_name.charAt(0).toUpperCase()}
+                                        </div>
+                                        <span class="font-medium truncate">${post.author_name}</span>
+                                    </div>
+                                    <div class="flex items-center gap-1 whitespace-nowrap">
+                                        <i class="fas fa-clock"></i>
+                                        <span>${new Date(post.published_at).toLocaleDateString('ja-JP', { month: 'short', day: 'numeric' })}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </a>
                     </article>
                     `).join('')}
                 </div>
@@ -183,23 +237,41 @@ tenant.get('/', tenantMiddleware, async (c) => {
             `}
 
             <!-- コミュニティ情報 -->
-            <section class="card mt-6 md:mt-8">
-                <h2 class="text-lg md:text-xl font-bold text-gray-900 mb-4">
-                    <i class="fas fa-info-circle mr-2 theme-text-primary"></i>
-                    コミュニティ情報
-                </h2>
-                <div class="grid grid-cols-3 gap-3 md:gap-4 text-center">
-                    <div>
-                        <div class="text-2xl md:text-3xl font-bold theme-text-primary">${tenantData.member_count}</div>
-                        <div class="text-gray-600 mt-1 text-xs md:text-base">メンバー</div>
+            <section class="mt-8 md:mt-12 bg-gradient-to-br from-gray-50 to-white rounded-2xl shadow-lg p-6 md:p-8 border border-gray-100">
+                <div class="text-center mb-6 md:mb-8">
+                    <h2 class="text-2xl md:text-3xl font-bold text-gray-900 mb-2">
+                        <i class="fas fa-chart-line mr-2 theme-text-primary"></i>
+                        コミュニティの成長
+                    </h2>
+                    <p class="text-sm md:text-base text-gray-600">私たちのコミュニティについて</p>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
+                    <div class="bg-white rounded-xl p-6 shadow-md hover:shadow-xl transition text-center border-l-4 border-primary-500">
+                        <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 text-white mb-4">
+                            <i class="fas fa-users text-2xl"></i>
+                        </div>
+                        <div class="text-3xl md:text-4xl font-bold theme-text-primary mb-2">${tenantData.member_count}</div>
+                        <div class="text-gray-600 font-medium">アクティブメンバー</div>
+                        <div class="text-xs text-gray-500 mt-2">参加して交流しよう</div>
                     </div>
-                    <div>
-                        <div class="text-2xl md:text-3xl font-bold theme-text-primary">${posts.length}</div>
-                        <div class="text-gray-600 mt-1 text-xs md:text-base">投稿</div>
+                    
+                    <div class="bg-white rounded-xl p-6 shadow-md hover:shadow-xl transition text-center border-l-4 border-success-500">
+                        <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-success-400 to-success-600 text-white mb-4">
+                            <i class="fas fa-file-alt text-2xl"></i>
+                        </div>
+                        <div class="text-3xl md:text-4xl font-bold text-success-600 mb-2">${posts.length}</div>
+                        <div class="text-gray-600 font-medium">公開投稿</div>
+                        <div class="text-xs text-gray-500 mt-2">知識を共有</div>
                     </div>
-                    <div>
-                        <div class="text-2xl md:text-3xl font-bold theme-text-primary">${tenantData.plan.toUpperCase()}</div>
-                        <div class="text-gray-600 mt-1 text-xs md:text-base">プラン</div>
+                    
+                    <div class="bg-white rounded-xl p-6 shadow-md hover:shadow-xl transition text-center border-l-4 border-accent-500">
+                        <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-accent-400 to-accent-600 text-white mb-4">
+                            <i class="fas fa-crown text-2xl"></i>
+                        </div>
+                        <div class="text-3xl md:text-4xl font-bold text-accent-600 mb-2">${tenantData.plan.toUpperCase()}</div>
+                        <div class="text-gray-600 font-medium">現在のプラン</div>
+                        <div class="text-xs text-gray-500 mt-2">充実した機能</div>
                     </div>
                 </div>
             </section>
@@ -667,23 +739,37 @@ tenant.get('/posts/:id', tenantMiddleware, async (c) => {
         <!-- メイン -->
         <main class="max-w-5xl mx-auto px-4 py-4 md:py-8">
             <!-- 投稿本体 -->
-            <article class="card mb-6 md:mb-8">
-                <div class="p-4 md:p-8">
-                    <h1 class="text-2xl md:text-4xl font-bold text-gray-900 mb-3 md:mb-4">${post.title}</h1>
+            <article class="bg-white rounded-xl shadow-lg mb-6 md:mb-8 overflow-hidden">
+                <div class="p-6 md:p-10">
+                    <!-- タイトル -->
+                    <h1 class="text-2xl md:text-4xl font-bold text-gray-900 mb-4 md:mb-6 leading-tight">${post.title}</h1>
                     
-                    <div class="flex flex-wrap items-center gap-2 md:gap-4 text-xs md:text-sm text-gray-600 mb-4 md:mb-6 pb-4 md:pb-6 border-b border-gray-200">
+                    <!-- メタ情報 -->
+                    <div class="flex flex-wrap items-center gap-3 md:gap-6 text-xs md:text-sm text-gray-600 mb-6 md:mb-8 pb-6 md:pb-8 border-b border-gray-200">
                         <div class="flex items-center gap-2">
-                            <div class="w-8 h-8 md:w-10 md:h-10 bg-gradient-to-br from-primary-400 to-primary-600 rounded-full flex items-center justify-center text-white font-bold text-sm md:text-base">
+                            <div class="w-10 h-10 md:w-12 md:h-12 bg-gradient-to-br from-primary-400 to-primary-600 rounded-full flex items-center justify-center text-white font-bold text-base md:text-lg shadow-md">
                                 ${post.author_name.charAt(0).toUpperCase()}
                             </div>
-                            <span class="font-semibold">${post.author_name}</span>
+                            <div>
+                                <div class="font-semibold text-gray-900">${post.author_name}</div>
+                                <div class="text-xs text-gray-500">投稿者</div>
+                            </div>
                         </div>
-                        <span><i class="fas fa-calendar mr-1"></i>${new Date(post.published_at).toLocaleDateString('ja-JP')}</span>
-                        <span><i class="fas fa-eye mr-1"></i>${post.view_count || 0} views</span>
+                        <div class="flex items-center gap-4">
+                            <span class="flex items-center gap-1 bg-gray-100 px-3 py-1 rounded-full">
+                                <i class="fas fa-calendar text-primary-500"></i>
+                                ${new Date(post.published_at).toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric' })}
+                            </span>
+                            <span class="flex items-center gap-1 bg-gray-100 px-3 py-1 rounded-full">
+                                <i class="fas fa-eye text-primary-500"></i>
+                                ${post.view_count || 0}
+                            </span>
+                        </div>
                     </div>
 
-                    <div class="prose prose-sm md:prose-lg max-w-none">
-                        ${post.content.split('\n').map((line: string) => `<p>${line}</p>`).join('')}
+                    <!-- 本文 -->
+                    <div class="prose prose-sm md:prose-lg max-w-none prose-headings:text-gray-900 prose-p:text-gray-700 prose-p:leading-relaxed prose-a:text-primary-600 prose-strong:text-gray-900">
+                        ${post.content.split('\n').map((line: string) => line.trim() ? `<p class="mb-4">${line}</p>` : '').join('')}
                     </div>
                 </div>
             </article>
