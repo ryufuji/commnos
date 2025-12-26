@@ -22,28 +22,28 @@
 - **メール通知システム** - Resend API統合、会員管理通知
 - **デザイン洗練** - ヒーローセクション、カードグリッド、タイポグラフィ改善
 - **完全レスポンシブ対応** - モバイル/タブレット/デスクトップ最適化
+- **画像アップロード** - R2バケット統合、プロフィール画像、投稿サムネイル ✨ 新機能
 
 ⚠️ **今後実装予定:**
-- R2バケット（画像アップロード）
 - コメント返信通知メール
 - 高度な分析機能
 
 ## URLs
 
 ### 本番環境（Cloudflare Pages）
-- **最新デプロイ**: https://7c1e7fea.commons-webapp.pages.dev
-- **新規登録**: https://7c1e7fea.commons-webapp.pages.dev/register
-- **ログイン**: https://7c1e7fea.commons-webapp.pages.dev/login
-- **ダッシュボード**: https://7c1e7fea.commons-webapp.pages.dev/dashboard
-- **会員管理**: https://7c1e7fea.commons-webapp.pages.dev/members
-- **投稿詳細例**: https://7c1e7fea.commons-webapp.pages.dev/posts/1
+- **最新デプロイ**: https://69e23b45.commons-webapp.pages.dev
+- **新規登録**: https://69e23b45.commons-webapp.pages.dev/register
+- **ログイン**: https://69e23b45.commons-webapp.pages.dev/login
+- **ダッシュボード**: https://69e23b45.commons-webapp.pages.dev/dashboard
+- **会員管理**: https://69e23b45.commons-webapp.pages.dev/members
+- **投稿詳細例**: https://69e23b45.commons-webapp.pages.dev/posts/1
 
 ### サンドボックス環境
 - **ホーム**: https://3000-imu7i4bdyc519gbijlo4z-5185f4aa.sandbox.novita.ai
 
 ### GitHub
 - **リポジトリ**: https://github.com/ryufuji/commnos
-- **最新コミット**: 8c53071
+- **最新コミット**: d7d8f28
 
 ## データアーキテクチャ
 
@@ -67,6 +67,9 @@
 - **認証**: JWT（jose ライブラリ）
 - **決済**: Stripe（テストモード）
 - **メール**: Resend API ✨ Phase 2
+- **画像ストレージ**: Cloudflare R2 Bucket ✨ Phase 2
+  - アバター画像（最大5MB、JPEG/PNG/GIF/WebP）
+  - 投稿サムネイル（最大10MB、JPEG/PNG/GIF/WebP）
 
 ### データフロー
 
@@ -304,14 +307,61 @@
 #### POST /api/stripe/checkout
 Checkoutセッション作成（要認証）
 
+### 画像アップロードAPI ✨ Phase 2
+
+#### POST /api/upload/avatar
+プロフィール画像アップロード（要認証）
+
+**Request:**
+```multipart/form-data
+avatar: File (JPEG/PNG/GIF/WebP, 最大5MB)
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "avatar_url": "/api/images/avatars/123-1234567890.jpg"
+}
+```
+
+#### POST /api/upload/post-thumbnail
+投稿サムネイル画像アップロード（要認証）
+
+**Request:**
+```multipart/form-data
+thumbnail: File (JPEG/PNG/GIF/WebP, 最大10MB)
+```
+
+**Response:**
+```json
+{
+  "success": true,
+  "thumbnail_url": "/api/images/thumbnails/1234567890-abc123.jpg"
+}
+```
+
+#### GET /api/images/:path
+画像取得（公開アクセス）
+
+**パス例:**
+- `/api/images/avatars/123-1234567890.jpg`
+- `/api/images/thumbnails/1234567890-abc123.jpg`
+
+**機能:**
+- R2バケットから画像を取得
+- 1年間のキャッシュヘッダー付与
+- ETag対応
+
 ## デプロイ
 
 ### 本番環境（Cloudflare Pages）
 - **プラットフォーム**: Cloudflare Pages
 - **プロジェクト名**: commons-webapp
 - **ステータス**: ✅ デプロイ完了
-- **URL**: https://7c1e7fea.commons-webapp.pages.dev
+- **URL**: https://69e23b45.commons-webapp.pages.dev
 - **データベース**: Cloudflare D1（commons-webapp-production）
+- **R2バケット**: commons-images ✨ Phase 2
 - **環境変数**: JWT_SECRET, PLATFORM_DOMAIN, STRIPE_SECRET_KEY, RESEND_API_KEY 設定済み
 - **最終デプロイ**: 2025-12-26
 
@@ -334,6 +384,9 @@ curl http://localhost:3000/health
 ### Cloudflare Pages デプロイ
 
 ```bash
+# R2バケット作成（初回のみ）✨ Phase 2
+npx wrangler r2 bucket create commons-images
+
 # マイグレーション適用（本番）
 npx wrangler d1 migrations apply commons-webapp-production --remote
 
@@ -458,8 +511,13 @@ echo "YOUR_RESEND_API_KEY" | npx wrangler pages secret put RESEND_API_KEY --proj
 | - グリッドレイアウト | ✅ 完了 | 2025-12-26 |
 | - モバイル最適化 | ✅ 完了 | 2025-12-26 |
 | - タブレット最適化 | ✅ 完了 | 2025-12-26 |
+| **画像アップロード** | ✅ 完了 | 2025-12-26 |
+| - R2バケット統合 | ✅ 完了 | 2025-12-26 |
+| - プロフィール画像 | ✅ 完了 | 2025-12-26 |
+| - 投稿サムネイル | ✅ 完了 | 2025-12-26 |
+| - 画像取得API | ✅ 完了 | 2025-12-26 |
 
-**Phase 2 進捗: 88%（5/6機能グループ完成）**
+**Phase 2 進捗: 100%（6/6機能グループ完成）** ✨
 
 ### 今後の実装予定（Phase 3）
 
