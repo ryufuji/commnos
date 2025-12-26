@@ -18,6 +18,7 @@ import posts from './routes/posts' // Week 7-8
 import stripe from './routes/stripe' // Week 9-10
 import upload from './routes/upload' // Phase 2 - 画像アップロード
 import images from './routes/images' // Phase 2 - 画像取得
+import tenantPublic from './routes/tenant-public' // Phase 3 - テナント公開ページ
 
 const app = new Hono<AppContext>()
 
@@ -1990,6 +1991,11 @@ app.get('/members', (c) => {
     </html>
   `)
 })
+
+// --------------------------------------------
+// テナント公開ページ（Phase 3）
+// --------------------------------------------
+app.route('/tenant', tenantPublic)
 
 // --------------------------------------------
 // ヘルスチェック
