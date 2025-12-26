@@ -5,7 +5,7 @@
 // Cloudflare Bindings（環境変数とサービス）
 export type Bindings = {
   DB: D1Database
-  AVATARS: R2Bucket // Week 5-6: アバター画像用
+  R2: R2Bucket // Phase 2: 画像ストレージ（アバター、サムネイル）
   JWT_SECRET: string
   RESEND_API_KEY: string
   STRIPE_SECRET_KEY: string

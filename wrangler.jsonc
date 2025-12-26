@@ -12,9 +12,13 @@
       "database_name": "commons-webapp-production",
       "database_id": "5dc36696-29ca-4e6e-9cb9-6bcd63a37a2e"
     }
-  ]
+  ],
   
-  // Phase 2 で追加予定:
-  // - r2_buckets (アバター画像用)
-  // - kv_namespaces (通知キャッシュ用)
+  // Phase 2: R2 Bucket for image storage
+  "r2_buckets": [
+    {
+      "binding": "R2",
+      "bucket_name": "commons-images"
+    }
+  ]
 }

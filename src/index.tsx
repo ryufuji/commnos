@@ -16,6 +16,8 @@ import tenant from './routes/tenant'
 import profile from './routes/profile' // Week 5-6
 import posts from './routes/posts' // Week 7-8
 import stripe from './routes/stripe' // Week 9-10
+import upload from './routes/upload' // Phase 2 - 画像アップロード
+import images from './routes/images' // Phase 2 - 画像取得
 
 const app = new Hono<AppContext>()
 
@@ -51,6 +53,12 @@ app.route('/api/members', members)
 
 // 管理者ルート
 app.route('/api/admin', admin)
+
+// 画像アップロードルート（Phase 2）
+app.route('/api/upload', upload)
+
+// 画像取得ルート（Phase 2）
+app.route('/api/images', images)
 
 // --------------------------------------------
 // ルーティングロジック
@@ -977,6 +985,29 @@ app.get('/profile', (c) => {
                 <div class="card fade-in hidden" id="editForm">
                     <h2 class="text-xl font-bold mb-4">プロフィール編集</h2>
                     <form id="profileForm" class="space-y-4">
+                        <!-- アバター画像 -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                プロフィール画像
+                            </label>
+                            <div class="flex items-center gap-4">
+                                <div id="avatarPreview" class="w-20 h-20 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center text-white text-2xl font-bold overflow-hidden">
+                                    <img id="avatarImg" class="w-full h-full object-cover hidden" alt="Avatar">
+                                    <span id="avatarInitial">U</span>
+                                </div>
+                                <div class="flex-1">
+                                    <input type="file" id="avatarInput" accept="image/jpeg,image/png,image/gif,image/webp" class="hidden">
+                                    <button type="button" id="selectAvatarBtn" class="btn-secondary text-sm">
+                                        <i class="fas fa-image mr-2"></i>
+                                        画像を選択
+                                    </button>
+                                    <p class="text-xs text-gray-500 mt-1">
+                                        JPEG, PNG, GIF, WebP形式（最大5MB）
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        
                         <!-- ニックネーム -->
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">
@@ -1069,7 +1100,48 @@ app.get('/profile', (c) => {
                 // 現在の値をフォームに設定
                 document.getElementById('inputNickname').value = currentProfile.nickname
                 document.getElementById('inputBio').value = currentProfile.bio || ''
+                
+                // アバター画像表示
+                if (currentProfile.avatar_url) {
+                    document.getElementById('avatarImg').src = currentProfile.avatar_url
+                    document.getElementById('avatarImg').classList.remove('hidden')
+                    document.getElementById('avatarInitial').classList.add('hidden')
+                } else {
+                    document.getElementById('avatarInitial').textContent = currentProfile.nickname.charAt(0).toUpperCase()
+                    document.getElementById('avatarImg').classList.add('hidden')
+                    document.getElementById('avatarInitial').classList.remove('hidden')
+                }
+                
                 updateCharCount()
+            })
+            
+            // アバター選択ボタン
+            document.getElementById('selectAvatarBtn').addEventListener('click', () => {
+                document.getElementById('avatarInput').click()
+            })
+            
+            // アバタープレビュー
+            let selectedAvatarFile = null
+            document.getElementById('avatarInput').addEventListener('change', (e) => {
+                const file = e.target.files[0]
+                if (!file) return
+                
+                // ファイルサイズチェック（5MB）
+                if (file.size > 5 * 1024 * 1024) {
+                    showToast('画像サイズは5MB以下にしてください', 'error')
+                    return
+                }
+                
+                selectedAvatarFile = file
+                
+                // プレビュー表示
+                const reader = new FileReader()
+                reader.onload = (e) => {
+                    document.getElementById('avatarImg').src = e.target.result
+                    document.getElementById('avatarImg').classList.remove('hidden')
+                    document.getElementById('avatarInitial').classList.add('hidden')
+                }
+                reader.readAsDataURL(file)
             })
 
             // キャンセル
@@ -1094,12 +1166,36 @@ app.get('/profile', (c) => {
                 showLoading(saveBtn)
 
                 const token = getToken()
-                const data = {
-                    nickname: document.getElementById('inputNickname').value,
-                    bio: document.getElementById('inputBio').value
-                }
-
+                
                 try {
+                    // アバター画像がある場合は先にアップロード
+                    if (selectedAvatarFile) {
+                        const formData = new FormData()
+                        formData.append('avatar', selectedAvatarFile)
+                        
+                        const uploadResponse = await fetch('/api/upload/avatar', {
+                            method: 'POST',
+                            headers: {
+                                'Authorization': 'Bearer ' + token
+                            },
+                            body: formData
+                        })
+                        
+                        const uploadResult = await uploadResponse.json()
+                        if (!uploadResult.success) {
+                            throw new Error(uploadResult.error || 'アバターのアップロードに失敗しました')
+                        }
+                        
+                        // アップロード成功後、ファイルをクリア
+                        selectedAvatarFile = null
+                    }
+                    
+                    // プロフィール情報を更新
+                    const data = {
+                        nickname: document.getElementById('inputNickname').value,
+                        bio: document.getElementById('inputBio').value
+                    }
+                    
                     const response = await apiRequest('/api/profile', {
                         method: 'PUT',
                         headers: {
@@ -1117,43 +1213,9 @@ app.get('/profile', (c) => {
                         showToast('プロフィールを更新しました', 'success')
                     }
                 } catch (error) {
-                    showToast('更新に失敗しました', 'error')
+                    showToast(error.message || '更新に失敗しました', 'error')
                 } finally {
                     hideLoading(saveBtn)
-                }
-            })
-
-            // アバター変更
-            document.getElementById('changeAvatarBtn').addEventListener('click', () => {
-                document.getElementById('avatarInput').click()
-            })
-
-            document.getElementById('avatarInput').addEventListener('change', async (e) => {
-                const file = e.target.files[0]
-                if (!file) return
-
-                const token = getToken()
-                const formData = new FormData()
-                formData.append('avatar', file)
-
-                try {
-                    const response = await fetch('/api/profile/avatar', {
-                        method: 'POST',
-                        headers: {
-                            'Authorization': 'Bearer ' + token
-                        },
-                        body: formData
-                    }).then(r => r.json())
-
-                    if (response.success) {
-                        currentProfile = response.user
-                        displayProfile(response.user)
-                        showToast('アバターを更新しました', 'success')
-                    } else {
-                        showToast(response.error || 'アップロードに失敗しました', 'error')
-                    }
-                } catch (error) {
-                    showToast('アップロードに失敗しました', 'error')
                 }
             })
 
