@@ -29,9 +29,11 @@
   - ✅ テナントホームページ（/tenant/home）
   - ✅ 投稿一覧ページ（/tenant/posts）
   - ✅ 投稿作成ページ（/tenant/posts/new）
+  - ✅ 投稿詳細ページ（/tenant/posts/:id）
   - ✅ 投稿作成API（POST /api/posts）- 認証済み全会員が投稿可能
   - ✅ 画像アップロード統合（サムネイル対応）
   - ✅ 下書き保存機能
+  - ✅ 閲覧数カウント機能
 
 ⏳ **Phase 3 今後の実装予定（Week 18-21）:**
 - 会員一覧ページ・プロフィール詳細
@@ -41,15 +43,16 @@
 ## URLs
 
 ### 本番環境（Cloudflare Pages）
-- **最新デプロイ**: https://f3594532.commons-webapp.pages.dev
-- **新規登録**: https://f3594532.commons-webapp.pages.dev/register
-- **ログイン**: https://f3594532.commons-webapp.pages.dev/login
-- **ダッシュボード**: https://f3594532.commons-webapp.pages.dev/dashboard
-- **会員管理**: https://f3594532.commons-webapp.pages.dev/members
-- **プロフィール**: https://f3594532.commons-webapp.pages.dev/profile
-- **テナントホーム**: https://f3594532.commons-webapp.pages.dev/tenant/home?subdomain=test-phase2
-- **投稿一覧**: https://f3594532.commons-webapp.pages.dev/tenant/posts?subdomain=test-phase2
-- **投稿作成**: https://f3594532.commons-webapp.pages.dev/tenant/posts/new?subdomain=test-phase2
+- **最新デプロイ**: https://a75664e6.commons-webapp.pages.dev
+- **新規登録**: https://a75664e6.commons-webapp.pages.dev/register
+- **ログイン**: https://a75664e6.commons-webapp.pages.dev/login
+- **ダッシュボード**: https://a75664e6.commons-webapp.pages.dev/dashboard
+- **会員管理**: https://a75664e6.commons-webapp.pages.dev/members
+- **プロフィール**: https://a75664e6.commons-webapp.pages.dev/profile
+- **テナントホーム**: https://a75664e6.commons-webapp.pages.dev/tenant/home?subdomain=test-phase2
+- **投稿一覧**: https://a75664e6.commons-webapp.pages.dev/tenant/posts?subdomain=test-phase2
+- **投稿作成**: https://a75664e6.commons-webapp.pages.dev/tenant/posts/new?subdomain=test-phase2
+- **投稿詳細**: https://a75664e6.commons-webapp.pages.dev/tenant/posts/1?subdomain=test-phase2
 
 ### サンドボックス環境
 - **ホーム**: https://3000-imu7i4bdyc519gbijlo4z-5185f4aa.sandbox.novita.ai
