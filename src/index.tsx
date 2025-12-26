@@ -956,9 +956,9 @@ app.get('/profile', (c) => {
             <div class="max-w-2xl mx-auto">
                 <!-- ヘッダー -->
                 <div class="mb-8">
-                    <a href="/" class="text-blue-600 hover:underline">
+                    <a href="/dashboard" class="text-blue-600 hover:underline">
                         <i class="fas fa-arrow-left mr-2"></i>
-                        ホームに戻る
+                        ダッシュボードに戻る
                     </a>
                 </div>
 
