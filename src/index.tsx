@@ -1254,13 +1254,21 @@ app.get('/dashboard', (c) => {
                         <i class="fas fa-rocket mr-2 text-primary-500"></i>
                         クイックアクション
                     </h2>
-                    <div class="grid md:grid-cols-3 gap-4">
+                    <div class="grid md:grid-cols-4 gap-4">
                         <a href="/posts" class="card-interactive p-6 text-center">
                             <div class="text-4xl mb-3 text-primary-500">
                                 <i class="fas fa-plus-circle"></i>
                             </div>
                             <h3 class="font-bold text-gray-900 mb-2">新規投稿</h3>
                             <p class="text-sm text-secondary-600">記事を投稿する</p>
+                        </a>
+
+                        <a href="/members" class="card-interactive p-6 text-center">
+                            <div class="text-4xl mb-3 text-warning-500">
+                                <i class="fas fa-user-check"></i>
+                            </div>
+                            <h3 class="font-bold text-gray-900 mb-2">会員管理</h3>
+                            <p class="text-sm text-secondary-600">申請の承認・会員一覧</p>
                         </a>
 
                         <a href="/profile" class="card-interactive p-6 text-center">
@@ -1493,6 +1501,275 @@ app.get('/dashboard', (c) => {
 
             // ページロード時
             loadDashboard()
+        </script>
+    </body>
+    </html>
+  `)
+})
+
+// --------------------------------------------
+// 会員管理ページ（Phase 2）
+// --------------------------------------------
+
+app.get('/members', (c) => {
+  return c.html(`
+    <!DOCTYPE html>
+    <html lang="ja" data-theme="modern-business">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>会員管理 - Commons</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+        <link href="/static/styles.css" rel="stylesheet">
+    </head>
+    <body class="bg-gradient-to-br from-gray-50 to-gray-100">
+        <div class="min-h-screen">
+            <!-- ヘッダー -->
+            <header class="bg-white/80 backdrop-blur-sm shadow-sm border-b border-gray-200">
+                <div class="container-custom py-4">
+                    <div class="flex justify-between items-center">
+                        <h1 class="text-2xl font-bold text-gradient">
+                            <i class="fas fa-user-check mr-2"></i>
+                            会員管理
+                        </h1>
+                        <div class="flex gap-4">
+                            <a href="/dashboard" class="btn-ghost">
+                                <i class="fas fa-arrow-left mr-2"></i>
+                                ダッシュボード
+                            </a>
+                            <button id="logoutBtn" class="btn-secondary">
+                                <i class="fas fa-sign-out-alt mr-2"></i>
+                                ログアウト
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- メインコンテンツ -->
+            <main class="container-custom section-spacing">
+                <!-- タブ -->
+                <div class="mb-6">
+                    <div class="bg-white rounded-lg shadow p-2 inline-flex gap-2">
+                        <button id="tabPending" onclick="switchTab('pending')" 
+                            class="px-6 py-2 rounded-md font-semibold transition bg-primary-500 text-white">
+                            <i class="fas fa-hourglass-half mr-2"></i>
+                            承認待ち
+                            <span id="pendingCount" class="ml-2 bg-white text-primary-600 px-2 py-0.5 rounded-full text-xs font-bold">0</span>
+                        </button>
+                        <button id="tabActive" onclick="switchTab('active')" 
+                            class="px-6 py-2 rounded-md font-semibold transition text-gray-600 hover:bg-gray-100">
+                            <i class="fas fa-check-circle mr-2"></i>
+                            承認済み会員
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 承認待ちリスト -->
+                <div id="pendingSection" class="card">
+                    <div class="p-6 border-b border-gray-200">
+                        <h2 class="text-xl font-bold text-gray-900">
+                            <i class="fas fa-hourglass-half mr-2 text-warning-500"></i>
+                            承認待ち会員申請
+                        </h2>
+                        <p class="text-sm text-gray-600 mt-1">申請を確認して承認または却下してください</p>
+                    </div>
+                    <div id="pendingList" class="divide-y divide-gray-200">
+                        <!-- 動的に追加されます -->
+                    </div>
+                </div>
+
+                <!-- 承認済み会員リスト -->
+                <div id="activeSection" class="card hidden">
+                    <div class="p-6 border-b border-gray-200">
+                        <h2 class="text-xl font-bold text-gray-900">
+                            <i class="fas fa-users mr-2 text-success-500"></i>
+                            承認済み会員一覧
+                        </h2>
+                        <p class="text-sm text-gray-600 mt-1">現在のコミュニティメンバー</p>
+                    </div>
+                    <div id="activeList" class="divide-y divide-gray-200">
+                        <!-- 動的に追加されます -->
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+        <script src="/static/app.js"></script>
+        <script>
+            let currentTab = 'pending'
+
+            // タブ切り替え
+            function switchTab(tab) {
+                currentTab = tab
+                
+                // タブボタンのスタイル更新
+                const tabPending = document.getElementById('tabPending')
+                const tabActive = document.getElementById('tabActive')
+                
+                if (tab === 'pending') {
+                    tabPending.className = 'px-6 py-2 rounded-md font-semibold transition bg-primary-500 text-white'
+                    tabActive.className = 'px-6 py-2 rounded-md font-semibold transition text-gray-600 hover:bg-gray-100'
+                    document.getElementById('pendingSection').classList.remove('hidden')
+                    document.getElementById('activeSection').classList.add('hidden')
+                    loadPendingMembers()
+                } else {
+                    tabActive.className = 'px-6 py-2 rounded-md font-semibold transition bg-primary-500 text-white'
+                    tabPending.className = 'px-6 py-2 rounded-md font-semibold transition text-gray-600 hover:bg-gray-100'
+                    document.getElementById('activeSection').classList.remove('hidden')
+                    document.getElementById('pendingSection').classList.add('hidden')
+                    loadActiveMembers()
+                }
+            }
+
+            // 承認待ちメンバー取得
+            async function loadPendingMembers() {
+                try {
+                    const token = getToken()
+                    if (!token) {
+                        window.location.href = '/login'
+                        return
+                    }
+
+                    const response = await axios.get('/api/admin/members/pending', {
+                        headers: { Authorization: \`Bearer \${token}\` }
+                    })
+
+                    if (response.data.success) {
+                        const members = response.data.members || []
+                        document.getElementById('pendingCount').textContent = members.length
+                        renderPendingMembers(members)
+                    } else {
+                        showToast(response.data.error || 'データ取得に失敗しました', 'error')
+                    }
+                } catch (error) {
+                    console.error('Load pending members error:', error)
+                    if (error.response?.status === 401) {
+                        window.location.href = '/login'
+                    } else {
+                        showToast('データ取得に失敗しました', 'error')
+                    }
+                }
+            }
+
+            // 承認待ちメンバー表示
+            function renderPendingMembers(members) {
+                const container = document.getElementById('pendingList')
+                
+                if (members.length === 0) {
+                    container.innerHTML = \`
+                        <div class="p-12 text-center">
+                            <i class="fas fa-check-circle text-6xl text-gray-300 mb-4"></i>
+                            <p class="text-gray-600 text-lg">承認待ちの申請はありません</p>
+                        </div>
+                    \`
+                    return
+                }
+
+                container.innerHTML = members.map(member => \`
+                    <div class="p-6 hover:bg-gray-50 transition">
+                        <div class="flex items-start justify-between">
+                            <div class="flex-1">
+                                <div class="flex items-center gap-3 mb-2">
+                                    <div class="w-12 h-12 bg-gradient-to-br from-primary-400 to-primary-600 rounded-full flex items-center justify-center text-white font-bold text-lg">
+                                        \${member.nickname.charAt(0).toUpperCase()}
+                                    </div>
+                                    <div>
+                                        <h3 class="font-bold text-gray-900 text-lg">\${member.nickname}</h3>
+                                        <p class="text-sm text-gray-600">\${member.email}</p>
+                                    </div>
+                                </div>
+                                <p class="text-sm text-gray-500 ml-15">
+                                    <i class="fas fa-clock mr-1"></i>
+                                    申請日時: \${new Date(member.joined_at).toLocaleString('ja-JP')}
+                                </p>
+                            </div>
+                            <div class="flex gap-2 ml-4">
+                                <button onclick="approveMember(\${member.id}, '\${member.nickname}')" 
+                                    class="btn-primary px-4 py-2">
+                                    <i class="fas fa-check mr-2"></i>
+                                    承認
+                                </button>
+                                <button onclick="rejectMember(\${member.id}, '\${member.nickname}')" 
+                                    class="btn-danger px-4 py-2">
+                                    <i class="fas fa-times mr-2"></i>
+                                    却下
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                \`).join('')
+            }
+
+            // 会員承認
+            async function approveMember(id, nickname) {
+                if (!confirm(\`\${nickname} さんの申請を承認しますか？\`)) {
+                    return
+                }
+
+                try {
+                    const token = getToken()
+                    const response = await axios.post(\`/api/admin/members/\${id}/approve\`, {}, {
+                        headers: { Authorization: \`Bearer \${token}\` }
+                    })
+
+                    if (response.data.success) {
+                        showToast(\`\${nickname} さんを承認しました\`, 'success')
+                        loadPendingMembers()
+                    } else {
+                        showToast(response.data.error || '承認に失敗しました', 'error')
+                    }
+                } catch (error) {
+                    console.error('Approve member error:', error)
+                    showToast(error.response?.data?.error || '承認に失敗しました', 'error')
+                }
+            }
+
+            // 会員却下
+            async function rejectMember(id, nickname) {
+                if (!confirm(\`\${nickname} さんの申請を却下しますか？\`)) {
+                    return
+                }
+
+                try {
+                    const token = getToken()
+                    const response = await axios.post(\`/api/admin/members/\${id}/reject\`, {}, {
+                        headers: { Authorization: \`Bearer \${token}\` }
+                    })
+
+                    if (response.data.success) {
+                        showToast(\`\${nickname} さんの申請を却下しました\`, 'success')
+                        loadPendingMembers()
+                    } else {
+                        showToast(response.data.error || '却下に失敗しました', 'error')
+                    }
+                } catch (error) {
+                    console.error('Reject member error:', error)
+                    showToast(error.response?.data?.error || '却下に失敗しました', 'error')
+                }
+            }
+
+            // 承認済みメンバー取得（TODO: API実装が必要）
+            async function loadActiveMembers() {
+                const container = document.getElementById('activeList')
+                container.innerHTML = \`
+                    <div class="p-12 text-center">
+                        <i class="fas fa-exclamation-circle text-6xl text-gray-300 mb-4"></i>
+                        <p class="text-gray-600 text-lg">承認済み会員一覧は実装中です</p>
+                        <p class="text-sm text-gray-500 mt-2">Phase 2 で完全実装予定</p>
+                    </div>
+                \`
+            }
+
+            // ログアウト
+            document.getElementById('logoutBtn').addEventListener('click', async () => {
+                await handleLogout()
+            })
+
+            // ページロード時
+            loadPendingMembers()
         </script>
     </body>
     </html>

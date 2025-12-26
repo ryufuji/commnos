@@ -337,4 +337,230 @@ tenant.get('/join', tenantMiddleware, async (c) => {
   `)
 })
 
+/**
+ * GET /join
+ * 会員申請フォームページ
+ */
+tenant.get('/join', tenantMiddleware, async (c) => {
+  const tenantId = c.get('tenantId')
+  const db = c.env.DB
+
+  // テナント情報取得
+  const tenantResult = await globalQuery<any>(
+    db,
+    `SELECT t.*, tc.theme_preset 
+     FROM tenants t
+     LEFT JOIN tenant_customization tc ON t.id = tc.tenant_id
+     WHERE t.id = ?`,
+    [tenantId]
+  )
+
+  if (!tenantResult.success || !tenantResult.results || tenantResult.results.length === 0) {
+    return c.html('<h1>Tenant not found</h1>', 404)
+  }
+
+  const tenantData = tenantResult.results[0]
+
+  return c.html(`
+    <!DOCTYPE html>
+    <html lang="ja" data-theme="modern-business">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>会員登録 - ${tenantData.name}</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+        <link href="/static/styles.css" rel="stylesheet">
+    </head>
+    <body class="bg-gradient-to-br from-primary-50 via-white to-secondary-50">
+        <!-- ヘッダー -->
+        <header class="bg-white shadow-sm sticky top-0 z-10">
+            <div class="max-w-4xl mx-auto px-4 py-4">
+                <div class="flex items-center justify-between">
+                    <a href="/" class="text-xl font-bold text-primary-600 hover:text-primary-700 transition">
+                        <i class="fas fa-arrow-left mr-2"></i>
+                        ${tenantData.name}
+                    </a>
+                    <a href="/member/login" class="text-gray-600 hover:text-gray-900">
+                        <i class="fas fa-sign-in-alt mr-2"></i>
+                        ログイン
+                    </a>
+                </div>
+            </div>
+        </header>
+
+        <!-- メイン -->
+        <main class="max-w-2xl mx-auto px-4 py-12">
+            <div class="card">
+                <div class="text-center mb-8">
+                    <div class="inline-flex items-center justify-center w-16 h-16 bg-primary-100 rounded-full mb-4">
+                        <i class="fas fa-user-plus text-2xl text-primary-600"></i>
+                    </div>
+                    <h1 class="text-3xl font-bold text-gray-900 mb-2">
+                        ${tenantData.name} への会員登録
+                    </h1>
+                    ${tenantData.subtitle ? `<p class="text-gray-600">${tenantData.subtitle}</p>` : ''}
+                </div>
+
+                <!-- 会員登録フォーム -->
+                <form id="joinForm" class="space-y-6">
+                    <!-- ニックネーム -->
+                    <div>
+                        <label for="nickname" class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-user mr-2 text-primary-500"></i>
+                            ニックネーム *
+                        </label>
+                        <input type="text" id="nickname" name="nickname" required
+                            class="input-primary w-full"
+                            placeholder="山田太郎">
+                    </div>
+
+                    <!-- メールアドレス -->
+                    <div>
+                        <label for="email" class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-envelope mr-2 text-primary-500"></i>
+                            メールアドレス *
+                        </label>
+                        <input type="email" id="email" name="email" required
+                            class="input-primary w-full"
+                            placeholder="you@example.com">
+                        <p class="mt-1 text-sm text-gray-500">
+                            <i class="fas fa-info-circle mr-1"></i>
+                            承認通知はこのメールアドレスに送信されます
+                        </p>
+                    </div>
+
+                    <!-- パスワード -->
+                    <div>
+                        <label for="password" class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-lock mr-2 text-primary-500"></i>
+                            パスワード *
+                        </label>
+                        <input type="password" id="password" name="password" required
+                            class="input-primary w-full"
+                            placeholder="8文字以上">
+                        <p class="mt-1 text-sm text-gray-500">
+                            <i class="fas fa-info-circle mr-1"></i>
+                            8文字以上、大文字・小文字・数字を含む
+                        </p>
+                    </div>
+
+                    <!-- 確認用パスワード -->
+                    <div>
+                        <label for="password_confirm" class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-lock mr-2 text-primary-500"></i>
+                            パスワード（確認用） *
+                        </label>
+                        <input type="password" id="password_confirm" name="password_confirm" required
+                            class="input-primary w-full"
+                            placeholder="パスワードを再入力">
+                    </div>
+
+                    <!-- 利用規約 -->
+                    <div class="flex items-start">
+                        <input type="checkbox" id="terms" name="terms" required
+                            class="mt-1 h-4 w-4 text-primary-600 focus:ring-primary-500 border-gray-300 rounded">
+                        <label for="terms" class="ml-2 text-sm text-gray-700">
+                            <a href="#" class="text-primary-600 hover:text-primary-700 underline">利用規約</a>
+                            および
+                            <a href="#" class="text-primary-600 hover:text-primary-700 underline">プライバシーポリシー</a>
+                            に同意します *
+                        </label>
+                    </div>
+
+                    <!-- 送信ボタン -->
+                    <button type="submit" id="submitBtn" class="btn-primary w-full">
+                        <i class="fas fa-paper-plane mr-2"></i>
+                        申請を送信
+                    </button>
+
+                    <!-- 注意事項 -->
+                    <div class="bg-blue-50 border-l-4 border-blue-500 p-4 rounded">
+                        <div class="flex items-start">
+                            <i class="fas fa-info-circle text-blue-500 mt-0.5 mr-3"></i>
+                            <div class="text-sm text-blue-700">
+                                <p class="font-semibold mb-1">申請の流れ</p>
+                                <ol class="list-decimal ml-5 space-y-1">
+                                    <li>申請フォームを送信</li>
+                                    <li>管理者が申請を確認</li>
+                                    <li>承認されるとメールで通知</li>
+                                    <li>ログインしてコミュニティに参加</li>
+                                </ol>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </main>
+
+        <!-- フッター -->
+        <footer class="bg-gray-800 text-white py-8 mt-12">
+            <div class="max-w-7xl mx-auto px-4 text-center">
+                <p>&copy; 2025 ${tenantData.name}. All rights reserved.</p>
+                <p class="mt-2 text-gray-400 text-sm">
+                    Powered by <a href="https://commons.com" class="hover:text-white transition">Commons</a>
+                </p>
+            </div>
+        </footer>
+
+        <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+        <script src="/static/app.js"></script>
+        <script>
+            document.getElementById('joinForm').addEventListener('submit', async (e) => {
+                e.preventDefault()
+                
+                const submitBtn = document.getElementById('submitBtn')
+                const nickname = document.getElementById('nickname').value
+                const email = document.getElementById('email').value
+                const password = document.getElementById('password').value
+                const passwordConfirm = document.getElementById('password_confirm').value
+                const terms = document.getElementById('terms').checked
+
+                // バリデーション
+                if (!terms) {
+                    showToast('利用規約に同意してください', 'error')
+                    return
+                }
+
+                if (password !== passwordConfirm) {
+                    showToast('パスワードが一致しません', 'error')
+                    return
+                }
+
+                if (password.length < 8) {
+                    showToast('パスワードは8文字以上で入力してください', 'error')
+                    return
+                }
+
+                showLoading(submitBtn)
+
+                try {
+                    const response = await axios.post('/api/members/apply', {
+                        nickname,
+                        email,
+                        password
+                    })
+
+                    if (response.data.success) {
+                        showToast('申請を受け付けました！承認をお待ちください', 'success')
+                        // 3秒後にトップページへ
+                        setTimeout(() => {
+                            window.location.href = '/'
+                        }, 3000)
+                    } else {
+                        showToast(response.data.error || '申請に失敗しました', 'error')
+                        hideLoading(submitBtn)
+                    }
+                } catch (error) {
+                    console.error('Join error:', error)
+                    showToast(error.response?.data?.error || '申請に失敗しました', 'error')
+                    hideLoading(submitBtn)
+                }
+            })
+        </script>
+    </body>
+    </html>
+  `)
+})
+
 export default tenant
