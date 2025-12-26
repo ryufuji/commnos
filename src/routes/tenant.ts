@@ -84,22 +84,38 @@ tenant.get('/', tenantMiddleware, async (c) => {
     <body class="bg-gray-50">
         <!-- ヘッダー -->
         <header class="theme-bg-primary text-white shadow-lg">
-            <div class="max-w-7xl mx-auto px-4 py-6">
+            <div class="max-w-7xl mx-auto px-4 py-4 md:py-6">
                 <div class="flex items-center justify-between">
-                    <div>
-                        <h1 class="text-3xl font-bold">${tenantData.name}</h1>
-                        ${tenantData.subtitle ? `<p class="text-gray-200 mt-1">${tenantData.subtitle}</p>` : ''}
+                    <div class="flex-1 min-w-0">
+                        <h1 class="text-xl md:text-3xl font-bold truncate">${tenantData.name}</h1>
+                        ${tenantData.subtitle ? `<p class="text-gray-200 mt-1 text-sm md:text-base truncate">${tenantData.subtitle}</p>` : ''}
                     </div>
-                    <div class="flex items-center gap-4">
-                        <a href="/join" class="bg-white text-gray-800 px-4 py-2 rounded-lg font-semibold hover:bg-gray-100 transition">
+                    <!-- デスクトップナビ -->
+                    <div class="hidden md:flex items-center gap-4 ml-4">
+                        <a href="/join" class="bg-white text-gray-800 px-4 py-2 rounded-lg font-semibold hover:bg-gray-100 transition whitespace-nowrap">
                             <i class="fas fa-user-plus mr-2"></i>
                             会員登録
                         </a>
-                        <a href="/member/login" class="text-white hover:text-gray-200 transition">
+                        <a href="/member/login" class="text-white hover:text-gray-200 transition whitespace-nowrap">
                             <i class="fas fa-sign-in-alt mr-2"></i>
                             ログイン
                         </a>
                     </div>
+                    <!-- モバイルメニューボタン -->
+                    <button id="mobileMenuBtn" class="md:hidden ml-4 p-2">
+                        <i class="fas fa-bars text-2xl"></i>
+                    </button>
+                </div>
+                <!-- モバイルメニュー -->
+                <div id="mobileMenu" class="hidden md:hidden mt-4 space-y-2">
+                    <a href="/join" class="block bg-white text-gray-800 px-4 py-2 rounded-lg font-semibold text-center">
+                        <i class="fas fa-user-plus mr-2"></i>
+                        会員登録
+                    </a>
+                    <a href="/member/login" class="block text-white hover:bg-white/10 px-4 py-2 rounded-lg text-center">
+                        <i class="fas fa-sign-in-alt mr-2"></i>
+                        ログイン
+                    </a>
                 </div>
             </div>
         </header>
@@ -107,47 +123,49 @@ tenant.get('/', tenantMiddleware, async (c) => {
         <!-- ナビゲーション -->
         <nav class="bg-white shadow">
             <div class="max-w-7xl mx-auto px-4">
-                <div class="flex space-x-8 py-4">
-                    <a href="/" class="theme-text-primary font-semibold border-b-2 theme-border-primary pb-1">
+                <div class="flex space-x-4 md:space-x-8 py-3 md:py-4 overflow-x-auto">
+                    <a href="/" class="theme-text-primary font-semibold border-b-2 theme-border-primary pb-1 whitespace-nowrap text-sm md:text-base">
                         ホーム
                     </a>
-                    <a href="/about" class="text-gray-600 hover:text-gray-900 transition">
-                        このコミュニティについて
+                    <a href="/about" class="text-gray-600 hover:text-gray-900 transition whitespace-nowrap text-sm md:text-base">
+                        <span class="hidden sm:inline">このコミュニティについて</span>
+                        <span class="sm:hidden">About</span>
                     </a>
-                    <a href="/members" class="text-gray-600 hover:text-gray-900 transition">
-                        メンバー
+                    <a href="/members" class="text-gray-600 hover:text-gray-900 transition whitespace-nowrap text-sm md:text-base">
+                        <span class="hidden sm:inline">メンバー</span>
+                        <span class="sm:hidden">Members</span>
                     </a>
                 </div>
             </div>
         </nav>
 
         <!-- メインコンテンツ -->
-        <main class="max-w-7xl mx-auto px-4 py-8">
+        <main class="max-w-7xl mx-auto px-4 py-4 md:py-8">
             ${posts.length > 0 ? `
             <!-- 最新の投稿 -->
-            <section class="mb-8">
-                <h2 class="text-2xl font-bold text-gray-900 mb-6">
+            <section class="mb-6 md:mb-8">
+                <h2 class="text-xl md:text-2xl font-bold text-gray-900 mb-4 md:mb-6">
                     <i class="fas fa-newspaper mr-2 theme-text-primary"></i>
                     最新の投稿
                 </h2>
-                <div class="space-y-6">
+                <div class="space-y-4 md:space-y-6">
                     ${posts.map(post => `
                     <article class="card hover:shadow-lg transition">
                         ${post.thumbnail_url ? `
-                        <img src="${post.thumbnail_url}" alt="${post.title}" class="w-full h-48 object-cover rounded-lg mb-4">
+                        <img src="${post.thumbnail_url}" alt="${post.title}" class="w-full h-40 md:h-48 object-cover rounded-lg mb-3 md:mb-4">
                         ` : ''}
-                        <h3 class="text-xl font-bold text-gray-900 mb-2">
+                        <h3 class="text-lg md:text-xl font-bold text-gray-900 mb-2">
                             <a href="/posts/${post.id}" class="hover:theme-text-primary transition">
                                 ${post.title}
                             </a>
                         </h3>
-                        <p class="text-gray-600 mb-4">${post.excerpt || post.content.substring(0, 150) + '...'}</p>
-                        <div class="flex items-center justify-between text-sm text-gray-500">
+                        <p class="text-sm md:text-base text-gray-600 mb-3 md:mb-4 line-clamp-2">${post.excerpt || post.content.substring(0, 150) + '...'}</p>
+                        <div class="flex flex-wrap items-center justify-between text-xs md:text-sm text-gray-500 gap-2">
                             <div>
                                 <i class="fas fa-user mr-1"></i>
-                                ${post.author_name}
+                                <span class="truncate">${post.author_name}</span>
                             </div>
-                            <div>
+                            <div class="whitespace-nowrap">
                                 <i class="fas fa-clock mr-1"></i>
                                 ${new Date(post.published_at).toLocaleDateString('ja-JP')}
                             </div>
@@ -165,23 +183,23 @@ tenant.get('/', tenantMiddleware, async (c) => {
             `}
 
             <!-- コミュニティ情報 -->
-            <section class="card mt-8">
-                <h2 class="text-xl font-bold text-gray-900 mb-4">
+            <section class="card mt-6 md:mt-8">
+                <h2 class="text-lg md:text-xl font-bold text-gray-900 mb-4">
                     <i class="fas fa-info-circle mr-2 theme-text-primary"></i>
                     コミュニティ情報
                 </h2>
-                <div class="grid md:grid-cols-3 gap-4 text-center">
+                <div class="grid grid-cols-3 gap-3 md:gap-4 text-center">
                     <div>
-                        <div class="text-3xl font-bold theme-text-primary">${tenantData.member_count}</div>
-                        <div class="text-gray-600 mt-1">メンバー</div>
+                        <div class="text-2xl md:text-3xl font-bold theme-text-primary">${tenantData.member_count}</div>
+                        <div class="text-gray-600 mt-1 text-xs md:text-base">メンバー</div>
                     </div>
                     <div>
-                        <div class="text-3xl font-bold theme-text-primary">${posts.length}</div>
-                        <div class="text-gray-600 mt-1">投稿</div>
+                        <div class="text-2xl md:text-3xl font-bold theme-text-primary">${posts.length}</div>
+                        <div class="text-gray-600 mt-1 text-xs md:text-base">投稿</div>
                     </div>
                     <div>
-                        <div class="text-3xl font-bold theme-text-primary">${tenantData.plan.toUpperCase()}</div>
-                        <div class="text-gray-600 mt-1">プラン</div>
+                        <div class="text-2xl md:text-3xl font-bold theme-text-primary">${tenantData.plan.toUpperCase()}</div>
+                        <div class="text-gray-600 mt-1 text-xs md:text-base">プラン</div>
                     </div>
                 </div>
             </section>
@@ -198,6 +216,16 @@ tenant.get('/', tenantMiddleware, async (c) => {
         </footer>
 
         <script src="/static/app.js"></script>
+        <script>
+            // モバイルメニュートグル
+            const mobileMenuBtn = document.getElementById('mobileMenuBtn')
+            const mobileMenu = document.getElementById('mobileMenu')
+            if (mobileMenuBtn && mobileMenu) {
+                mobileMenuBtn.addEventListener('click', () => {
+                    mobileMenu.classList.toggle('hidden')
+                })
+            }
+        </script>
     </body>
     </html>
   `)
@@ -618,16 +646,18 @@ tenant.get('/posts/:id', tenantMiddleware, async (c) => {
     <body class="bg-gray-50">
         <!-- ヘッダー -->
         <header class="bg-white shadow-sm sticky top-0 z-10">
-            <div class="max-w-5xl mx-auto px-4 py-4">
+            <div class="max-w-5xl mx-auto px-4 py-3 md:py-4">
                 <div class="flex items-center justify-between">
-                    <a href="/" class="text-xl font-bold text-primary-600 hover:text-primary-700 transition">
-                        <i class="fas fa-arrow-left mr-2"></i>
-                        ${tenantData.name}
+                    <a href="/" class="text-base md:text-xl font-bold text-primary-600 hover:text-primary-700 transition">
+                        <i class="fas fa-arrow-left mr-1 md:mr-2"></i>
+                        <span class="hidden sm:inline">${tenantData.name}</span>
+                        <span class="sm:hidden">Back</span>
                     </a>
-                    <div class="flex items-center gap-4">
-                        <a href="/member/login" class="text-gray-600 hover:text-gray-900">
-                            <i class="fas fa-sign-in-alt mr-2"></i>
-                            ログイン
+                    <div class="flex items-center gap-2 md:gap-4">
+                        <a href="/member/login" class="text-sm md:text-base text-gray-600 hover:text-gray-900">
+                            <i class="fas fa-sign-in-alt mr-1 md:mr-2"></i>
+                            <span class="hidden sm:inline">ログイン</span>
+                            <span class="sm:hidden">Login</span>
                         </a>
                     </div>
                 </div>
@@ -635,15 +665,15 @@ tenant.get('/posts/:id', tenantMiddleware, async (c) => {
         </header>
 
         <!-- メイン -->
-        <main class="max-w-5xl mx-auto px-4 py-8">
+        <main class="max-w-5xl mx-auto px-4 py-4 md:py-8">
             <!-- 投稿本体 -->
-            <article class="card mb-8">
-                <div class="p-8">
-                    <h1 class="text-4xl font-bold text-gray-900 mb-4">${post.title}</h1>
+            <article class="card mb-6 md:mb-8">
+                <div class="p-4 md:p-8">
+                    <h1 class="text-2xl md:text-4xl font-bold text-gray-900 mb-3 md:mb-4">${post.title}</h1>
                     
-                    <div class="flex items-center gap-4 text-sm text-gray-600 mb-6 pb-6 border-b border-gray-200">
+                    <div class="flex flex-wrap items-center gap-2 md:gap-4 text-xs md:text-sm text-gray-600 mb-4 md:mb-6 pb-4 md:pb-6 border-b border-gray-200">
                         <div class="flex items-center gap-2">
-                            <div class="w-10 h-10 bg-gradient-to-br from-primary-400 to-primary-600 rounded-full flex items-center justify-center text-white font-bold">
+                            <div class="w-8 h-8 md:w-10 md:h-10 bg-gradient-to-br from-primary-400 to-primary-600 rounded-full flex items-center justify-center text-white font-bold text-sm md:text-base">
                                 ${post.author_name.charAt(0).toUpperCase()}
                             </div>
                             <span class="font-semibold">${post.author_name}</span>
@@ -652,7 +682,7 @@ tenant.get('/posts/:id', tenantMiddleware, async (c) => {
                         <span><i class="fas fa-eye mr-1"></i>${post.view_count || 0} views</span>
                     </div>
 
-                    <div class="prose prose-lg max-w-none">
+                    <div class="prose prose-sm md:prose-lg max-w-none">
                         ${post.content.split('\n').map((line: string) => `<p>${line}</p>`).join('')}
                     </div>
                 </div>
@@ -660,27 +690,27 @@ tenant.get('/posts/:id', tenantMiddleware, async (c) => {
 
             <!-- コメントセクション -->
             <div class="card">
-                <div class="p-6 border-b border-gray-200">
-                    <h2 class="text-2xl font-bold text-gray-900">
+                <div class="p-4 md:p-6 border-b border-gray-200">
+                    <h2 class="text-xl md:text-2xl font-bold text-gray-900">
                         <i class="fas fa-comments mr-2 text-primary-500"></i>
                         コメント
-                        <span id="commentCount" class="ml-2 text-lg text-gray-600">(0)</span>
+                        <span id="commentCount" class="ml-2 text-base md:text-lg text-gray-600">(0)</span>
                     </h2>
                 </div>
 
                 <!-- コメント投稿フォーム -->
-                <div class="p-6 border-b border-gray-200 bg-gray-50">
-                    <form id="commentForm" class="space-y-4">
+                <div class="p-4 md:p-6 border-b border-gray-200 bg-gray-50">
+                    <form id="commentForm" class="space-y-3 md:space-y-4">
                         <textarea id="commentContent" 
-                            class="input-primary w-full h-24 resize-none"
+                            class="input-primary w-full h-20 md:h-24 resize-none text-sm md:text-base"
                             placeholder="コメントを入力...&#10;※ログインが必要です"
                             maxlength="1000"></textarea>
-                        <div class="flex items-center justify-between">
-                            <span class="text-sm text-gray-500">
+                        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+                            <span class="text-xs md:text-sm text-gray-500">
                                 <span id="charCount">0</span> / 1000文字
                             </span>
-                            <button type="submit" id="submitCommentBtn" class="btn-primary">
-                                <i class="fas fa-paper-plane mr-2"></i>
+                            <button type="submit" id="submitCommentBtn" class="btn-primary w-full sm:w-auto text-sm md:text-base">
+                                <i class="fas fa-paper-plane mr-1 md:mr-2"></i>
                                 コメントを投稿
                             </button>
                         </div>
@@ -750,23 +780,23 @@ tenant.get('/posts/:id', tenantMiddleware, async (c) => {
                 const rootComments = comments.filter(c => !c.parent_comment_id)
                 
                 container.innerHTML = rootComments.map(comment => \`
-                    <div class="p-6">
-                        <div class="flex items-start gap-4">
-                            <div class="w-12 h-12 bg-gradient-to-br from-success-400 to-success-600 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0">
+                    <div class="p-4 md:p-6">
+                        <div class="flex items-start gap-2 md:gap-4">
+                            <div class="w-10 h-10 md:w-12 md:h-12 bg-gradient-to-br from-success-400 to-success-600 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0 text-sm md:text-base">
                                 \${comment.user_name.charAt(0).toUpperCase()}
                             </div>
-                            <div class="flex-1">
-                                <div class="flex items-center gap-3 mb-2">
-                                    <span class="font-bold text-gray-900">\${comment.user_name}</span>
-                                    <span class="text-sm text-gray-500">
+                            <div class="flex-1 min-w-0">
+                                <div class="flex flex-wrap items-center gap-2 md:gap-3 mb-2">
+                                    <span class="font-bold text-gray-900 text-sm md:text-base truncate">\${comment.user_name}</span>
+                                    <span class="text-xs md:text-sm text-gray-500 flex-shrink-0">
                                         \${new Date(comment.created_at).toLocaleString('ja-JP')}
                                     </span>
                                 </div>
-                                <p class="text-gray-700 whitespace-pre-wrap">\${comment.content}</p>
+                                <p class="text-gray-700 whitespace-pre-wrap text-sm md:text-base break-words">\${comment.content}</p>
                                 
-                                <div class="mt-3 flex gap-4">
+                                <div class="mt-2 md:mt-3 flex gap-3 md:gap-4">
                                     <button onclick="startReply(\${comment.id}, '\${comment.user_name}')" 
-                                        class="text-sm text-primary-600 hover:text-primary-700 font-semibold">
+                                        class="text-xs md:text-sm text-primary-600 hover:text-primary-700 font-semibold">
                                         <i class="fas fa-reply mr-1"></i>
                                         返信
                                     </button>
@@ -787,20 +817,20 @@ tenant.get('/posts/:id', tenantMiddleware, async (c) => {
                 if (replies.length === 0) return ''
 
                 return \`
-                    <div class="ml-8 mt-4 space-y-4 border-l-2 border-gray-200 pl-4">
+                    <div class="ml-4 md:ml-8 mt-3 md:mt-4 space-y-3 md:space-y-4 border-l-2 border-gray-200 pl-2 md:pl-4">
                         \${replies.map(reply => \`
-                            <div class="flex items-start gap-3">
-                                <div class="w-10 h-10 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0">
+                            <div class="flex items-start gap-2 md:gap-3">
+                                <div class="w-8 h-8 md:w-10 md:h-10 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0 text-xs md:text-sm">
                                     \${reply.user_name.charAt(0).toUpperCase()}
                                 </div>
-                                <div class="flex-1">
-                                    <div class="flex items-center gap-2 mb-1">
-                                        <span class="font-bold text-gray-900 text-sm">\${reply.user_name}</span>
-                                        <span class="text-xs text-gray-500">
+                                <div class="flex-1 min-w-0">
+                                    <div class="flex flex-wrap items-center gap-1 md:gap-2 mb-1">
+                                        <span class="font-bold text-gray-900 text-xs md:text-sm truncate">\${reply.user_name}</span>
+                                        <span class="text-xs text-gray-500 flex-shrink-0">
                                             \${new Date(reply.created_at).toLocaleString('ja-JP')}
                                         </span>
                                     </div>
-                                    <p class="text-gray-700 text-sm whitespace-pre-wrap">\${reply.content}</p>
+                                    <p class="text-gray-700 text-xs md:text-sm whitespace-pre-wrap break-words">\${reply.content}</p>
                                 </div>
                             </div>
                         \`).join('')}
