@@ -765,6 +765,7 @@ body {
   border-radius: 0.75rem;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
   border: 1px solid #E5E7EB;
+  padding: 1.5rem;
   transition: all 200ms ease-in-out;
 }
 
@@ -773,6 +774,7 @@ body {
   border-radius: 0.75rem;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
   border: 1px solid #E5E7EB;
+  padding: 1.5rem;
   transition: all 200ms ease-in-out;
 }
 
@@ -787,6 +789,7 @@ body {
   border-radius: 0.75rem;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
   border: 1px solid #E5E7EB;
+  padding: 1.5rem;
   cursor: pointer;
   transition: all 200ms ease-in-out;
 }
