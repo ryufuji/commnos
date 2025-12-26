@@ -563,4 +563,315 @@ tenant.get('/join', tenantMiddleware, async (c) => {
   `)
 })
 
+/**
+ * GET /posts/:id
+ * 投稿詳細ページ（コメント機能付き）
+ */
+tenant.get('/posts/:id', tenantMiddleware, async (c) => {
+  const postId = parseInt(c.req.param('id'))
+  const tenantId = c.get('tenantId')
+  const db = c.env.DB
+
+  // テナント情報取得
+  const tenantResult = await globalQuery<any>(
+    db,
+    `SELECT t.*, tc.theme_preset 
+     FROM tenants t
+     LEFT JOIN tenant_customization tc ON t.id = tc.tenant_id
+     WHERE t.id = ?`,
+    [tenantId]
+  )
+
+  if (!tenantResult.success || !tenantResult.results || tenantResult.results.length === 0) {
+    return c.html('<h1>Tenant not found</h1>', 404)
+  }
+
+  const tenantData = tenantResult.results[0]
+
+  // 投稿取得
+  const postResult = await globalQuery<any>(
+    db,
+    `SELECT p.*, u.nickname as author_name
+     FROM posts p
+     JOIN users u ON p.author_id = u.id
+     WHERE p.id = ? AND p.tenant_id = ? AND p.status = 'published'`,
+    [postId, tenantId]
+  )
+
+  if (!postResult.success || !postResult.results || postResult.results.length === 0) {
+    return c.html('<h1>Post not found</h1>', 404)
+  }
+
+  const post = postResult.results[0]
+
+  return c.html(`
+    <!DOCTYPE html>
+    <html lang="ja" data-theme="${tenantData.theme_preset || 'modern-business'}">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>${post.title} - ${tenantData.name}</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+        <link href="/static/styles.css" rel="stylesheet">
+    </head>
+    <body class="bg-gray-50">
+        <!-- ヘッダー -->
+        <header class="bg-white shadow-sm sticky top-0 z-10">
+            <div class="max-w-5xl mx-auto px-4 py-4">
+                <div class="flex items-center justify-between">
+                    <a href="/" class="text-xl font-bold text-primary-600 hover:text-primary-700 transition">
+                        <i class="fas fa-arrow-left mr-2"></i>
+                        ${tenantData.name}
+                    </a>
+                    <div class="flex items-center gap-4">
+                        <a href="/member/login" class="text-gray-600 hover:text-gray-900">
+                            <i class="fas fa-sign-in-alt mr-2"></i>
+                            ログイン
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- メイン -->
+        <main class="max-w-5xl mx-auto px-4 py-8">
+            <!-- 投稿本体 -->
+            <article class="card mb-8">
+                <div class="p-8">
+                    <h1 class="text-4xl font-bold text-gray-900 mb-4">${post.title}</h1>
+                    
+                    <div class="flex items-center gap-4 text-sm text-gray-600 mb-6 pb-6 border-b border-gray-200">
+                        <div class="flex items-center gap-2">
+                            <div class="w-10 h-10 bg-gradient-to-br from-primary-400 to-primary-600 rounded-full flex items-center justify-center text-white font-bold">
+                                ${post.author_name.charAt(0).toUpperCase()}
+                            </div>
+                            <span class="font-semibold">${post.author_name}</span>
+                        </div>
+                        <span><i class="fas fa-calendar mr-1"></i>${new Date(post.published_at).toLocaleDateString('ja-JP')}</span>
+                        <span><i class="fas fa-eye mr-1"></i>${post.view_count || 0} views</span>
+                    </div>
+
+                    <div class="prose prose-lg max-w-none">
+                        ${post.content.split('\n').map((line: string) => `<p>${line}</p>`).join('')}
+                    </div>
+                </div>
+            </article>
+
+            <!-- コメントセクション -->
+            <div class="card">
+                <div class="p-6 border-b border-gray-200">
+                    <h2 class="text-2xl font-bold text-gray-900">
+                        <i class="fas fa-comments mr-2 text-primary-500"></i>
+                        コメント
+                        <span id="commentCount" class="ml-2 text-lg text-gray-600">(0)</span>
+                    </h2>
+                </div>
+
+                <!-- コメント投稿フォーム -->
+                <div class="p-6 border-b border-gray-200 bg-gray-50">
+                    <form id="commentForm" class="space-y-4">
+                        <textarea id="commentContent" 
+                            class="input-primary w-full h-24 resize-none"
+                            placeholder="コメントを入力...&#10;※ログインが必要です"
+                            maxlength="1000"></textarea>
+                        <div class="flex items-center justify-between">
+                            <span class="text-sm text-gray-500">
+                                <span id="charCount">0</span> / 1000文字
+                            </span>
+                            <button type="submit" id="submitCommentBtn" class="btn-primary">
+                                <i class="fas fa-paper-plane mr-2"></i>
+                                コメントを投稿
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- コメント一覧 -->
+                <div id="commentsList" class="divide-y divide-gray-200">
+                    <!-- 動的に追加されます -->
+                </div>
+            </div>
+        </main>
+
+        <!-- フッター -->
+        <footer class="bg-gray-800 text-white py-8 mt-12">
+            <div class="max-w-7xl mx-auto px-4 text-center">
+                <p>&copy; 2025 ${tenantData.name}. All rights reserved.</p>
+                <p class="mt-2 text-gray-400 text-sm">
+                    Powered by <a href="https://commons.com" class="hover:text-white transition">Commons</a>
+                </p>
+            </div>
+        </footer>
+
+        <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+        <script src="/static/app.js"></script>
+        <script>
+            const postId = ${postId}
+            let replyToCommentId = null
+
+            // 文字数カウント
+            document.getElementById('commentContent').addEventListener('input', (e) => {
+                const count = e.target.value.length
+                document.getElementById('charCount').textContent = count
+            })
+
+            // コメント取得
+            async function loadComments() {
+                try {
+                    const response = await axios.get(\`/api/posts/\${postId}/comments\`)
+                    
+                    if (response.data.success) {
+                        const comments = response.data.comments || []
+                        document.getElementById('commentCount').textContent = \`(\${comments.length})\`
+                        renderComments(comments)
+                    }
+                } catch (error) {
+                    console.error('Load comments error:', error)
+                }
+            }
+
+            // コメント表示
+            function renderComments(comments) {
+                const container = document.getElementById('commentsList')
+                
+                if (comments.length === 0) {
+                    container.innerHTML = \`
+                        <div class="p-12 text-center">
+                            <i class="fas fa-comments text-6xl text-gray-300 mb-4"></i>
+                            <p class="text-gray-600">まだコメントがありません</p>
+                            <p class="text-sm text-gray-500 mt-2">最初のコメントを投稿してみましょう</p>
+                        </div>
+                    \`
+                    return
+                }
+
+                // ルートコメント（parent_comment_id が null）のみ取得
+                const rootComments = comments.filter(c => !c.parent_comment_id)
+                
+                container.innerHTML = rootComments.map(comment => \`
+                    <div class="p-6">
+                        <div class="flex items-start gap-4">
+                            <div class="w-12 h-12 bg-gradient-to-br from-success-400 to-success-600 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0">
+                                \${comment.user_name.charAt(0).toUpperCase()}
+                            </div>
+                            <div class="flex-1">
+                                <div class="flex items-center gap-3 mb-2">
+                                    <span class="font-bold text-gray-900">\${comment.user_name}</span>
+                                    <span class="text-sm text-gray-500">
+                                        \${new Date(comment.created_at).toLocaleString('ja-JP')}
+                                    </span>
+                                </div>
+                                <p class="text-gray-700 whitespace-pre-wrap">\${comment.content}</p>
+                                
+                                <div class="mt-3 flex gap-4">
+                                    <button onclick="startReply(\${comment.id}, '\${comment.user_name}')" 
+                                        class="text-sm text-primary-600 hover:text-primary-700 font-semibold">
+                                        <i class="fas fa-reply mr-1"></i>
+                                        返信
+                                    </button>
+                                </div>
+
+                                <!-- 返信コメント -->
+                                \${renderReplies(comments, comment.id)}
+                            </div>
+                        </div>
+                    </div>
+                \`).join('')
+            }
+
+            // 返信コメント表示
+            function renderReplies(comments, parentId) {
+                const replies = comments.filter(c => c.parent_comment_id === parentId)
+                
+                if (replies.length === 0) return ''
+
+                return \`
+                    <div class="ml-8 mt-4 space-y-4 border-l-2 border-gray-200 pl-4">
+                        \${replies.map(reply => \`
+                            <div class="flex items-start gap-3">
+                                <div class="w-10 h-10 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center text-white font-bold flex-shrink-0">
+                                    \${reply.user_name.charAt(0).toUpperCase()}
+                                </div>
+                                <div class="flex-1">
+                                    <div class="flex items-center gap-2 mb-1">
+                                        <span class="font-bold text-gray-900 text-sm">\${reply.user_name}</span>
+                                        <span class="text-xs text-gray-500">
+                                            \${new Date(reply.created_at).toLocaleString('ja-JP')}
+                                        </span>
+                                    </div>
+                                    <p class="text-gray-700 text-sm whitespace-pre-wrap">\${reply.content}</p>
+                                </div>
+                            </div>
+                        \`).join('')}
+                    </div>
+                \`
+            }
+
+            // 返信開始
+            function startReply(commentId, userName) {
+                replyToCommentId = commentId
+                const textarea = document.getElementById('commentContent')
+                textarea.placeholder = \`\${userName} さんに返信...\\n※ログインが必要です\`
+                textarea.focus()
+                showToast(\`\${userName} さんへの返信モード\`, 'info')
+            }
+
+            // コメント投稿
+            document.getElementById('commentForm').addEventListener('submit', async (e) => {
+                e.preventDefault()
+                
+                const content = document.getElementById('commentContent').value.trim()
+                const submitBtn = document.getElementById('submitCommentBtn')
+
+                if (!content) {
+                    showToast('コメント内容を入力してください', 'error')
+                    return
+                }
+
+                const token = getToken()
+                if (!token) {
+                    showToast('ログインが必要です', 'error')
+                    setTimeout(() => {
+                        window.location.href = '/member/login'
+                    }, 2000)
+                    return
+                }
+
+                showLoading(submitBtn)
+
+                try {
+                    const response = await axios.post(\`/api/posts/\${postId}/comments\`, {
+                        content,
+                        parent_comment_id: replyToCommentId
+                    }, {
+                        headers: { Authorization: \`Bearer \${token}\` }
+                    })
+
+                    if (response.data.success) {
+                        showToast('コメントを投稿しました', 'success')
+                        document.getElementById('commentContent').value = ''
+                        document.getElementById('commentContent').placeholder = 'コメントを入力...\\n※ログインが必要です'
+                        document.getElementById('charCount').textContent = '0'
+                        replyToCommentId = null
+                        loadComments()
+                    } else {
+                        showToast(response.data.error || 'コメント投稿に失敗しました', 'error')
+                    }
+                } catch (error) {
+                    console.error('Comment submit error:', error)
+                    showToast(error.response?.data?.error || 'コメント投稿に失敗しました', 'error')
+                } finally {
+                    hideLoading(submitBtn)
+                }
+            })
+
+            // ページロード時
+            loadComments()
+        </script>
+    </body>
+    </html>
+  `)
+})
+
 export default tenant

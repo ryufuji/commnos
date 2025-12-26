@@ -329,7 +329,7 @@ posts.delete('/:id', authMiddleware, roleMiddleware(['owner', 'admin']), async (
 
 /**
  * GET /api/posts/:id/comments
- * コメント一覧取得
+ * コメント一覧取得（ネスト構造対応）
  */
 posts.get('/:id/comments', tenantMiddleware, async (c) => {
   const postId = parseInt(c.req.param('id'))
@@ -340,7 +340,7 @@ posts.get('/:id/comments', tenantMiddleware, async (c) => {
     const result = await db
       .prepare(`
         SELECT 
-          c.id, c.content, c.created_at,
+          c.id, c.content, c.parent_comment_id, c.created_at,
           u.id as user_id, u.nickname as user_name, u.avatar_url as user_avatar
         FROM comments c
         JOIN users u ON c.user_id = u.id
@@ -365,13 +365,13 @@ posts.get('/:id/comments', tenantMiddleware, async (c) => {
 
 /**
  * POST /api/posts/:id/comments
- * コメント投稿（全会員）
+ * コメント投稿（全会員）- 返信機能対応
  */
 posts.post('/:id/comments', authMiddleware, async (c) => {
   const postId = parseInt(c.req.param('id'))
   const userId = c.get('userId')
   const tenantId = c.get('tenantId')
-  const { content } = await c.req.json<{ content: string }>()
+  const { content, parent_comment_id } = await c.req.json<{ content: string; parent_comment_id?: number }>()
   const db = c.env.DB
 
   // バリデーション
@@ -394,13 +394,25 @@ posts.post('/:id/comments', authMiddleware, async (c) => {
       return c.json({ success: false, error: 'Post not found' }, 404)
     }
 
+    // 返信先コメントの存在確認（parent_comment_idが指定されている場合）
+    if (parent_comment_id) {
+      const parentComment = await db
+        .prepare('SELECT id FROM comments WHERE id = ? AND post_id = ? AND tenant_id = ?')
+        .bind(parent_comment_id, postId, tenantId)
+        .first()
+
+      if (!parentComment) {
+        return c.json({ success: false, error: 'Parent comment not found' }, 404)
+      }
+    }
+
     // コメント作成
     const result = await db
       .prepare(`
-        INSERT INTO comments (tenant_id, post_id, user_id, content)
-        VALUES (?, ?, ?, ?)
+        INSERT INTO comments (tenant_id, post_id, user_id, content, parent_comment_id)
+        VALUES (?, ?, ?, ?, ?)
       `)
-      .bind(tenantId, postId, userId, content)
+      .bind(tenantId, postId, userId, content, parent_comment_id || null)
       .run()
 
     if (!result.success) {
@@ -411,7 +423,7 @@ posts.post('/:id/comments', authMiddleware, async (c) => {
     const comment = await db
       .prepare(`
         SELECT 
-          c.id, c.content, c.created_at,
+          c.id, c.content, c.parent_comment_id, c.created_at,
           u.id as user_id, u.nickname as user_name, u.avatar_url as user_avatar
         FROM comments c
         JOIN users u ON c.user_id = u.id
