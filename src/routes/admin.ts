@@ -153,4 +153,36 @@ admin.post('/members/:id/reject', authMiddleware, requireRole('admin'), async (c
   }
 })
 
+/**
+ * GET /api/admin/members/active
+ * 承認済み会員一覧
+ */
+admin.get('/members/active', authMiddleware, requireRole('admin'), async (c) => {
+  const tenantId = c.get('tenantId')
+  const db = c.env.DB
+
+  try {
+    const result = await globalQuery<any>(
+      db,
+      `SELECT tm.id, tm.user_id, tm.member_number, tm.role, tm.joined_at, u.email, u.nickname, u.avatar_url
+       FROM tenant_memberships tm
+       JOIN users u ON tm.user_id = u.id
+       WHERE tm.tenant_id = ? AND tm.status = 'active'
+       ORDER BY tm.joined_at DESC`,
+      [tenantId]
+    )
+
+    return c.json({
+      success: true,
+      members: result.results || []
+    })
+  } catch (error) {
+    console.error('[Get Active Members Error]', error)
+    return c.json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to get active members'
+    }, 500)
+  }
+})
+
 export default admin

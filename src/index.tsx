@@ -1751,16 +1751,82 @@ app.get('/members', (c) => {
                 }
             }
 
-            // 承認済みメンバー取得（TODO: API実装が必要）
+            // 承認済みメンバー取得
             async function loadActiveMembers() {
+                try {
+                    const token = getToken()
+                    if (!token) {
+                        window.location.href = '/login'
+                        return
+                    }
+
+                    const response = await axios.get('/api/admin/members/active', {
+                        headers: { Authorization: \`Bearer \${token}\` }
+                    })
+
+                    if (response.data.success) {
+                        const members = response.data.members || []
+                        renderActiveMembers(members)
+                    } else {
+                        showToast(response.data.error || 'データ取得に失敗しました', 'error')
+                    }
+                } catch (error) {
+                    console.error('Load active members error:', error)
+                    if (error.response?.status === 401) {
+                        window.location.href = '/login'
+                    } else {
+                        showToast('データ取得に失敗しました', 'error')
+                    }
+                }
+            }
+
+            // 承認済みメンバー表示
+            function renderActiveMembers(members) {
                 const container = document.getElementById('activeList')
-                container.innerHTML = \`
-                    <div class="p-12 text-center">
-                        <i class="fas fa-exclamation-circle text-6xl text-gray-300 mb-4"></i>
-                        <p class="text-gray-600 text-lg">承認済み会員一覧は実装中です</p>
-                        <p class="text-sm text-gray-500 mt-2">Phase 2 で完全実装予定</p>
+                
+                if (members.length === 0) {
+                    container.innerHTML = \`
+                        <div class="p-12 text-center">
+                            <i class="fas fa-users text-6xl text-gray-300 mb-4"></i>
+                            <p class="text-gray-600 text-lg">承認済みの会員がいません</p>
+                        </div>
+                    \`
+                    return
+                }
+
+                container.innerHTML = members.map(member => \`
+                    <div class="p-6 hover:bg-gray-50 transition">
+                        <div class="flex items-center gap-4">
+                            <div class="w-14 h-14 bg-gradient-to-br from-success-400 to-success-600 rounded-full flex items-center justify-center text-white font-bold text-xl">
+                                \${member.nickname.charAt(0).toUpperCase()}
+                            </div>
+                            <div class="flex-1">
+                                <div class="flex items-center gap-3 mb-1">
+                                    <h3 class="font-bold text-gray-900 text-lg">\${member.nickname}</h3>
+                                    <span class="badge badge-success">\${member.member_number}</span>
+                                    \${member.role === 'owner' ? '<span class="badge bg-purple-100 text-purple-700">オーナー</span>' : ''}
+                                    \${member.role === 'admin' ? '<span class="badge bg-blue-100 text-blue-700">管理者</span>' : ''}
+                                </div>
+                                <p class="text-sm text-gray-600">\${member.email}</p>
+                                <p class="text-xs text-gray-500 mt-1">
+                                    <i class="fas fa-calendar mr-1"></i>
+                                    登録日: \${new Date(member.joined_at).toLocaleDateString('ja-JP')}
+                                </p>
+                            </div>
+                            <div class="text-right">
+                                <button class="text-gray-400 hover:text-gray-600 p-2" 
+                                    onclick="showMemberMenu(\${member.id})">
+                                    <i class="fas fa-ellipsis-v"></i>
+                                </button>
+                            </div>
+                        </div>
                     </div>
-                \`
+                \`).join('')
+            }
+
+            // 会員メニュー表示（今後実装）
+            function showMemberMenu(memberId) {
+                showToast('会員管理機能は今後実装予定です', 'info')
             }
 
             // ログアウト
