@@ -236,6 +236,12 @@ app.get('/', (c) => {
 
         <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
         <script src="/static/app.js"></script>
+        <script>
+            // ログイン済みの場合はダッシュボードにリダイレクト
+            if (isLoggedIn()) {
+                window.location.href = '/dashboard'
+            }
+        </script>
     </body>
     </html>
   `)
@@ -381,6 +387,12 @@ app.get('/register', (c) => {
         </script>
         <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
         <script src="/static/app.js"></script>
+        <script>
+            // ログイン済みの場合はダッシュボードにリダイレクト
+            if (isLoggedIn()) {
+                window.location.href = '/dashboard'
+            }
+        </script>
     </body>
     </html>
   `)
@@ -477,6 +489,12 @@ app.get('/login', (c) => {
         </script>
         <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
         <script src="/static/app.js"></script>
+        <script>
+            // ログイン済みの場合はダッシュボードにリダイレクト
+            if (isLoggedIn()) {
+                window.location.href = '/dashboard'
+            }
+        </script>
     </body>
     </html>
   `)
@@ -1943,10 +1961,27 @@ app.get('/members', (c) => {
                 showToast('会員管理機能は今後実装予定です', 'info')
             }
 
-            // ログアウト
+            // ログアウト（デスクトップ）
             document.getElementById('logoutBtn').addEventListener('click', async () => {
                 await handleLogout()
             })
+
+            // ログアウト（モバイル）
+            const logoutBtnMobile = document.getElementById('logoutBtnMobile')
+            if (logoutBtnMobile) {
+                logoutBtnMobile.addEventListener('click', async () => {
+                    await handleLogout()
+                })
+            }
+
+            // モバイルメニュー切り替え
+            const mobileMenuBtn = document.getElementById('mobileMenuBtn')
+            const mobileMenu = document.getElementById('mobileMenu')
+            if (mobileMenuBtn && mobileMenu) {
+                mobileMenuBtn.addEventListener('click', () => {
+                    mobileMenu.classList.toggle('hidden')
+                })
+            }
 
             // ページロード時
             loadPendingMembers()
