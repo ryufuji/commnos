@@ -23,6 +23,7 @@
 - **デザイン洗練** - ヒーローセクション、カードグリッド、タイポグラフィ改善
 - **完全レスポンシブ対応** - モバイル/タブレット/デスクトップ最適化
 - **画像アップロード** - R2バケット統合、プロフィール画像、投稿サムネイル
+- **テナント会員認証** - テナント会員ログイン/登録機能（会員の入口完成）
 
 🚀 **Phase 3 進行中（Week 14-19）:**
 - **テナント公開ページ** - 会員用フロントエンド実装
@@ -46,24 +47,28 @@
 ## URLs
 
 ### 本番環境（Cloudflare Pages）
-- **最新デプロイ**: https://9ad6db21.commons-webapp.pages.dev
-- **新規登録**: https://9ad6db21.commons-webapp.pages.dev/register
-- **ログイン**: https://9ad6db21.commons-webapp.pages.dev/login
-- **ダッシュボード**: https://9ad6db21.commons-webapp.pages.dev/dashboard
-- **会員管理**: https://9ad6db21.commons-webapp.pages.dev/members
-- **プロフィール**: https://9ad6db21.commons-webapp.pages.dev/profile
-- **テナントホーム**: https://9ad6db21.commons-webapp.pages.dev/tenant/home?subdomain=test-phase2
-- **投稿一覧**: https://9ad6db21.commons-webapp.pages.dev/tenant/posts?subdomain=test-phase2
-- **投稿作成**: https://9ad6db21.commons-webapp.pages.dev/tenant/posts/new?subdomain=test-phase2
-- **投稿詳細**: https://9ad6db21.commons-webapp.pages.dev/tenant/posts/1?subdomain=test-phase2
-- **会員一覧**: https://9ad6db21.commons-webapp.pages.dev/tenant/members?subdomain=test-phase2
+- **最新デプロイ**: https://1fcb534a.commons-webapp.pages.dev
+- **新規登録**: https://1fcb534a.commons-webapp.pages.dev/register
+- **ログイン**: https://1fcb534a.commons-webapp.pages.dev/login
+- **ダッシュボード**: https://1fcb534a.commons-webapp.pages.dev/dashboard
+- **会員管理**: https://1fcb534a.commons-webapp.pages.dev/members
+- **プロフィール**: https://1fcb534a.commons-webapp.pages.dev/profile
+
+### テナント公開ページ（本番環境）
+- **テナントホーム**: https://1fcb534a.commons-webapp.pages.dev/home?subdomain=test-phase2
+- **テナント会員登録**: https://1fcb534a.commons-webapp.pages.dev/register?subdomain=test-phase2
+- **テナント会員ログイン**: https://1fcb534a.commons-webapp.pages.dev/login?subdomain=test-phase2
+- **投稿一覧**: https://1fcb534a.commons-webapp.pages.dev/posts?subdomain=test-phase2
+- **投稿作成**: https://1fcb534a.commons-webapp.pages.dev/posts/new?subdomain=test-phase2
+- **投稿詳細**: https://1fcb534a.commons-webapp.pages.dev/posts/1?subdomain=test-phase2
+- **会員一覧**: https://1fcb534a.commons-webapp.pages.dev/members?subdomain=test-phase2
 
 ### サンドボックス環境
 - **ホーム**: https://3000-imu7i4bdyc519gbijlo4z-5185f4aa.sandbox.novita.ai
 
 ### GitHub
 - **リポジトリ**: https://github.com/ryufuji/commnos
-- **最新コミット**: d7d8f28
+- **最新コミット**: b8c3769
 
 ## データアーキテクチャ
 
