@@ -946,31 +946,26 @@ app.get('/profile', (c) => {
 
                 <!-- プロフィールカード -->
                 <div class="card fade-in" id="profileCard">
-                    <div class="flex items-start gap-6 mb-6">
+                    <div class="flex flex-col md:flex-row items-start gap-6 mb-6">
                         <!-- アバター -->
                         <div class="flex-shrink-0">
-                            <div class="w-24 h-24 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden" id="avatarContainer">
-                                <i class="fas fa-user text-4xl text-gray-400" id="avatarIcon"></i>
+                            <div class="w-24 h-24 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 flex items-center justify-center text-white text-3xl font-bold overflow-hidden" id="avatarContainer">
+                                <span id="avatarIcon">U</span>
                                 <img id="avatarImage" class="w-full h-full object-cover hidden" alt="Avatar">
                             </div>
-                            <button id="changeAvatarBtn" class="mt-2 text-sm text-blue-600 hover:underline">
-                                <i class="fas fa-camera mr-1"></i>
-                                変更
-                            </button>
-                            <input type="file" id="avatarInput" accept="image/jpeg,image/png,image/webp" class="hidden">
                         </div>
 
                         <!-- プロフィール情報 -->
                         <div class="flex-1">
                             <h1 class="text-2xl font-bold mb-2" id="displayNickname">Loading...</h1>
                             <p class="text-gray-600 mb-2" id="displayEmail"></p>
-                            <p class="text-gray-700" id="displayBio"></p>
+                            <p class="text-gray-700 whitespace-pre-line" id="displayBio"></p>
                         </div>
                     </div>
 
                     <!-- 編集ボタン -->
-                    <div class="flex gap-2">
-                        <button id="editBtn" class="btn-secondary">
+                    <div class="flex flex-col sm:flex-row gap-2">
+                        <button id="editBtn" class="btn-primary">
                             <i class="fas fa-edit mr-2"></i>
                             プロフィールを編集
                         </button>
@@ -1082,13 +1077,17 @@ app.get('/profile', (c) => {
                 document.getElementById('displayBio').textContent = user.bio || '自己紹介が未設定です'
 
                 // アバター表示
+                const avatarIcon = document.getElementById('avatarIcon')
+                const avatarImage = document.getElementById('avatarImage')
+                
                 if (user.avatar_url) {
-                    document.getElementById('avatarImage').src = user.avatar_url
-                    document.getElementById('avatarImage').classList.remove('hidden')
-                    document.getElementById('avatarIcon').classList.add('hidden')
+                    avatarImage.src = user.avatar_url
+                    avatarImage.classList.remove('hidden')
+                    avatarIcon.classList.add('hidden')
                 } else {
-                    document.getElementById('avatarImage').classList.add('hidden')
-                    document.getElementById('avatarIcon').classList.remove('hidden')
+                    avatarImage.classList.add('hidden')
+                    avatarIcon.classList.remove('hidden')
+                    avatarIcon.textContent = user.nickname.charAt(0).toUpperCase()
                 }
             }
 
