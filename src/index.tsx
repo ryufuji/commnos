@@ -1192,11 +1192,13 @@ app.get('/dashboard', (c) => {
             <header class="bg-white/80 backdrop-blur-sm shadow-sm border-b border-gray-200">
                 <div class="container-custom py-4">
                     <div class="flex justify-between items-center">
-                        <h1 class="text-2xl font-bold text-gradient">
+                        <h1 class="text-xl md:text-2xl font-bold text-gradient">
                             <i class="fas fa-th-large mr-2"></i>
-                            ダッシュボード
+                            <span class="hidden sm:inline">ダッシュボード</span>
+                            <span class="sm:hidden">Dashboard</span>
                         </h1>
-                        <div class="flex gap-4">
+                        <!-- デスクトップナビ -->
+                        <div class="hidden md:flex gap-4">
                             <a href="/profile" class="btn-ghost">
                                 <i class="fas fa-user mr-2"></i>
                                 プロフィール
@@ -1206,6 +1208,21 @@ app.get('/dashboard', (c) => {
                                 ログアウト
                             </button>
                         </div>
+                        <!-- モバイルメニューボタン -->
+                        <button id="mobileMenuBtn" class="md:hidden btn-ghost p-2">
+                            <i class="fas fa-bars text-xl"></i>
+                        </button>
+                    </div>
+                    <!-- モバイルメニュー -->
+                    <div id="mobileMenu" class="hidden md:hidden mt-4 space-y-2">
+                        <a href="/profile" class="block btn-ghost text-center">
+                            <i class="fas fa-user mr-2"></i>
+                            プロフィール
+                        </a>
+                        <button id="logoutBtnMobile" class="w-full btn-secondary">
+                            <i class="fas fa-sign-out-alt mr-2"></i>
+                            ログアウト
+                        </button>
                     </div>
                 </div>
             </header>
@@ -1215,7 +1232,7 @@ app.get('/dashboard', (c) => {
                 <div id="userInfo" class="mb-8 fade-in"></div>
 
                 <!-- 統計カード -->
-                <div class="grid md:grid-cols-3 gap-6 mb-8">
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-6 mb-8">
                     <div class="card p-6 border-l-4 border-l-primary-500">
                         <div class="flex items-center justify-between mb-4">
                             <div class="text-3xl text-primary-500">
@@ -1254,7 +1271,7 @@ app.get('/dashboard', (c) => {
                         <i class="fas fa-rocket mr-2 text-primary-500"></i>
                         クイックアクション
                     </h2>
-                    <div class="grid md:grid-cols-4 gap-4">
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
                         <a href="/posts" class="card-interactive p-6 text-center">
                             <div class="text-4xl mb-3 text-primary-500">
                                 <i class="fas fa-plus-circle"></i>
@@ -1434,10 +1451,27 @@ app.get('/dashboard', (c) => {
                 \`
             }
 
-            // ログアウト
+            // モバイルメニュートグル
+            const mobileMenuBtn = document.getElementById('mobileMenuBtn')
+            const mobileMenu = document.getElementById('mobileMenu')
+            if (mobileMenuBtn && mobileMenu) {
+                mobileMenuBtn.addEventListener('click', () => {
+                    mobileMenu.classList.toggle('hidden')
+                })
+            }
+
+            // ログアウト（デスクトップ）
             document.getElementById('logoutBtn').addEventListener('click', async () => {
                 await handleLogout()
             })
+            
+            // ログアウト（モバイル）
+            const logoutBtnMobile = document.getElementById('logoutBtnMobile')
+            if (logoutBtnMobile) {
+                logoutBtnMobile.addEventListener('click', async () => {
+                    await handleLogout()
+                })
+            }
             
             // テーマモーダル制御
             window.openThemeModal = function() {
@@ -1529,11 +1563,13 @@ app.get('/members', (c) => {
             <header class="bg-white/80 backdrop-blur-sm shadow-sm border-b border-gray-200">
                 <div class="container-custom py-4">
                     <div class="flex justify-between items-center">
-                        <h1 class="text-2xl font-bold text-gradient">
+                        <h1 class="text-xl md:text-2xl font-bold text-gradient">
                             <i class="fas fa-user-check mr-2"></i>
-                            会員管理
+                            <span class="hidden sm:inline">会員管理</span>
+                            <span class="sm:hidden">Members</span>
                         </h1>
-                        <div class="flex gap-4">
+                        <!-- デスクトップナビ -->
+                        <div class="hidden md:flex gap-4">
                             <a href="/dashboard" class="btn-ghost">
                                 <i class="fas fa-arrow-left mr-2"></i>
                                 ダッシュボード
@@ -1543,6 +1579,21 @@ app.get('/members', (c) => {
                                 ログアウト
                             </button>
                         </div>
+                        <!-- モバイルメニューボタン -->
+                        <button id="mobileMenuBtn" class="md:hidden btn-ghost p-2">
+                            <i class="fas fa-bars text-xl"></i>
+                        </button>
+                    </div>
+                    <!-- モバイルメニュー -->
+                    <div id="mobileMenu" class="hidden md:hidden mt-4 space-y-2">
+                        <a href="/dashboard" class="block btn-ghost text-center">
+                            <i class="fas fa-arrow-left mr-2"></i>
+                            ダッシュボード
+                        </a>
+                        <button id="logoutBtnMobile" class="w-full btn-secondary">
+                            <i class="fas fa-sign-out-alt mr-2"></i>
+                            ログアウト
+                        </button>
                     </div>
                 </div>
             </header>
@@ -1551,17 +1602,19 @@ app.get('/members', (c) => {
             <main class="container-custom section-spacing">
                 <!-- タブ -->
                 <div class="mb-6">
-                    <div class="bg-white rounded-lg shadow p-2 inline-flex gap-2">
+                    <div class="bg-white rounded-lg shadow p-2 flex gap-2 overflow-x-auto">
                         <button id="tabPending" onclick="switchTab('pending')" 
-                            class="px-6 py-2 rounded-md font-semibold transition bg-primary-500 text-white">
-                            <i class="fas fa-hourglass-half mr-2"></i>
-                            承認待ち
-                            <span id="pendingCount" class="ml-2 bg-white text-primary-600 px-2 py-0.5 rounded-full text-xs font-bold">0</span>
+                            class="px-4 md:px-6 py-2 rounded-md font-semibold transition bg-primary-500 text-white whitespace-nowrap">
+                            <i class="fas fa-hourglass-half mr-1 md:mr-2"></i>
+                            <span class="hidden sm:inline">承認待ち</span>
+                            <span class="sm:hidden">Pending</span>
+                            <span id="pendingCount" class="ml-1 md:ml-2 bg-white text-primary-600 px-2 py-0.5 rounded-full text-xs font-bold">0</span>
                         </button>
                         <button id="tabActive" onclick="switchTab('active')" 
-                            class="px-6 py-2 rounded-md font-semibold transition text-gray-600 hover:bg-gray-100">
-                            <i class="fas fa-check-circle mr-2"></i>
-                            承認済み会員
+                            class="px-4 md:px-6 py-2 rounded-md font-semibold transition text-gray-600 hover:bg-gray-100 whitespace-nowrap">
+                            <i class="fas fa-check-circle mr-1 md:mr-2"></i>
+                            <span class="hidden sm:inline">承認済み会員</span>
+                            <span class="sm:hidden">Active</span>
                         </button>
                     </div>
                 </div>
