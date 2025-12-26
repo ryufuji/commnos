@@ -31,12 +31,14 @@
 ## URLs
 
 ### 本番環境（Cloudflare Pages）
-- **最新デプロイ**: https://69e23b45.commons-webapp.pages.dev
-- **新規登録**: https://69e23b45.commons-webapp.pages.dev/register
-- **ログイン**: https://69e23b45.commons-webapp.pages.dev/login
-- **ダッシュボード**: https://69e23b45.commons-webapp.pages.dev/dashboard
-- **会員管理**: https://69e23b45.commons-webapp.pages.dev/members
-- **投稿詳細例**: https://69e23b45.commons-webapp.pages.dev/posts/1
+- **最新デプロイ**: https://2835f2a0.commons-webapp.pages.dev
+- **新規登録**: https://2835f2a0.commons-webapp.pages.dev/register
+- **ログイン**: https://2835f2a0.commons-webapp.pages.dev/login
+- **ダッシュボード**: https://2835f2a0.commons-webapp.pages.dev/dashboard
+- **会員管理**: https://2835f2a0.commons-webapp.pages.dev/members
+- **プロフィール**: https://2835f2a0.commons-webapp.pages.dev/profile
+- **投稿詳細例**: https://2835f2a0.commons-webapp.pages.dev/posts/1
+- **画像アップロードテスト**: https://2835f2a0.commons-webapp.pages.dev/test-avatar.html
 
 ### サンドボックス環境
 - **ホーム**: https://3000-imu7i4bdyc519gbijlo4z-5185f4aa.sandbox.novita.ai
@@ -359,7 +361,7 @@ thumbnail: File (JPEG/PNG/GIF/WebP, 最大10MB)
 - **プラットフォーム**: Cloudflare Pages
 - **プロジェクト名**: commons-webapp
 - **ステータス**: ✅ デプロイ完了
-- **URL**: https://69e23b45.commons-webapp.pages.dev
+- **URL**: https://2835f2a0.commons-webapp.pages.dev
 - **データベース**: Cloudflare D1（commons-webapp-production）
 - **R2バケット**: commons-images ✨ Phase 2
 - **環境変数**: JWT_SECRET, PLATFORM_DOMAIN, STRIPE_SECRET_KEY, RESEND_API_KEY 設定済み
