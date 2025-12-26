@@ -31,12 +31,12 @@
 ## URLs
 
 ### 本番環境（Cloudflare Pages）
-- **最新デプロイ**: https://96fcf098.commons-webapp.pages.dev
-- **新規登録**: https://96fcf098.commons-webapp.pages.dev/register
-- **ログイン**: https://96fcf098.commons-webapp.pages.dev/login
-- **ダッシュボード**: https://96fcf098.commons-webapp.pages.dev/dashboard
-- **会員管理**: https://96fcf098.commons-webapp.pages.dev/members
-- **プロフィール**: https://96fcf098.commons-webapp.pages.dev/profile
+- **最新デプロイ**: https://268125e1.commons-webapp.pages.dev
+- **新規登録**: https://268125e1.commons-webapp.pages.dev/register
+- **ログイン**: https://268125e1.commons-webapp.pages.dev/login
+- **ダッシュボード**: https://268125e1.commons-webapp.pages.dev/dashboard
+- **会員管理**: https://268125e1.commons-webapp.pages.dev/members
+- **プロフィール**: https://268125e1.commons-webapp.pages.dev/profile
 - **投稿詳細例**: https://2835f2a0.commons-webapp.pages.dev/posts/1
 - **画像アップロードテスト**: https://2835f2a0.commons-webapp.pages.dev/test-avatar.html
 
