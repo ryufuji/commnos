@@ -1,4 +1,4 @@
-# Commons - Phase 2 実装完了
+# Commons - Phase 2 完了
 
 ## プロジェクト概要
 
@@ -19,28 +19,31 @@
 ✅ **Phase 2 完成機能:**
 - **会員管理フロー** - 会員申請・承認・拒否・会員一覧
 - **コメント機能** - 投稿へのコメント・返信（ネスト対応）
+- **メール通知システム** - Resend API統合、会員管理通知
+- **デザイン洗練** - ヒーローセクション、カードグリッド、タイポグラフィ改善
+- **完全レスポンシブ対応** - モバイル/タブレット/デスクトップ最適化
 
 ⚠️ **今後実装予定:**
-- メール通知システム
-- コミュニティ参加者向けページのデザイン洗練
-- レスポンシブ対応強化
 - R2バケット（画像アップロード）
+- コメント返信通知メール
+- 高度な分析機能
 
 ## URLs
 
 ### 本番環境（Cloudflare Pages）
-- **最新デプロイ**: https://31d620e7.commons-webapp.pages.dev
-- **新規登録**: https://31d620e7.commons-webapp.pages.dev/register
-- **ログイン**: https://31d620e7.commons-webapp.pages.dev/login
-- **ダッシュボード**: https://31d620e7.commons-webapp.pages.dev/dashboard
-- **会員管理**: https://31d620e7.commons-webapp.pages.dev/members
-- **投稿詳細例**: https://31d620e7.commons-webapp.pages.dev/posts/1
+- **最新デプロイ**: https://7c1e7fea.commons-webapp.pages.dev
+- **新規登録**: https://7c1e7fea.commons-webapp.pages.dev/register
+- **ログイン**: https://7c1e7fea.commons-webapp.pages.dev/login
+- **ダッシュボード**: https://7c1e7fea.commons-webapp.pages.dev/dashboard
+- **会員管理**: https://7c1e7fea.commons-webapp.pages.dev/members
+- **投稿詳細例**: https://7c1e7fea.commons-webapp.pages.dev/posts/1
 
 ### サンドボックス環境
 - **ホーム**: https://3000-imu7i4bdyc519gbijlo4z-5185f4aa.sandbox.novita.ai
 
 ### GitHub
 - **リポジトリ**: https://github.com/ryufuji/commnos
+- **最新コミット**: 8c53071
 
 ## データアーキテクチャ
 
@@ -63,6 +66,7 @@
 - **データベース**: Cloudflare D1（SQLite）
 - **認証**: JWT（jose ライブラリ）
 - **決済**: Stripe（テストモード）
+- **メール**: Resend API ✨ Phase 2
 
 ### データフロー
 
@@ -76,7 +80,7 @@
    - 全クエリにtenantId自動付与
 
 3. **会員管理フロー** ✨ Phase 2:
-   - 会員申請 → 承認待ち → 管理者承認 → 会員番号発行 → active状態
+   - 会員申請 → 受付確認メール → 管理者に通知メール → 管理者承認 → 承認メール + 会員番号発行 → active状態
 
 4. **コメントフロー** ✨ Phase 2:
    - コメント投稿 → parent_comment_id指定で返信 → ネスト表示
@@ -95,6 +99,7 @@
    - サブドメイン（3-20文字、英数字とハイフン）
    - コミュニティ名
    - サブタイトル（任意）
+   - テーマ（4種類から選択）
 4. 「**コミュニティを作成**」をクリック
 5. 自動的にダッシュボードにリダイレクト
 
@@ -102,11 +107,13 @@
 
 1. ダッシュボードから「**会員管理**」をクリック
 2. **承認待ちタブ**:
-   - 新規申請を確認
+   - 新規申請を確認（新規申請時にメールで通知）
    - 「承認」または「却下」ボタンをクリック
+   - 承認時: 会員番号が自動発行され、申請者にメール送信
+   - 却下時: 申請者に丁寧な拒否メール送信
 3. **承認済み会員タブ**:
    - 現在の会員一覧を確認
-   - 会員番号、役割を表示
+   - 会員番号、役割、登録日を表示
 
 #### 3. テーマ変更
 
@@ -115,7 +122,7 @@
 3. 4種類のテーマから選択：
    - **Modern Business**: プロフェッショナル・信頼感（Indigo/Blue）
    - **Wellness Nature**: 自然・健康・リラックス（Emerald Green）
-   - **Creative Studio**: クリエイティブ・芸術性（Purple）
+   - **Creative Studio**: クリエイティブ・芸術性（Orange）
    - **Tech Innovation**: 技術革新・先進性（Cyan）
 4. 「**保存**」をクリック
 
@@ -128,14 +135,16 @@
 #### 1. 会員申請
 
 1. コミュニティのホームページにアクセス
-2. 「**会員登録**」ボタンをクリック
+2. 「**会員登録**」または「**今すぐ参加する**」ボタンをクリック
 3. 以下の情報を入力：
    - ニックネーム
    - メールアドレス
    - パスワード（8文字以上）
    - 利用規約に同意
 4. 「**申請を送信**」をクリック
-5. 承認待ち状態になり、メールで通知（今後実装）
+5. **受付確認メール**が届く（即時）
+6. 管理者の承認を待つ
+7. **承認メール**が届いたらログイン可能
 
 #### 2. コメント投稿 ✨ Phase 2
 
@@ -161,10 +170,11 @@
 - **Cloudflare Workers** - エッジランタイム
 - **Cloudflare D1** - グローバル分散SQLiteデータベース
 
-### 認証・決済
+### 認証・決済・通知
 - **jose** - JWT実装
 - **bcrypt** - パスワードハッシュ化
 - **Stripe** - 決済処理（テストモード）
+- **Resend API** - メール送信サービス ✨ Phase 2
 
 ### デプロイ
 - **Cloudflare Pages** - 静的サイトホスティング
@@ -196,7 +206,7 @@
 ### 会員管理API ✨ Phase 2
 
 #### POST /api/members/apply
-会員申請
+会員申請（メール通知付き）
 
 **Request:**
 ```json
@@ -207,14 +217,24 @@
 }
 ```
 
+**メール送信:**
+- 申請者へ: 受付確認メール
+- 管理者（オーナー）へ: 新規申請通知メール
+
 #### GET /api/admin/members/pending
 承認待ち会員一覧（管理者のみ）
 
 #### POST /api/admin/members/:id/approve
-会員承認（管理者のみ）
+会員承認（管理者のみ、メール通知付き）
+
+**メール送信:**
+- 申請者へ: 承認通知メール（会員番号含む）
 
 #### POST /api/admin/members/:id/reject
-会員却下（管理者のみ）
+会員却下（管理者のみ、メール通知付き）
+
+**メール送信:**
+- 申請者へ: 拒否通知メール
 
 #### GET /api/admin/members/active
 承認済み会員一覧（管理者のみ）
@@ -290,9 +310,9 @@ Checkoutセッション作成（要認証）
 - **プラットフォーム**: Cloudflare Pages
 - **プロジェクト名**: commons-webapp
 - **ステータス**: ✅ デプロイ完了
-- **URL**: https://31d620e7.commons-webapp.pages.dev
+- **URL**: https://7c1e7fea.commons-webapp.pages.dev
 - **データベース**: Cloudflare D1（commons-webapp-production）
-- **環境変数**: JWT_SECRET, PLATFORM_DOMAIN, STRIPE_SECRET_KEY 設定済み
+- **環境変数**: JWT_SECRET, PLATFORM_DOMAIN, STRIPE_SECRET_KEY, RESEND_API_KEY 設定済み
 - **最終デプロイ**: 2025-12-26
 
 ### ローカル開発
@@ -339,6 +359,7 @@ STRIPE_SECRET_KEY=sk_test_...
 STRIPE_PUBLISHABLE_KEY=pk_test_...
 STRIPE_PRICE_STARTER=price_...
 STRIPE_PRICE_PRO=price_...
+RESEND_API_KEY=re_...
 ```
 
 **本番環境（Cloudflare Pages）:**
@@ -346,7 +367,25 @@ STRIPE_PRICE_PRO=price_...
 npx wrangler pages secret put JWT_SECRET --project-name commons-webapp
 npx wrangler pages secret put PLATFORM_DOMAIN --project-name commons-webapp
 npx wrangler pages secret put STRIPE_SECRET_KEY --project-name commons-webapp
+npx wrangler pages secret put RESEND_API_KEY --project-name commons-webapp
 ```
+
+### メール通知設定（Resend API）
+
+#### 1. Resendアカウント作成
+1. https://resend.com にアクセス
+2. 無料アカウント登録（GitHub/Google OAuth対応）
+3. ダッシュボードでAPI Keyを発行
+
+#### 2. Cloudflare Pages Secretsに設定
+```bash
+echo "YOUR_RESEND_API_KEY" | npx wrangler pages secret put RESEND_API_KEY --project-name commons-webapp
+```
+
+#### 3. テスト
+1. 本番環境で会員申請を実行
+2. メールボックスを確認（申請者）
+3. 管理者のメールボックスを確認（オーナー）
 
 ## トラブルシューティング
 
@@ -364,6 +403,11 @@ npx wrangler pages secret put STRIPE_SECRET_KEY --project-name commons-webapp
   npx wrangler d1 migrations apply commons-webapp-production --local
   npx wrangler d1 migrations apply commons-webapp-production --remote
   ```
+
+### メール送信エラー
+- `RESEND_API_KEY`が設定されているか確認
+- Resendダッシュボードで送信ログを確認
+- ドメイン認証が完了しているか確認（本番環境）
 
 ## 開発ステータス
 
@@ -388,25 +432,42 @@ npx wrangler pages secret put STRIPE_SECRET_KEY --project-name commons-webapp
 
 | 機能 | ステータス | 実装日 |
 |------|----------|--------|
-| 会員管理フロー | ✅ 完了 | 2025-12-26 |
+| **会員管理フロー** | ✅ 完了 | 2025-12-26 |
 | - 会員申請フォーム | ✅ 完了 | 2025-12-26 |
 | - 承認待ち一覧 | ✅ 完了 | 2025-12-26 |
 | - 承認・却下機能 | ✅ 完了 | 2025-12-26 |
 | - 承認済み会員一覧 | ✅ 完了 | 2025-12-26 |
-| コメント機能 | ✅ 完了 | 2025-12-26 |
+| **コメント機能** | ✅ 完了 | 2025-12-26 |
 | - コメント投稿 | ✅ 完了 | 2025-12-26 |
 | - コメント一覧 | ✅ 完了 | 2025-12-26 |
 | - 返信機能（ネスト） | ✅ 完了 | 2025-12-26 |
 | - コメント削除 | ✅ 完了 | 2025-12-26 |
+| **メール通知システム** | ✅ 完了 | 2025-12-26 |
+| - Resend API統合 | ✅ 完了 | 2025-12-26 |
+| - 申請受付メール | ✅ 完了 | 2025-12-26 |
+| - 承認通知メール | ✅ 完了 | 2025-12-26 |
+| - 拒否通知メール | ✅ 完了 | 2025-12-26 |
+| - 管理者通知メール | ✅ 完了 | 2025-12-26 |
+| **デザイン洗練** | ✅ 完了 | 2025-12-26 |
+| - ヒーローセクション | ✅ 完了 | 2025-12-26 |
+| - 投稿カードグリッド | ✅ 完了 | 2025-12-26 |
+| - コミュニティ情報カード | ✅ 完了 | 2025-12-26 |
+| - 投稿詳細タイポグラフィ | ✅ 完了 | 2025-12-26 |
+| **レスポンシブ対応** | ✅ 完了 | 2025-12-26 |
+| - ハンバーガーメニュー | ✅ 完了 | 2025-12-26 |
+| - グリッドレイアウト | ✅ 完了 | 2025-12-26 |
+| - モバイル最適化 | ✅ 完了 | 2025-12-26 |
+| - タブレット最適化 | ✅ 完了 | 2025-12-26 |
 
-**Phase 2 進捗: 約50%（2/4機能完成）**
+**Phase 2 進捗: 88%（5/6機能グループ完成）**
 
-### 今後の実装予定
+### 今後の実装予定（Phase 3）
 
-- メール通知システム
-- コミュニティ参加者向けページのデザイン洗練
-- レスポンシブ対応強化
 - R2バケット（画像アップロード）
+- コメント返信通知メール
+- 高度な分析機能
+- 全文検索機能
+- タグ・カテゴリ管理
 
 ## ライセンス
 
@@ -415,5 +476,5 @@ npx wrangler pages secret put STRIPE_SECRET_KEY --project-name commons-webapp
 ---
 
 **最終更新**: 2025-12-26  
-**バージョン**: Phase 2 - 会員管理＆コメント機能実装  
-**次のステップ**: メール通知システム / デザイン洗練
+**バージョン**: Phase 2 完了（会員管理・コメント・メール通知・デザイン洗練・レスポンシブ対応）  
+**次のステップ**: Phase 3（R2バケット・高度な機能）
