@@ -1253,4 +1253,288 @@ tenantPublic.get('/create-post', async (c) => {
 </html>`)
 })
 
+// --------------------------------------------
+// 投稿詳細ページ
+// --------------------------------------------
+tenantPublic.get('/posts/:id', async (c) => {
+  const { DB } = c.env
+  const subdomain = c.req.query('subdomain')
+  const postId = c.req.param('id')
+  
+  if (!subdomain) {
+    return c.html(`<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>開発環境 - Commons</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+    <div class="text-center">
+        <h1 class="text-4xl font-bold text-gray-800 mb-4">開発環境</h1>
+        <p class="text-xl text-gray-600 mb-4">URLに?subdomain=your-subdomainを追加してください</p>
+        <a href="/" class="text-blue-600 hover:underline">ホームに戻る</a>
+    </div>
+</body>
+</html>`)
+  }
+  
+  // テナント情報を取得
+  const tenant = await DB.prepare(
+    'SELECT * FROM tenants WHERE subdomain = ? AND status = ?'
+  ).bind(subdomain, 'active').first()
+  
+  if (!tenant) {
+    return c.html(`<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>コミュニティが見つかりません - Commons</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+    <div class="text-center">
+        <h1 class="text-4xl font-bold text-gray-800 mb-4">コミュニティが見つかりません</h1>
+        <a href="/" class="text-blue-600 hover:underline">ホームに戻る</a>
+    </div>
+</body>
+</html>`)
+  }
+  
+  // テーマ設定を取得
+  const customization = await DB.prepare(
+    'SELECT theme_preset FROM tenant_customization WHERE tenant_id = ?'
+  ).bind(tenant.id).first()
+  const theme = customization?.theme_preset || 'modern-business'
+  
+  // 投稿を取得
+  const post = await DB.prepare(`
+    SELECT p.*, u.nickname as author_name, u.avatar_url as author_avatar
+    FROM posts p
+    LEFT JOIN users u ON p.author_id = u.id
+    WHERE p.id = ? AND p.tenant_id = ? AND p.status = ?
+  `).bind(postId, tenant.id, 'published').first()
+  
+  if (!post) {
+    return c.html(`<!DOCTYPE html>
+<html lang="ja" data-theme="${theme}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>投稿が見つかりません - ${tenant.name}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="/static/styles.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <div class="flex items-center justify-center min-h-screen">
+        <div class="text-center">
+            <i class="fas fa-exclamation-triangle text-6xl text-yellow-500 mb-4"></i>
+            <h1 class="text-4xl font-bold text-gray-800 mb-4">投稿が見つかりません</h1>
+            <p class="text-gray-600 mb-6">指定された投稿は存在しないか、削除された可能性があります。</p>
+            <a href="/tenant/posts?subdomain=${subdomain}" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
+                <i class="fas fa-arrow-left mr-2"></i>投稿一覧に戻る
+            </a>
+        </div>
+    </div>
+</body>
+</html>`)
+  }
+  
+  // 閲覧数を増加
+  await DB.prepare(
+    'UPDATE posts SET view_count = view_count + 1 WHERE id = ?'
+  ).bind(postId).run()
+  
+  const tenantName = String(tenant.name || '')
+  const tenantSubtitle = String(tenant.subtitle || '')
+  const postTitle = String(post.title || '')
+  const postContent = String(post.content || '')
+  const authorName = String(post.author_name || '不明')
+  const authorAvatar = String(post.author_avatar || '')
+  const viewCount = post.view_count || 0
+  const createdDate = new Date(String(post.created_at)).toLocaleDateString('ja-JP', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric'
+  })
+  
+  return c.html(`<!DOCTYPE html>
+<html lang="ja" data-theme="${theme}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${postTitle} - ${tenantName}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="/static/styles.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- ヘッダー -->
+    <header class="bg-white shadow-sm sticky top-0 z-50">
+        <div class="container mx-auto px-4 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <a href="/tenant/home?subdomain=${subdomain}" class="text-2xl font-bold text-primary">
+                        ${tenantName}
+                    </a>
+                    ${tenantSubtitle ? `<span class="text-gray-500 hidden md:inline">- ${tenantSubtitle}</span>` : ''}
+                </div>
+                
+                <!-- デスクトップナビ -->
+                <nav class="hidden md:flex items-center space-x-6">
+                    <a href="/tenant/home?subdomain=${subdomain}" class="text-gray-600 hover:text-primary transition">
+                        <i class="fas fa-home mr-2"></i>ホーム
+                    </a>
+                    <a href="/tenant/posts?subdomain=${subdomain}" class="text-primary font-semibold">
+                        <i class="fas fa-newspaper mr-2"></i>投稿
+                    </a>
+                    <a href="/tenant/posts/new?subdomain=${subdomain}" class="text-gray-600 hover:text-primary transition">
+                        <i class="fas fa-plus-circle mr-2"></i>投稿作成
+                    </a>
+                    <a href="/tenant/members?subdomain=${subdomain}" class="text-gray-600 hover:text-primary transition">
+                        <i class="fas fa-users mr-2"></i>メンバー
+                    </a>
+                    <a href="/login" class="text-gray-600 hover:text-primary transition">
+                        <i class="fas fa-sign-in-alt mr-2"></i>ログイン
+                    </a>
+                </nav>
+                
+                <!-- モバイルメニューボタン -->
+                <button id="mobileMenuToggle" class="md:hidden text-gray-600 hover:text-primary">
+                    <i class="fas fa-bars text-xl"></i>
+                </button>
+            </div>
+            
+            <!-- モバイルナビ -->
+            <nav id="mobileMenu" class="md:hidden mt-4 pb-4 space-y-2 hidden">
+                <a href="/tenant/home?subdomain=${subdomain}" class="block py-2 text-gray-600 hover:text-primary transition">
+                    <i class="fas fa-home mr-2"></i>ホーム
+                </a>
+                <a href="/tenant/posts?subdomain=${subdomain}" class="block py-2 text-primary font-semibold">
+                    <i class="fas fa-newspaper mr-2"></i>投稿
+                </a>
+                <a href="/tenant/posts/new?subdomain=${subdomain}" class="block py-2 text-gray-600 hover:text-primary transition">
+                    <i class="fas fa-plus-circle mr-2"></i>投稿作成
+                </a>
+                <a href="/tenant/members?subdomain=${subdomain}" class="block py-2 text-gray-600 hover:text-primary transition">
+                    <i class="fas fa-users mr-2"></i>メンバー
+                </a>
+                <a href="/login" class="block py-2 text-gray-600 hover:text-primary transition">
+                    <i class="fas fa-sign-in-alt mr-2"></i>ログイン
+                </a>
+            </nav>
+        </div>
+    </header>
+
+    <!-- メインコンテンツ -->
+    <main class="container mx-auto px-4 py-8 max-w-4xl">
+        <!-- パンくずリスト -->
+        <nav class="mb-6 text-sm">
+            <ol class="flex items-center space-x-2 text-gray-600">
+                <li><a href="/tenant/home?subdomain=${subdomain}" class="hover:text-primary transition">ホーム</a></li>
+                <li><i class="fas fa-chevron-right text-xs"></i></li>
+                <li><a href="/tenant/posts?subdomain=${subdomain}" class="hover:text-primary transition">投稿一覧</a></li>
+                <li><i class="fas fa-chevron-right text-xs"></i></li>
+                <li class="text-gray-900 font-semibold">${postTitle}</li>
+            </ol>
+        </nav>
+
+        <!-- 投稿コンテンツ -->
+        <article class="bg-white rounded-lg shadow-md overflow-hidden">
+            <!-- サムネイル画像 -->
+            ${post.thumbnail_url ? `
+            <div class="w-full h-96 overflow-hidden">
+                <img src="${post.thumbnail_url}" alt="${postTitle}" class="w-full h-full object-cover">
+            </div>
+            ` : `
+            <div class="w-full h-64 bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center">
+                <i class="fas fa-file-alt text-8xl text-white opacity-50"></i>
+            </div>
+            `}
+            
+            <!-- 投稿ヘッダー -->
+            <div class="p-8 border-b">
+                <h1 class="text-3xl md:text-4xl font-bold text-gray-900 mb-4">${postTitle}</h1>
+                
+                <!-- メタ情報 -->
+                <div class="flex flex-wrap items-center gap-6 text-gray-600">
+                    <div class="flex items-center space-x-2">
+                        ${authorAvatar ? `
+                        <img src="${authorAvatar}" alt="${authorName}" class="w-10 h-10 rounded-full object-cover">
+                        ` : `
+                        <div class="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center">
+                            <i class="fas fa-user text-gray-600"></i>
+                        </div>
+                        `}
+                        <span class="font-medium">${authorName}</span>
+                    </div>
+                    <div class="flex items-center space-x-1">
+                        <i class="fas fa-calendar text-sm"></i>
+                        <span>${createdDate}</span>
+                    </div>
+                    <div class="flex items-center space-x-1">
+                        <i class="fas fa-eye text-sm"></i>
+                        <span>${viewCount + 1} 回閲覧</span>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 投稿本文 -->
+            <div class="p-8">
+                <div class="prose prose-lg max-w-none">
+                    ${postContent.split('\n').map(paragraph => {
+                      if (paragraph.trim() === '') return '<br>'
+                      return `<p class="mb-4 text-gray-700 leading-relaxed">${paragraph}</p>`
+                    }).join('')}
+                </div>
+            </div>
+            
+            <!-- 投稿フッター -->
+            <div class="p-8 bg-gray-50 border-t">
+                <div class="flex items-center justify-between">
+                    <a href="/tenant/posts?subdomain=${subdomain}" 
+                       class="px-6 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition">
+                        <i class="fas fa-arrow-left mr-2"></i>投稿一覧に戻る
+                    </a>
+                    <div class="flex items-center space-x-4">
+                        <button class="px-4 py-2 text-gray-600 hover:text-blue-600 transition">
+                            <i class="fas fa-thumbs-up mr-2"></i>いいね
+                        </button>
+                        <button class="px-4 py-2 text-gray-600 hover:text-blue-600 transition">
+                            <i class="fas fa-share-alt mr-2"></i>シェア
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </article>
+        
+        <!-- コメントセクション（今後実装） -->
+        <div class="mt-8 bg-white rounded-lg shadow-md p-8">
+            <h2 class="text-2xl font-bold text-gray-900 mb-4">
+                <i class="fas fa-comments mr-2 text-blue-600"></i>コメント
+            </h2>
+            <p class="text-gray-600">コメント機能は今後実装予定です。</p>
+        </div>
+    </main>
+
+    <!-- フッター -->
+    <footer class="bg-white border-t mt-16">
+        <div class="container mx-auto px-4 py-6 text-center text-gray-600">
+            <p>© 2025 ${tenantName}. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script src="/static/app.js"></script>
+    <script>
+        // モバイルメニュー切替
+        document.getElementById('mobileMenuToggle')?.addEventListener('click', () => {
+            const menu = document.getElementById('mobileMenu')
+            menu.classList.toggle('hidden')
+        })
+    </script>
+</body>
+</html>`)
+})
+
 export default tenantPublic
