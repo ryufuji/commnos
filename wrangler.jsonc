@@ -1,35 +1,20 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "webapp",
-  "main": "src/index.tsx",
+  "name": "commons-webapp",
   "compatibility_date": "2025-12-25",
   "compatibility_flags": ["nodejs_compat"],
   "pages_build_output_dir": "./dist",
   
   // Phase 1: D1 Database のみ設定
-  // 注意: 本番用 database_id は Cloudflare Dashboard で確認後に設定
-  // ローカル開発では任意の ID でOK
   "d1_databases": [
     {
       "binding": "DB",
-      "database_name": "webapp-production",
-      "database_id": "00000000-0000-0000-0000-000000000000"
-    }
-  ]
-  
-  // Phase 1 (Week 5-6): R2 バケット追加（アバター画像用）
-  // 注意: ローカル開発では preview_bucket_name を使用
-  // 本番デプロイ前に実際の R2 バケットを作成: npx wrangler r2 bucket create webapp-avatars
-  ,
-  "r2_buckets": [
-    {
-      "binding": "AVATARS",
-      "bucket_name": "webapp-avatars",
-      "preview_bucket_name": "webapp-avatars-preview"
+      "database_name": "commons-webapp-production",
+      "database_id": "5dc36696-29ca-4e6e-9cb9-6bcd63a37a2e"
     }
   ]
   
   // Phase 2 で追加予定:
+  // - r2_buckets (アバター画像用)
   // - kv_namespaces (通知キャッシュ用)
-  // - r2_buckets (追加のファイル共有用)
 }

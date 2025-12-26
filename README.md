@@ -24,6 +24,12 @@
 
 ## URLs
 
+### 本番環境（Cloudflare Pages）
+- **ホーム**: https://e9412add.commons-webapp.pages.dev
+- **新規登録**: https://e9412add.commons-webapp.pages.dev/register
+- **ログイン**: https://e9412add.commons-webapp.pages.dev/login
+- **ダッシュボード**: https://e9412add.commons-webapp.pages.dev/dashboard
+
 ### サンドボックス環境
 - **ホーム**: https://3000-imu7i4bdyc519gbijlo4z-5185f4aa.sandbox.novita.ai
 - **新規登録**: https://3000-imu7i4bdyc519gbijlo4z-5185f4aa.sandbox.novita.ai/register
@@ -31,10 +37,7 @@
 - **ダッシュボード**: https://3000-imu7i4bdyc519gbijlo4z-5185f4aa.sandbox.novita.ai/dashboard
 
 ### GitHub
-- **リポジトリ**: （デプロイ後に追加）
-
-### 本番環境
-- **URL**: （Cloudflare Pages デプロイ後に追加）
+- **リポジトリ**: https://github.com/ryufuji/commnos
 
 ## データアーキテクチャ
 
@@ -278,6 +281,15 @@ Checkoutセッション作成（要認証）
 
 ## デプロイ
 
+### 本番環境（Cloudflare Pages）
+- **プラットフォーム**: Cloudflare Pages
+- **プロジェクト名**: commons-webapp
+- **ステータス**: ✅ デプロイ完了
+- **URL**: https://e9412add.commons-webapp.pages.dev
+- **データベース**: Cloudflare D1（commons-webapp-production）
+- **環境変数**: JWT_SECRET, PLATFORM_DOMAIN, STRIPE_SECRET_KEY 設定済み
+- **最終デプロイ**: 2025-12-26
+
 ### ローカル開発
 
 ```bash
@@ -358,10 +370,10 @@ npx wrangler pages secret put STRIPE_SECRET_KEY --project-name webapp
 | Stripe連携 | ✅ 基盤実装 | Week 9-10 |
 | テーマシステム | ✅ 完了 | Week 11-12 |
 | ダークモード | ✅ 完了 | Week 11-12 |
-| 総合テスト | 🔄 進行中 | Week 13 |
-| デプロイ | ⏳ 予定 | Week 13 |
+| 総合テスト | ✅ 完了 | Week 13 |
+| デプロイ | ✅ 完了 | Week 13 |
 
-**全体進捗: 約85%**
+**全体進捗: 100% (Phase 1 MVP完成)**
 
 ### Phase 2 で実装予定
 
