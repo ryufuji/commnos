@@ -19,6 +19,7 @@ import stripe from './routes/stripe' // Week 9-10
 import upload from './routes/upload' // Phase 2 - 画像アップロード
 import images from './routes/images' // Phase 2 - 画像取得
 import tenantPublic from './routes/tenant-public' // Phase 3 - テナント公開ページ
+import tenantAuth from './routes/tenant-auth' // Phase 2 - テナント会員認証
 
 const app = new Hono<AppContext>()
 
@@ -60,6 +61,9 @@ app.route('/api/upload', upload)
 
 // 画像取得ルート（Phase 2）
 app.route('/api/images', images)
+
+// テナント会員認証ルート（Phase 2）
+app.route('/api/tenant', tenantAuth)
 
 // --------------------------------------------
 // ルーティングロジック

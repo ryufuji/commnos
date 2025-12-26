@@ -14,6 +14,563 @@ tenantPublic.get('/test', (c) => {
 })
 
 // --------------------------------------------
+// テナント会員ログインページ
+// --------------------------------------------
+tenantPublic.get('/login', async (c) => {
+  const { DB } = c.env
+  const subdomain = c.req.query('subdomain')
+  
+  if (!subdomain) {
+    return c.text('Subdomain is required', 400)
+  }
+
+  // Get tenant by subdomain
+  const tenantResult = await DB.prepare(`
+    SELECT * FROM tenants WHERE subdomain = ?
+  `).bind(subdomain).first()
+
+  if (!tenantResult) {
+    return c.text('Tenant not found', 404)
+  }
+
+  const tenant = tenantResult as any
+
+  return c.html(`
+    <!DOCTYPE html>
+    <html lang="ja" data-theme="light">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>ログイン - ${tenant.name}</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+        <style>
+            .gradient-bg {
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            }
+            .input-focus:focus {
+                border-color: #667eea;
+                box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            }
+        </style>
+    </head>
+    <body class="bg-gray-50">
+        <!-- Header -->
+        <header class="gradient-bg text-white shadow-lg">
+            <div class="container mx-auto px-4 py-4">
+                <div class="flex items-center justify-between">
+                    <a href="/home?subdomain=${subdomain}" class="text-2xl font-bold hover:opacity-80 transition">
+                        <i class="fas fa-users mr-2"></i>
+                        ${tenant.name}
+                    </a>
+                    <nav class="hidden md:flex space-x-6">
+                        <a href="/home?subdomain=${subdomain}" class="hover:opacity-80 transition">
+                            <i class="fas fa-home mr-1"></i> ホーム
+                        </a>
+                        <a href="/register?subdomain=${subdomain}" class="hover:opacity-80 transition">
+                            <i class="fas fa-user-plus mr-1"></i> 新規登録
+                        </a>
+                    </nav>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="container mx-auto px-4 py-12">
+            <div class="max-w-md mx-auto">
+                <!-- Login Card -->
+                <div class="bg-white rounded-lg shadow-xl p-8">
+                    <div class="text-center mb-8">
+                        <div class="inline-flex items-center justify-center w-16 h-16 rounded-full gradient-bg text-white mb-4">
+                            <i class="fas fa-sign-in-alt text-2xl"></i>
+                        </div>
+                        <h1 class="text-3xl font-bold text-gray-800 mb-2">ログイン</h1>
+                        <p class="text-gray-600">${tenant.name}へようこそ</p>
+                    </div>
+
+                    <!-- Login Form -->
+                    <form id="loginForm" class="space-y-6">
+                        <!-- Email -->
+                        <div>
+                            <label for="email" class="block text-sm font-medium text-gray-700 mb-2">
+                                <i class="fas fa-envelope mr-1"></i> メールアドレス
+                            </label>
+                            <input
+                                type="email"
+                                id="email"
+                                name="email"
+                                required
+                                class="input-focus w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none transition"
+                                placeholder="your@email.com"
+                            />
+                        </div>
+
+                        <!-- Password -->
+                        <div>
+                            <label for="password" class="block text="sm font-medium text-gray-700 mb-2">
+                                <i class="fas fa-lock mr-1"></i> パスワード
+                            </label>
+                            <input
+                                type="password"
+                                id="password"
+                                name="password"
+                                required
+                                minlength="8"
+                                class="input-focus w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none transition"
+                                placeholder="••••••••"
+                            />
+                        </div>
+
+                        <!-- Remember Me -->
+                        <div class="flex items-center justify-between">
+                            <label class="flex items-center">
+                                <input type="checkbox" id="remember" name="remember" class="rounded text-purple-600 mr-2">
+                                <span class="text-sm text-gray-600">ログイン状態を保持</span>
+                            </label>
+                            <a href="#" class="text-sm text-purple-600 hover:text-purple-700">
+                                パスワードを忘れた場合
+                            </a>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <button
+                            type="submit"
+                            id="loginBtn"
+                            class="w-full gradient-bg text-white py-3 rounded-lg font-semibold hover:opacity-90 transition transform hover:scale-105"
+                        >
+                            <i class="fas fa-sign-in-alt mr-2"></i>
+                            ログイン
+                        </button>
+                    </form>
+
+                    <!-- Divider -->
+                    <div class="relative my-8">
+                        <div class="absolute inset-0 flex items-center">
+                            <div class="w-full border-t border-gray-300"></div>
+                        </div>
+                        <div class="relative flex justify-center text-sm">
+                            <span class="px-4 bg-white text-gray-500">または</span>
+                        </div>
+                    </div>
+
+                    <!-- Register Link -->
+                    <div class="text-center">
+                        <p class="text-gray-600 mb-4">まだアカウントをお持ちでない方</p>
+                        <a
+                            href="/register?subdomain=${subdomain}"
+                            class="inline-block w-full border-2 border-purple-600 text-purple-600 py-3 rounded-lg font-semibold hover:bg-purple-50 transition"
+                        >
+                            <i class="fas fa-user-plus mr-2"></i>
+                            新規登録
+                        </a>
+                    </div>
+                </div>
+
+                <!-- Back to Home -->
+                <div class="text-center mt-6">
+                    <a href="/home?subdomain=${subdomain}" class="text-gray-600 hover:text-gray-800">
+                        <i class="fas fa-arrow-left mr-2"></i>
+                        ホームに戻る
+                    </a>
+                </div>
+            </div>
+        </main>
+
+        <!-- Toast Container -->
+        <div id="toast" class="fixed top-4 right-4 z-50 hidden">
+            <div class="bg-white rounded-lg shadow-xl p-4 max-w-md">
+                <div class="flex items-center">
+                    <div id="toastIcon" class="mr-3"></div>
+                    <p id="toastMessage" class="text-gray-800"></p>
+                </div>
+            </div>
+        </div>
+
+        <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+        <script>
+            const subdomain = '${subdomain}';
+
+            // Toast notification
+            function showToast(message, type = 'success') {
+                const toast = document.getElementById('toast');
+                const toastMessage = document.getElementById('toastMessage');
+                const toastIcon = document.getElementById('toastIcon');
+
+                toastMessage.textContent = message;
+
+                if (type === 'success') {
+                    toastIcon.innerHTML = '<i class="fas fa-check-circle text-green-500 text-xl"></i>';
+                } else if (type === 'error') {
+                    toastIcon.innerHTML = '<i class="fas fa-times-circle text-red-500 text-xl"></i>';
+                }
+
+                toast.classList.remove('hidden');
+                setTimeout(() => {
+                    toast.classList.add('hidden');
+                }, 3000);
+            }
+
+            // Handle login form submission
+            document.getElementById('loginForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+
+                const email = document.getElementById('email').value.trim();
+                const password = document.getElementById('password').value;
+                const remember = document.getElementById('remember').checked;
+                const loginBtn = document.getElementById('loginBtn');
+
+                // Validation
+                if (!email || !password) {
+                    showToast('すべての項目を入力してください', 'error');
+                    return;
+                }
+
+                // Disable button
+                loginBtn.disabled = true;
+                loginBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> ログイン中...';
+
+                try {
+                    const response = await axios.post('/api/tenant/login', {
+                        email,
+                        password,
+                        subdomain,
+                        remember
+                    });
+
+                    if (response.data.success) {
+                        // Store token
+                        localStorage.setItem('authToken', response.data.token);
+                        localStorage.setItem('user', JSON.stringify(response.data.user));
+
+                        showToast('ログインに成功しました', 'success');
+
+                        // Redirect to home
+                        setTimeout(() => {
+                            window.location.href = \`/home?subdomain=\${subdomain}\`;
+                        }, 1500);
+                    } else {
+                        throw new Error(response.data.message || 'ログインに失敗しました');
+                    }
+                } catch (error) {
+                    console.error('Login error:', error);
+                    const errorMessage = error.response?.data?.message || error.message || 'ログインに失敗しました';
+                    showToast(errorMessage, 'error');
+
+                    // Re-enable button
+                    loginBtn.disabled = false;
+                    loginBtn.innerHTML = '<i class="fas fa-sign-in-alt mr-2"></i> ログイン';
+                }
+            });
+        </script>
+    </body>
+    </html>
+  `)
+})
+
+// --------------------------------------------
+// テナント会員登録ページ
+// --------------------------------------------
+tenantPublic.get('/register', async (c) => {
+  const { DB } = c.env
+  const subdomain = c.req.query('subdomain')
+  
+  if (!subdomain) {
+    return c.html(`<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>開発環境 - Commons</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+    <div class="text-center">
+        <h1 class="text-4xl font-bold text-gray-800 mb-4">開発環境</h1>
+        <p class="text-xl text-gray-600 mb-4">URLに?subdomain=your-subdomainを追加してください</p>
+        <a href="/" class="text-blue-600 hover:underline">ホームに戻る</a>
+    </div>
+</body>
+</html>`)
+  }
+  
+  // テナント情報を取得
+  const tenant = await DB.prepare(
+    'SELECT * FROM tenants WHERE subdomain = ? AND status = ?'
+  ).bind(subdomain, 'active').first()
+  
+  if (!tenant) {
+    return c.html(`<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>コミュニティが見つかりません - Commons</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+    <div class="text-center">
+        <h1 class="text-4xl font-bold text-gray-800 mb-4">コミュニティが見つかりません</h1>
+        <a href="/" class="text-blue-600 hover:underline">ホームに戻る</a>
+    </div>
+</body>
+</html>`)
+  }
+  
+  // テーマ設定を取得
+  const customization = await DB.prepare(
+    'SELECT theme_preset FROM tenant_customization WHERE tenant_id = ?'
+  ).bind(tenant.id).first()
+  const theme = customization?.theme_preset || 'modern-business'
+  
+  const tenantName = String(tenant.name || '')
+  const tenantSubtitle = String(tenant.subtitle || '')
+  
+  return c.html(`<!DOCTYPE html>
+<html lang="ja" data-theme="${theme}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>会員登録 - ${tenantName}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="/static/styles.css" rel="stylesheet">
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-purple-50 min-h-screen flex items-center justify-center p-4">
+    <div class="max-w-md w-full">
+        <!-- ロゴ・タイトル -->
+        <div class="text-center mb-8">
+            <a href="/tenant/home?subdomain=${subdomain}" class="inline-block mb-4">
+                <h1 class="text-3xl font-bold text-gray-800">${tenantName}</h1>
+                ${tenantSubtitle ? `<p class="text-gray-600">${tenantSubtitle}</p>` : ''}
+            </a>
+            <h2 class="text-2xl font-bold text-gray-800 mt-4">会員登録</h2>
+            <p class="text-gray-600 mt-2">コミュニティに参加しましょう</p>
+        </div>
+
+        <!-- 登録フォーム -->
+        <div class="bg-white rounded-lg shadow-xl p-8">
+            <form id="registerForm" class="space-y-6">
+                <!-- ニックネーム -->
+                <div>
+                    <label for="nickname" class="block text-sm font-medium text-gray-700 mb-2">
+                        ニックネーム <span class="text-red-500">*</span>
+                    </label>
+                    <input 
+                        type="text" 
+                        id="nickname" 
+                        name="nickname" 
+                        required
+                        maxlength="50"
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="山田太郎"
+                    >
+                </div>
+
+                <!-- メールアドレス -->
+                <div>
+                    <label for="email" class="block text-sm font-medium text-gray-700 mb-2">
+                        メールアドレス <span class="text-red-500">*</span>
+                    </label>
+                    <input 
+                        type="email" 
+                        id="email" 
+                        name="email" 
+                        required
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="your@example.com"
+                    >
+                </div>
+
+                <!-- パスワード -->
+                <div>
+                    <label for="password" class="block text-sm font-medium text-gray-700 mb-2">
+                        パスワード <span class="text-red-500">*</span>
+                    </label>
+                    <input 
+                        type="password" 
+                        id="password" 
+                        name="password" 
+                        required
+                        minlength="8"
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="••••••••"
+                    >
+                    <p class="text-sm text-gray-500 mt-1">8文字以上</p>
+                </div>
+
+                <!-- パスワード確認 -->
+                <div>
+                    <label for="passwordConfirm" class="block text-sm font-medium text-gray-700 mb-2">
+                        パスワード（確認） <span class="text-red-500">*</span>
+                    </label>
+                    <input 
+                        type="password" 
+                        id="passwordConfirm" 
+                        name="passwordConfirm" 
+                        required
+                        minlength="8"
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="••••••••"
+                    >
+                </div>
+
+                <!-- 自己紹介（任意） -->
+                <div>
+                    <label for="bio" class="block text-sm font-medium text-gray-700 mb-2">
+                        自己紹介（任意）
+                    </label>
+                    <textarea 
+                        id="bio" 
+                        name="bio"
+                        rows="3"
+                        maxlength="500"
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        placeholder="簡単な自己紹介をお願いします"
+                    ></textarea>
+                    <p class="text-sm text-gray-500 mt-1">最大500文字</p>
+                </div>
+
+                <!-- 送信ボタン -->
+                <button 
+                    type="submit" 
+                    id="submitBtn"
+                    class="w-full px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors"
+                >
+                    <i class="fas fa-user-plus mr-2"></i>会員申請を送信
+                </button>
+            </form>
+
+            <!-- ログインリンク -->
+            <div class="mt-6 text-center">
+                <p class="text-gray-600">
+                    すでにアカウントをお持ちですか？
+                    <a href="/tenant/login?subdomain=${subdomain}" class="text-blue-600 hover:text-blue-700 font-semibold">
+                        ログイン
+                    </a>
+                </p>
+            </div>
+
+            <!-- ホームに戻る -->
+            <div class="mt-4 text-center">
+                <a href="/tenant/home?subdomain=${subdomain}" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-arrow-left mr-2"></i>ホームに戻る
+                </a>
+            </div>
+        </div>
+
+        <!-- 注意事項 -->
+        <div class="mt-6 text-center text-sm text-gray-600">
+            <p>会員申請後、管理者の承認をお待ちください。</p>
+            <p>承認されるとメールでお知らせします。</p>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+    <script src="/static/app.js"></script>
+    <script>
+        const registerForm = document.getElementById('registerForm')
+        const submitBtn = document.getElementById('submitBtn')
+        
+        registerForm?.addEventListener('submit', async (e) => {
+            e.preventDefault()
+            
+            const formData = new FormData(registerForm)
+            const nickname = formData.get('nickname')
+            const email = formData.get('email')
+            const password = formData.get('password')
+            const passwordConfirm = formData.get('passwordConfirm')
+            const bio = formData.get('bio')
+            
+            // バリデーション
+            if (!nickname || !email || !password) {
+                showToast('必須項目を入力してください', 'error')
+                return
+            }
+            
+            if (password !== passwordConfirm) {
+                showToast('パスワードが一致しません', 'error')
+                return
+            }
+            
+            if (password.length < 8) {
+                showToast('パスワードは8文字以上にしてください', 'error')
+                return
+            }
+            
+            try {
+                submitBtn.disabled = true
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>送信中...'
+                
+                const response = await axios.post('/api/tenant/register', {
+                    subdomain: '${subdomain}',
+                    nickname: nickname.trim(),
+                    email: email.trim(),
+                    password: password,
+                    bio: bio?.trim() || null
+                })
+                
+                if (response.data.success) {
+                    showToast('会員申請を送信しました！管理者の承認をお待ちください', 'success')
+                    setTimeout(() => {
+                        window.location.href = '/tenant/register/pending?subdomain=${subdomain}'
+                    }, 2000)
+                } else {
+                    throw new Error(response.data.message || '会員申請に失敗しました')
+                }
+            } catch (error) {
+                console.error('登録エラー:', error)
+                const message = error.response?.data?.message || error.message || '会員申請に失敗しました'
+                showToast(message, 'error')
+                submitBtn.disabled = false
+                submitBtn.innerHTML = '<i class="fas fa-user-plus mr-2"></i>会員申請を送信'
+            }
+        })
+    </script>
+</body>
+</html>`)
+})
+
+// --------------------------------------------
+// 会員登録（承認待ち画面）
+// --------------------------------------------
+tenantPublic.get('/register/pending', async (c) => {
+  const subdomain = c.req.query('subdomain')
+  
+  if (!subdomain) {
+    return c.redirect('/')
+  }
+  
+  return c.html(`<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>承認待ち - Commons</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-purple-50 min-h-screen flex items-center justify-center p-4">
+    <div class="max-w-md w-full text-center">
+        <div class="bg-white rounded-lg shadow-xl p-8">
+            <div class="mb-6">
+                <i class="fas fa-clock text-6xl text-blue-600"></i>
+            </div>
+            <h1 class="text-3xl font-bold text-gray-800 mb-4">会員申請を受付ました</h1>
+            <p class="text-gray-600 mb-6">
+                管理者が申請を確認し、承認されるとメールでお知らせします。<br>
+                しばらくお待ちください。
+            </p>
+            <div class="space-y-4">
+                <a href="/tenant/home?subdomain=${subdomain}" 
+                   class="block px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors">
+                    <i class="fas fa-home mr-2"></i>ホームに戻る
+                </a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>`)
+})
+
+// --------------------------------------------
 // テナントホームページ
 // --------------------------------------------
 tenantPublic.get('/home', async (c) => {
@@ -173,7 +730,7 @@ tenantPublic.get('/home', async (c) => {
                     <a href="/tenant/members?subdomain=${subdomain}" class="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition">
                         <i class="fas fa-users mr-2"></i>メンバー
                     </a>
-                    <a href="/login" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition">
+                    <a href="/login?subdomain=${subdomain}" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition">
                         <i class="fas fa-sign-in-alt mr-2"></i>ログイン
                     </a>
                 </nav>
@@ -196,7 +753,7 @@ tenantPublic.get('/home', async (c) => {
                 <a href="/tenant/members-list?subdomain=${subdomain}" class="block px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg text-center">
                     <i class="fas fa-users mr-2"></i>メンバー
                 </a>
-                <a href="/login" class="block px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-center">
+                <a href="/login?subdomain=${subdomain}" class="block px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-center">
                     <i class="fas fa-sign-in-alt mr-2"></i>ログイン
                 </a>
             </div>
@@ -215,7 +772,7 @@ tenantPublic.get('/home', async (c) => {
                 <a href="/join?subdomain=${subdomain}" class="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg text-lg transition-colors">
                     <i class="fas fa-user-plus mr-2"></i>メンバー申請
                 </a>
-                <a href="/login" class="px-8 py-3 bg-gray-600 hover:bg-gray-700 text-white font-semibold rounded-lg text-lg transition-colors">
+                <a href="/login?subdomain=${subdomain}" class="px-8 py-3 bg-gray-600 hover:bg-gray-700 text-white font-semibold rounded-lg text-lg transition-colors">
                     <i class="fas fa-sign-in-alt mr-2"></i>ログイン
                 </a>
             </div>
@@ -376,7 +933,7 @@ tenantPublic.get('/posts/new', async (c) => {
                     <a href="/tenant/members?subdomain=${subdomain}" class="text-gray-600 hover:text-primary transition">
                         <i class="fas fa-users mr-2"></i>メンバー
                     </a>
-                    <a href="/login" class="text-gray-600 hover:text-primary transition">
+                    <a href="/login?subdomain=${subdomain}" class="text-gray-600 hover:text-primary transition">
                         <i class="fas fa-sign-in-alt mr-2"></i>ログイン
                     </a>
                 </nav>
@@ -401,7 +958,7 @@ tenantPublic.get('/posts/new', async (c) => {
                 <a href="/tenant/members?subdomain=${subdomain}" class="block py-2 text-gray-600 hover:text-primary transition">
                     <i class="fas fa-users mr-2"></i>メンバー
                 </a>
-                <a href="/login" class="block py-2 text-gray-600 hover:text-primary transition">
+                <a href="/login?subdomain=${subdomain}" class="block py-2 text-gray-600 hover:text-primary transition">
                     <i class="fas fa-sign-in-alt mr-2"></i>ログイン
                 </a>
             </nav>
@@ -911,7 +1468,7 @@ tenantPublic.get('/posts', async (c) => {
                     <a href="/tenant/members?subdomain=${subdomain}" class="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition">
                         <i class="fas fa-users mr-2"></i>メンバー
                     </a>
-                    <a href="/login" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition">
+                    <a href="/login?subdomain=${subdomain}" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition">
                         <i class="fas fa-sign-in-alt mr-2"></i>ログイン
                     </a>
                 </nav>
@@ -934,7 +1491,7 @@ tenantPublic.get('/posts', async (c) => {
                 <a href="/tenant/members-list?subdomain=${subdomain}" class="block px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg text-center">
                     <i class="fas fa-users mr-2"></i>メンバー
                 </a>
-                <a href="/login" class="block px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-center">
+                <a href="/login?subdomain=${subdomain}" class="block px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-center">
                     <i class="fas fa-sign-in-alt mr-2"></i>ログイン
                 </a>
             </div>
@@ -1395,7 +1952,7 @@ tenantPublic.get('/posts/:id', async (c) => {
                     <a href="/tenant/members?subdomain=${subdomain}" class="text-gray-600 hover:text-primary transition">
                         <i class="fas fa-users mr-2"></i>メンバー
                     </a>
-                    <a href="/login" class="text-gray-600 hover:text-primary transition">
+                    <a href="/login?subdomain=${subdomain}" class="text-gray-600 hover:text-primary transition">
                         <i class="fas fa-sign-in-alt mr-2"></i>ログイン
                     </a>
                 </nav>
@@ -1420,7 +1977,7 @@ tenantPublic.get('/posts/:id', async (c) => {
                 <a href="/tenant/members?subdomain=${subdomain}" class="block py-2 text-gray-600 hover:text-primary transition">
                     <i class="fas fa-users mr-2"></i>メンバー
                 </a>
-                <a href="/login" class="block py-2 text-gray-600 hover:text-primary transition">
+                <a href="/login?subdomain=${subdomain}" class="block py-2 text-gray-600 hover:text-primary transition">
                     <i class="fas fa-sign-in-alt mr-2"></i>ログイン
                 </a>
             </nav>
@@ -1780,7 +2337,7 @@ tenantPublic.get('/members', async (c) => {
                     <a href="/tenant/members?subdomain=${subdomain}" class="text-primary font-semibold">
                         <i class="fas fa-users mr-2"></i>メンバー
                     </a>
-                    <a href="/login" class="text-gray-600 hover:text-primary transition">
+                    <a href="/login?subdomain=${subdomain}" class="text-gray-600 hover:text-primary transition">
                         <i class="fas fa-sign-in-alt mr-2"></i>ログイン
                     </a>
                 </nav>
@@ -1805,7 +2362,7 @@ tenantPublic.get('/members', async (c) => {
                 <a href="/tenant/members?subdomain=${subdomain}" class="block py-2 text-primary font-semibold">
                     <i class="fas fa-users mr-2"></i>メンバー
                 </a>
-                <a href="/login" class="block py-2 text-gray-600 hover:text-primary transition">
+                <a href="/login?subdomain=${subdomain}" class="block py-2 text-gray-600 hover:text-primary transition">
                     <i class="fas fa-sign-in-alt mr-2"></i>ログイン
                 </a>
             </nav>
@@ -2080,7 +2637,7 @@ tenantPublic.get('/members/:memberId', async (c) => {
                     <a href="/tenant/members?subdomain=${subdomain}" class="text-primary font-semibold">
                         <i class="fas fa-users mr-2"></i>メンバー
                     </a>
-                    <a href="/login" class="text-gray-600 hover:text-primary transition">
+                    <a href="/login?subdomain=${subdomain}" class="text-gray-600 hover:text-primary transition">
                         <i class="fas fa-sign-in-alt mr-2"></i>ログイン
                     </a>
                 </nav>
@@ -2105,7 +2662,7 @@ tenantPublic.get('/members/:memberId', async (c) => {
                 <a href="/tenant/members?subdomain=${subdomain}" class="block py-2 text-primary font-semibold">
                     <i class="fas fa-users mr-2"></i>メンバー
                 </a>
-                <a href="/login" class="block py-2 text-gray-600 hover:text-primary transition">
+                <a href="/login?subdomain=${subdomain}" class="block py-2 text-gray-600 hover:text-primary transition">
                     <i class="fas fa-sign-in-alt mr-2"></i>ログイン
                 </a>
             </nav>
