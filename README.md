@@ -24,35 +24,39 @@
 - **完全レスポンシブ対応** - モバイル/タブレット/デスクトップ最適化
 - **画像アップロード** - R2バケット統合、プロフィール画像、投稿サムネイル
 
-🚀 **Phase 3 進行中（Week 14-17）:**
+🚀 **Phase 3 進行中（Week 14-19）:**
 - **テナント公開ページ** - 会員用フロントエンド実装
   - ✅ テナントホームページ（/tenant/home）
   - ✅ 投稿一覧ページ（/tenant/posts）
   - ✅ 投稿作成ページ（/tenant/posts/new）
   - ✅ 投稿詳細ページ（/tenant/posts/:id）
+  - ✅ 会員一覧ページ（/tenant/members）
   - ✅ 投稿作成API（POST /api/posts）- 認証済み全会員が投稿可能
   - ✅ 画像アップロード統合（サムネイル対応）
   - ✅ 下書き保存機能
   - ✅ 閲覧数カウント機能
+  - ✅ ページネーション機能
 
 ⏳ **Phase 3 今後の実装予定（Week 18-21）:**
-- 会員一覧ページ・プロフィール詳細
+- 会員プロフィール詳細ページ
+- 会員検索機能
 - マイページ（自分の投稿・コメント管理）
 - 通知センター（ブラウザ内通知）
 
 ## URLs
 
 ### 本番環境（Cloudflare Pages）
-- **最新デプロイ**: https://a75664e6.commons-webapp.pages.dev
-- **新規登録**: https://a75664e6.commons-webapp.pages.dev/register
-- **ログイン**: https://a75664e6.commons-webapp.pages.dev/login
-- **ダッシュボード**: https://a75664e6.commons-webapp.pages.dev/dashboard
-- **会員管理**: https://a75664e6.commons-webapp.pages.dev/members
-- **プロフィール**: https://a75664e6.commons-webapp.pages.dev/profile
-- **テナントホーム**: https://a75664e6.commons-webapp.pages.dev/tenant/home?subdomain=test-phase2
-- **投稿一覧**: https://a75664e6.commons-webapp.pages.dev/tenant/posts?subdomain=test-phase2
-- **投稿作成**: https://a75664e6.commons-webapp.pages.dev/tenant/posts/new?subdomain=test-phase2
-- **投稿詳細**: https://a75664e6.commons-webapp.pages.dev/tenant/posts/1?subdomain=test-phase2
+- **最新デプロイ**: https://9ad6db21.commons-webapp.pages.dev
+- **新規登録**: https://9ad6db21.commons-webapp.pages.dev/register
+- **ログイン**: https://9ad6db21.commons-webapp.pages.dev/login
+- **ダッシュボード**: https://9ad6db21.commons-webapp.pages.dev/dashboard
+- **会員管理**: https://9ad6db21.commons-webapp.pages.dev/members
+- **プロフィール**: https://9ad6db21.commons-webapp.pages.dev/profile
+- **テナントホーム**: https://9ad6db21.commons-webapp.pages.dev/tenant/home?subdomain=test-phase2
+- **投稿一覧**: https://9ad6db21.commons-webapp.pages.dev/tenant/posts?subdomain=test-phase2
+- **投稿作成**: https://9ad6db21.commons-webapp.pages.dev/tenant/posts/new?subdomain=test-phase2
+- **投稿詳細**: https://9ad6db21.commons-webapp.pages.dev/tenant/posts/1?subdomain=test-phase2
+- **会員一覧**: https://9ad6db21.commons-webapp.pages.dev/tenant/members?subdomain=test-phase2
 
 ### サンドボックス環境
 - **ホーム**: https://3000-imu7i4bdyc519gbijlo4z-5185f4aa.sandbox.novita.ai
