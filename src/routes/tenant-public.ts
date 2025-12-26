@@ -2430,10 +2430,18 @@ tenantPublic.get('/members', async (c) => {
 // --------------------------------------------
 // 会員プロフィール詳細ページ
 // --------------------------------------------
-tenantPublic.get('/members/:memberId', async (c) => {
-  const { DB } = c.env
-  const subdomain = c.req.query('subdomain')
-  const memberId = c.req.param('memberId')
+// ============================================
+// 会員プロフィール詳細ページ（Phase 3: Week 18-19）
+// ============================================
+tenantPublic.get('/tenant/members/:memberId', async (c) => {
+  try {
+    const { DB } = c.env
+    const subdomain = c.req.query('subdomain')
+    const memberId = c.req.param('memberId')
+    
+    console.log('=== Member Profile Route ===')
+    console.log('subdomain:', subdomain)
+    console.log('memberId:', memberId)
   
   if (!subdomain) {
     return c.html(`<!DOCTYPE html>
@@ -2782,6 +2790,24 @@ tenantPublic.get('/members/:memberId', async (c) => {
     </script>
 </body>
 </html>`)
+  } catch (error: any) {
+    console.error('Member profile error:', error)
+    return c.html(`<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>エラー - Commons</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+    <div class="text-center">
+        <h1 class="text-4xl font-bold text-gray-800 mb-4">エラーが発生しました</h1>
+        <p class="text-gray-600 mb-4">${error.message}</p>
+        <a href="/" class="text-blue-600 hover:underline">ホームに戻る</a>
+    </div>
+</body>
+</html>`)
+  }
 })
 
 export default tenantPublic
