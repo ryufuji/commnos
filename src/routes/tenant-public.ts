@@ -3755,6 +3755,19 @@ tenantPublic.get('/tenant/notifications', async (c) => {
   `).bind(userId, tenant.id).first()
   const unreadCount = unreadCountResult?.count || 0
 
+  // 未読バッジHTML
+  const unreadBadgeHTML = unreadCount > 0 
+    ? '<span class="bg-red-500 text-white text-xs px-2 py-1 rounded-full ml-1">' + unreadCount + '</span>' 
+    : ''
+  
+  // すべて既読ボタンHTML
+  const markAllReadButtonHTML = unreadCount > 0
+    ? '<button id="markAllReadBtn" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"><i class="fas fa-check-double mr-2"></i>すべて既読にする</button>'
+    : ''
+  
+  // 未読件数表示
+  const unreadCountText = unreadCount > 0 ? '（未読: ' + unreadCount + '件）' : ''
+
   // 通知HTMLを生成
   let notificationsHTML = ''
   if (notifications.length === 0) {
@@ -3782,26 +3795,28 @@ tenantPublic.get('/tenant/notifications', async (c) => {
       // リンク先を決定
       let linkUrl = '#'
       if (notif.target_type === 'post') {
-        linkUrl = `/tenant/posts/${notif.target_id}?subdomain=${subdomain}`
+        linkUrl = '/tenant/posts/' + notif.target_id + '?subdomain=' + subdomain
       }
       
-      return `
-        <a href="${linkUrl}" 
-           class="block p-4 ${isUnread ? 'bg-blue-50' : 'bg-white'} rounded-lg shadow hover:shadow-md transition mb-3"
-           data-notification-id="${notif.id}">
-            <div class="flex items-start space-x-4">
-                <img src="${actorAvatar}" alt="${notif.actor_name}" class="w-12 h-12 rounded-full object-cover">
-                <div class="flex-grow">
-                    <div class="flex items-center space-x-2 mb-1">
-                        <i class="fas ${icon} ${iconColor}"></i>
-                        ${isUnread ? '<span class="bg-blue-600 text-white text-xs px-2 py-1 rounded">NEW</span>' : ''}
-                    </div>
-                    <p class="text-gray-900 ${isUnread ? 'font-semibold' : ''}">${notif.message}</p>
-                    <p class="text-xs text-gray-500 mt-2">${createdAt}</p>
-                </div>
-            </div>
-        </a>
-      `
+      const bgClass = isUnread ? 'bg-blue-50' : 'bg-white'
+      const fontClass = isUnread ? 'font-semibold' : ''
+      const newBadge = isUnread ? '<span class="bg-blue-600 text-white text-xs px-2 py-1 rounded">NEW</span>' : ''
+      
+      return '<a href="' + linkUrl + '" ' +
+           'class="block p-4 ' + bgClass + ' rounded-lg shadow hover:shadow-md transition mb-3" ' +
+           'data-notification-id="' + notif.id + '">' +
+            '<div class="flex items-start space-x-4">' +
+                '<img src="' + actorAvatar + '" alt="' + notif.actor_name + '" class="w-12 h-12 rounded-full object-cover">' +
+                '<div class="flex-grow">' +
+                    '<div class="flex items-center space-x-2 mb-1">' +
+                        '<i class="fas ' + icon + ' ' + iconColor + '"></i>' +
+                        newBadge +
+                    '</div>' +
+                    '<p class="text-gray-900 ' + fontClass + '">' + notif.message + '</p>' +
+                    '<p class="text-xs text-gray-500 mt-2">' + createdAt + '</p>' +
+                '</div>' +
+            '</div>' +
+        '</a>'
     }).join('')
   }
 
@@ -3811,7 +3826,7 @@ tenantPublic.get('/tenant/notifications', async (c) => {
     paginationHTML = '<div class="flex justify-center items-center space-x-2 mt-8">'
     
     if (page > 1) {
-      paginationHTML += `<a href="/tenant/notifications?subdomain=${subdomain}&page=${page - 1}" class="px-4 py-2 border rounded-lg hover:bg-gray-50">前へ</a>`
+      paginationHTML += '<a href="/tenant/notifications?subdomain=' + subdomain + '&page=' + (page - 1) + '" class="px-4 py-2 border rounded-lg hover:bg-gray-50">前へ</a>'
     } else {
       paginationHTML += '<span class="px-4 py-2 border rounded-lg text-gray-400 cursor-not-allowed">前へ</span>'
     }
@@ -3819,9 +3834,9 @@ tenantPublic.get('/tenant/notifications', async (c) => {
     for (let i = 1; i <= totalPages; i++) {
       if (i === 1 || i === totalPages || (i >= page - 2 && i <= page + 2)) {
         if (i === page) {
-          paginationHTML += `<span class="px-4 py-2 bg-blue-600 text-white rounded-lg">${i}</span>`
+          paginationHTML += '<span class="px-4 py-2 bg-blue-600 text-white rounded-lg">' + i + '</span>'
         } else {
-          paginationHTML += `<a href="/tenant/notifications?subdomain=${subdomain}&page=${i}" class="px-4 py-2 border rounded-lg hover:bg-gray-50">${i}</a>`
+          paginationHTML += '<a href="/tenant/notifications?subdomain=' + subdomain + '&page=' + i + '" class="px-4 py-2 border rounded-lg hover:bg-gray-50">' + i + '</a>'
         }
       } else if (i === page - 3 || i === page + 3) {
         paginationHTML += '<span class="px-4 py-2">...</span>'
@@ -3829,7 +3844,7 @@ tenantPublic.get('/tenant/notifications', async (c) => {
     }
     
     if (page < totalPages) {
-      paginationHTML += `<a href="/tenant/notifications?subdomain=${subdomain}&page=${page + 1}" class="px-4 py-2 border rounded-lg hover:bg-gray-50">次へ</a>`
+      paginationHTML += '<a href="/tenant/notifications?subdomain=' + subdomain + '&page=' + (page + 1) + '" class="px-4 py-2 border rounded-lg hover:bg-gray-50">次へ</a>'
     } else {
       paginationHTML += '<span class="px-4 py-2 border rounded-lg text-gray-400 cursor-not-allowed">次へ</span>'
     }
@@ -3868,7 +3883,7 @@ tenantPublic.get('/tenant/notifications', async (c) => {
                     </a>
                     <a href="/tenant/notifications?subdomain=${subdomain}" class="text-blue-600 font-semibold">
                         <i class="fas fa-bell mr-1"></i>通知
-                        ${unreadCount > 0 ? `<span class="bg-red-500 text-white text-xs px-2 py-1 rounded-full ml-1">${unreadCount}</span>` : ''}
+                        ${unreadBadgeHTML}
                     </a>
                     <a href="/tenant/mypage?subdomain=${subdomain}" class="text-gray-600 hover:text-blue-600">
                         <i class="fas fa-user mr-1"></i>マイページ
@@ -3895,7 +3910,7 @@ tenantPublic.get('/tenant/notifications', async (c) => {
                     </a>
                     <a href="/tenant/notifications?subdomain=${subdomain}" class="text-blue-600 font-semibold">
                         <i class="fas fa-bell mr-2"></i>通知
-                        ${unreadCount > 0 ? `<span class="bg-red-500 text-white text-xs px-2 py-1 rounded-full ml-1">${unreadCount}</span>` : ''}
+                        ${unreadBadgeHTML}
                     </a>
                     <a href="/tenant/mypage?subdomain=${subdomain}" class="text-gray-600 hover:text-blue-600">
                         <i class="fas fa-user mr-2"></i>マイページ
@@ -3913,14 +3928,10 @@ tenantPublic.get('/tenant/notifications', async (c) => {
                 <h1 class="text-3xl font-bold text-gray-900">
                     <i class="fas fa-bell text-blue-500 mr-3"></i>通知
                 </h1>
-                ${unreadCount > 0 ? `
-                <button id="markAllReadBtn" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition">
-                    <i class="fas fa-check-double mr-2"></i>すべて既読にする
-                </button>
-                ` : ''}
+                ${markAllReadButtonHTML}
             </div>
             <p class="text-gray-600">
-                全${totalCount}件の通知 ${unreadCount > 0 ? `（未読: ${unreadCount}件）` : ''}
+                全${totalCount}件の通知 ${unreadCountText}
             </p>
         </div>
 
@@ -3961,9 +3972,9 @@ tenantPublic.get('/tenant/notifications', async (c) => {
                 if (authToken && notificationId) {
                     try {
                         await axios.put(
-                            \`/api/notifications/\${notificationId}/read\`,
+                            '/api/notifications/' + notificationId + '/read',
                             {},
-                            { headers: { 'Authorization': \`Bearer \${authToken}\` } }
+                            { headers: { 'Authorization': 'Bearer ' + authToken } }
                         );
                     } catch (error) {
                         console.error('Failed to mark notification as read:', error);
@@ -3991,7 +4002,7 @@ tenantPublic.get('/tenant/notifications', async (c) => {
                     await axios.put(
                         '/api/notifications/read-all',
                         {},
-                        { headers: { 'Authorization': \`Bearer \${authToken}\` } }
+                        { headers: { 'Authorization': 'Bearer ' + authToken } }
                     );
                     
                     // ページをリロード
