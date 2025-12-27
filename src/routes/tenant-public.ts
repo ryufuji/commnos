@@ -776,7 +776,7 @@ tenantPublic.get('/home', async (c) => {
             </h2>
             ${tenantSubtitle ? `<p class="text-xl text-gray-600 mb-6">${tenantSubtitle}</p>` : ''}
             <div class="flex gap-4 justify-center flex-wrap">
-                <a href="/join?subdomain=${subdomain}" class="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg text-lg transition-colors">
+                <a href="/tenant/register?subdomain=${subdomain}" class="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg text-lg transition-colors">
                     <i class="fas fa-user-plus mr-2"></i>メンバー申請
                 </a>
                 <a href="/login?subdomain=${subdomain}" class="px-8 py-3 bg-gray-600 hover:bg-gray-700 text-white font-semibold rounded-lg text-lg transition-colors">
