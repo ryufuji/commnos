@@ -1189,6 +1189,52 @@ tenantPublic.get('/posts/new', async (c) => {
         </div>
     </main>
 
+    <!-- プレビューモーダル -->
+    <div id="previewModal" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+            <!-- モーダルヘッダー -->
+            <div class="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between">
+                <h2 class="text-2xl font-bold text-gray-800">
+                    <i class="fas fa-eye mr-2 text-blue-600"></i>投稿プレビュー
+                </h2>
+                <button onclick="closePreview()" class="text-gray-500 hover:text-gray-700 text-2xl">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <!-- プレビューコンテンツ -->
+            <div class="p-6">
+                <!-- サムネイル画像 -->
+                <div id="previewThumbnailContainer" class="hidden mb-6">
+                    <img id="previewThumbnail" src="" alt="サムネイル" class="w-full h-64 object-cover rounded-lg">
+                </div>
+                
+                <!-- 投稿情報 -->
+                <div class="mb-6">
+                    <div class="flex items-center gap-3 text-sm text-gray-600 mb-4 flex-wrap">
+                        <span id="previewCategory" class="px-3 py-1 bg-blue-100 text-blue-800 rounded-full font-medium"></span>
+                        <span id="previewStatus" class="px-3 py-1 rounded-full font-medium"></span>
+                        <span id="previewVisibility" class="hidden px-3 py-1 bg-purple-100 text-purple-800 rounded-full font-medium"></span>
+                    </div>
+                    <h1 id="previewTitle" class="text-3xl font-bold text-gray-900 mb-4"></h1>
+                </div>
+                
+                <!-- 投稿本文 -->
+                <div id="previewContent" class="prose prose-lg max-w-none text-gray-700 whitespace-pre-wrap"></div>
+            </div>
+            
+            <!-- モーダルフッター -->
+            <div class="sticky bottom-0 bg-gray-50 border-t px-6 py-4 flex justify-end gap-4">
+                <button onclick="closePreview()" class="px-6 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition">
+                    閉じる
+                </button>
+                <button onclick="submitFromPreview()" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-semibold">
+                    <i class="fas fa-paper-plane mr-2"></i>この内容で投稿する
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- フッター -->
     <footer class="bg-white border-t mt-16">
         <div class="container mx-auto px-4 py-6 text-center text-gray-600">
@@ -1288,6 +1334,100 @@ tenantPublic.get('/posts/new', async (c) => {
                     thumbnailPreview.classList.remove('hidden')
                 }
                 reader.readAsDataURL(file)
+            }
+        })
+        
+        // プレビュー機能
+        const previewBtn = document.getElementById('previewBtn')
+        const previewModal = document.getElementById('previewModal')
+        
+        window.openPreview = function() {
+            const title = document.getElementById('title').value
+            const content = document.getElementById('content').value
+            const category = document.getElementById('category').value
+            const status = document.querySelector('input[name="status"]:checked')?.value
+            const visibility = document.querySelector('input[name="visibility"]:checked')?.value
+            
+            // バリデーション
+            if (!title || title.trim() === '') {
+                showToast('タイトルを入力してください', 'error')
+                return
+            }
+            
+            if (!content || content.trim() === '') {
+                showToast('本文を入力してください', 'error')
+                return
+            }
+            
+            // プレビュー内容を設定
+            document.getElementById('previewTitle').textContent = title
+            document.getElementById('previewContent').textContent = content
+            
+            // カテゴリー表示
+            const categoryBadge = document.getElementById('previewCategory')
+            if (category) {
+                categoryBadge.textContent = category
+                categoryBadge.classList.remove('hidden')
+            } else {
+                categoryBadge.classList.add('hidden')
+            }
+            
+            // ステータスバッジ
+            const statusBadge = document.getElementById('previewStatus')
+            if (status === 'published') {
+                statusBadge.textContent = '公開'
+                statusBadge.className = 'px-3 py-1 bg-green-100 text-green-800 rounded-full font-medium'
+            } else {
+                statusBadge.textContent = '下書き'
+                statusBadge.className = 'px-3 py-1 bg-gray-100 text-gray-800 rounded-full font-medium'
+            }
+            
+            // 公開範囲バッジ（管理者のみ）
+            const visibilityBadge = document.getElementById('previewVisibility')
+            if (visibility) {
+                if (visibility === 'public') {
+                    visibilityBadge.textContent = 'パブリック'
+                } else {
+                    visibilityBadge.textContent = '会員限定'
+                }
+                visibilityBadge.classList.remove('hidden')
+            } else {
+                visibilityBadge.classList.add('hidden')
+            }
+            
+            // サムネイル画像
+            const thumbnailPreview = document.getElementById('thumbnailPreview')
+            const previewThumbnailContainer = document.getElementById('previewThumbnailContainer')
+            const previewThumbnail = document.getElementById('previewThumbnail')
+            
+            if (!thumbnailPreview.classList.contains('hidden')) {
+                const thumbnailSrc = document.getElementById('thumbnailImg').src
+                previewThumbnail.src = thumbnailSrc
+                previewThumbnailContainer.classList.remove('hidden')
+            } else {
+                previewThumbnailContainer.classList.add('hidden')
+            }
+            
+            // モーダルを表示
+            previewModal.classList.remove('hidden')
+        }
+        
+        window.closePreview = function() {
+            previewModal.classList.add('hidden')
+        }
+        
+        window.submitFromPreview = function() {
+            closePreview()
+            // フォームを送信
+            document.getElementById('createPostForm').dispatchEvent(new Event('submit'))
+        }
+        
+        previewBtn?.addEventListener('click', openPreview)
+        
+        // モーダル外クリックで閉じる
+        previewModal?.addEventListener('click', (e) => {
+            if (e.target === previewModal) {
+                closePreview()
             }
         })
         
