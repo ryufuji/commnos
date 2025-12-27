@@ -1341,9 +1341,10 @@ tenantPublic.get('/posts', async (c) => {
   const totalPosts = countResult?.count || 0
   const totalPages = Math.ceil(totalPosts / perPage)
   
-  // 投稿を取得
+  // 投稿を取得（いいね数を含む）
   const postsResult = await DB.prepare(`
-    SELECT p.*, u.nickname as author_name
+    SELECT p.*, u.nickname as author_name,
+           (SELECT COUNT(*) FROM post_likes WHERE post_id = p.id) as like_count
     FROM posts p
     LEFT JOIN users u ON p.author_id = u.id
     WHERE p.tenant_id = ? AND p.status = ?
@@ -1367,6 +1368,7 @@ tenantPublic.get('/posts', async (c) => {
       const postExcerpt = String(post.excerpt || postContent.substring(0, 150))
       const authorName = String(post.author_name || '不明')
       const createdDate = new Date(String(post.created_at)).toLocaleDateString('ja-JP')
+      const likeCount = Number(post.like_count || 0)
       
       return `
         <div class="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300">
@@ -1379,6 +1381,12 @@ tenantPublic.get('/posts', async (c) => {
                 <div class="flex items-center justify-between text-sm text-gray-500 mb-4">
                     <span><i class="fas fa-user mr-1"></i>${authorName}</span>
                     <span><i class="fas fa-calendar mr-1"></i>${createdDate}</span>
+                </div>
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center space-x-4 text-sm text-gray-600">
+                        <span><i class="far fa-thumbs-up mr-1"></i>${likeCount}</span>
+                        <span><i class="far fa-eye mr-1"></i>${post.view_count || 0}</span>
+                    </div>
                 </div>
                 <a href="/tenant/posts/${post.id}?subdomain=${subdomain}" 
                    class="block w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg text-center transition-colors">
