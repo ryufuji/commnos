@@ -4,6 +4,7 @@ async function showMemberMenu(memberId) {
     try {
         const token = getToken()
         console.log('Token:', token ? 'exists' : 'missing')
+        console.log('Token value:', token ? token.substring(0, 20) + '...' : 'N/A')
         if (!token) {
             showToast('ログインが必要です', 'error')
             window.location.href = '/login'
@@ -18,13 +19,19 @@ async function showMemberMenu(memberId) {
         if (response.data.success) {
             showMemberDetailModal(response.data.member)
         } else {
+            console.error('API Error:', response.data)
             showToast(response.data.error || '会員情報の取得に失敗しました', 'error')
         }
     } catch (error) {
         console.error('Get member detail error:', error)
-        if (error.response && error.response.status === 401) {
-            showToast('認証エラー: 再度ログインしてください', 'error')
-            setTimeout(() => window.location.href = '/login', 1500)
+        if (error.response) {
+            console.error('Error response:', error.response.status, error.response.data)
+            if (error.response.status === 401) {
+                showToast('認証エラー: 再度ログインしてください', 'error')
+                setTimeout(() => window.location.href = '/login', 1500)
+            } else {
+                showToast(error.response.data?.error || '会員情報の取得に失敗しました', 'error')
+            }
         } else {
             showToast('会員情報の取得に失敗しました', 'error')
         }
