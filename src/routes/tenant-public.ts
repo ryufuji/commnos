@@ -1656,12 +1656,18 @@ tenantPublic.get('/posts', async (c) => {
       const authorName = String(post.author_name || '不明')
       const createdDate = new Date(String(post.created_at)).toLocaleDateString('ja-JP')
       const likeCount = Number(post.like_count || 0)
+      const thumbnailUrl = post.thumbnail_url
+      
+      // サムネイル画像部分
+      const thumbnailHTML = thumbnailUrl 
+        ? `<img src="${thumbnailUrl}" alt="${postTitle}" class="w-full h-48 object-cover rounded-t-lg">`
+        : `<div class="w-full h-48 bg-gradient-to-br from-blue-400 to-blue-600 rounded-t-lg flex items-center justify-center">
+             <i class="fas fa-file-alt text-6xl text-white opacity-50"></i>
+           </div>`
       
       return `
         <div class="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300">
-            <div class="w-full h-48 bg-gradient-to-br from-blue-400 to-blue-600 rounded-t-lg flex items-center justify-center">
-                <i class="fas fa-file-alt text-6xl text-white opacity-50"></i>
-            </div>
+            ${thumbnailHTML}
             <div class="p-6">
                 <h3 class="text-xl font-bold text-gray-900 mb-2 line-clamp-2">${postTitle}</h3>
                 <p class="text-gray-600 mb-4 line-clamp-3">${postExcerpt}...</p>
