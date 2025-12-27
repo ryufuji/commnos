@@ -3205,6 +3205,39 @@ tenantPublic.get('/members', async (c) => {
 
     <script src="/static/app.js"></script>
     <script>
+        // ページ読み込み時に認証チェック
+        const subdomain = '${subdomain}'
+        const token = getToken()
+        
+        if (!token) {
+            // ログインしていない場合はログインページへリダイレクト
+            window.location.href = '/login?subdomain=' + subdomain
+        }
+        
+        // 認証チェック後、会員情報を確認
+        const membership = localStorage.getItem('membership')
+        if (membership) {
+            try {
+                const memberData = JSON.parse(membership)
+                if (memberData.subdomain !== subdomain) {
+                    // 別のコミュニティの会員の場合
+                    alert('このコミュニティのメンバーではありません')
+                    window.location.href = '/tenant/home?subdomain=' + subdomain
+                }
+                if (memberData.status !== 'active') {
+                    // 承認待ちまたは停止中の場合
+                    alert('メンバー一覧を閲覧する権限がありません')
+                    window.location.href = '/tenant/home?subdomain=' + subdomain
+                }
+            } catch (e) {
+                console.error('会員情報の解析に失敗:', e)
+                window.location.href = '/login?subdomain=' + subdomain
+            }
+        } else {
+            // 会員情報がない場合
+            window.location.href = '/login?subdomain=' + subdomain
+        }
+        
         // モバイルメニュー切替
         document.getElementById('mobileMenuToggle')?.addEventListener('click', () => {
             const menu = document.getElementById('mobileMenu')
@@ -3653,6 +3686,34 @@ tenantPublic.get('/members/:memberId', async (c) => {
     '<footer class="bg-white border-t mt-16">' +
     '<div class="container mx-auto px-4 py-6 text-center text-gray-600">' +
     '<p>&copy; 2025 ' + tenant.name + '. All rights reserved.</p></div></footer>' +
+    '<script src="/static/app.js"></script>' +
+    '<script>' +
+    'const subdomain = "' + subdomain + '";' +
+    'const token = getToken();' +
+    'if (!token) {' +
+    '  window.location.href = "/login?subdomain=" + subdomain;' +
+    '} else {' +
+    '  const membership = localStorage.getItem("membership");' +
+    '  if (membership) {' +
+    '    try {' +
+    '      const memberData = JSON.parse(membership);' +
+    '      if (memberData.subdomain !== subdomain) {' +
+    '        alert("このコミュニティのメンバーではありません");' +
+    '        window.location.href = "/tenant/home?subdomain=" + subdomain;' +
+    '      }' +
+    '      if (memberData.status !== "active") {' +
+    '        alert("メンバー詳細を閲覧する権限がありません");' +
+    '        window.location.href = "/tenant/home?subdomain=" + subdomain;' +
+    '      }' +
+    '    } catch (e) {' +
+    '      console.error("会員情報の解析に失敗:", e);' +
+    '      window.location.href = "/login?subdomain=" + subdomain;' +
+    '    }' +
+    '  } else {' +
+    '    window.location.href = "/login?subdomain=" + subdomain;' +
+    '  }' +
+    '}' +
+    '</script>' +
     '</body></html>'
 
   return c.html(html)
