@@ -919,6 +919,7 @@ tenantPublic.get('/posts/new', async (c) => {
     <meta charset="UTF-8">
     <title>ログインが必要です - Commons</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
 </head>
 <body class="bg-gray-100 flex items-center justify-center min-h-screen">
     <div class="text-center max-w-md mx-auto p-8">
@@ -935,6 +936,139 @@ tenantPublic.get('/posts/new', async (c) => {
             window.location.href = '/login?subdomain=${subdomain}'
         }
     </script>
+</body>
+</html>`)
+  }
+  
+  // 会員チェック - 認証済みだが会員でない場合は会員登録を促す
+  try {
+    const token = authHeader.replace('Bearer ', '')
+    const { jwtVerify } = await import('jose')
+    const secret = new TextEncoder().encode(c.env.JWT_SECRET || 'your-secret-key')
+    const { payload } = await jwtVerify(token, secret)
+    const userId = payload.userId as number
+    
+    // テナント情報を取得
+    const tenant = await DB.prepare(
+      'SELECT * FROM tenants WHERE subdomain = ? AND status = ?'
+    ).bind(subdomain, 'active').first()
+    
+    if (!tenant) {
+      return c.html(`<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>コミュニティが見つかりません</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+    <div class="text-center">
+        <h1 class="text-4xl font-bold text-gray-800 mb-4">コミュニティが見つかりません</h1>
+        <a href="/" class="text-blue-600 hover:underline">ホームに戻る</a>
+    </div>
+</body>
+</html>`)
+    }
+    
+    // 会員ステータスを確認
+    const membership = await DB.prepare(`
+      SELECT status FROM tenant_memberships 
+      WHERE tenant_id = ? AND user_id = ?
+    `).bind(tenant.id, userId).first()
+    
+    if (!membership) {
+      // 会員申請していない場合
+      return c.html(`<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>会員登録が必要です - ${tenant.name}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+    <div class="text-center max-w-md mx-auto p-8 bg-white rounded-lg shadow-lg">
+        <i class="fas fa-user-plus text-6xl text-blue-500 mb-4"></i>
+        <h1 class="text-2xl font-bold text-gray-800 mb-4">会員登録が必要です</h1>
+        <p class="text-gray-600 mb-6">投稿を作成するには、「${tenant.name}」の会員になる必要があります。</p>
+        <div class="space-y-3">
+            <a href="/tenant/register?subdomain=${subdomain}" class="block w-full px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition">
+                <i class="fas fa-user-plus mr-2"></i>会員登録する
+            </a>
+            <a href="/tenant/home?subdomain=${subdomain}" class="block w-full px-6 py-3 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold rounded-lg transition">
+                <i class="fas fa-home mr-2"></i>ホームに戻る
+            </a>
+        </div>
+    </div>
+</body>
+</html>`)
+    }
+    
+    if (membership.status === 'pending') {
+      // 承認待ちの場合
+      return c.html(`<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>承認待ち - ${tenant.name}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+    <div class="text-center max-w-md mx-auto p-8 bg-white rounded-lg shadow-lg">
+        <i class="fas fa-clock text-6xl text-yellow-500 mb-4"></i>
+        <h1 class="text-2xl font-bold text-gray-800 mb-4">承認待ち</h1>
+        <p class="text-gray-600 mb-6">会員申請を受け付けました。管理者の承認をお待ちください。</p>
+        <p class="text-sm text-gray-500 mb-6">承認後に投稿を作成できるようになります。</p>
+        <a href="/tenant/home?subdomain=${subdomain}" class="block w-full px-6 py-3 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold rounded-lg transition">
+            <i class="fas fa-home mr-2"></i>ホームに戻る
+        </a>
+    </div>
+</body>
+</html>`)
+    }
+    
+    if (membership.status !== 'active') {
+      // 停止中・退会済みなど
+      return c.html(`<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>アクセスできません - ${tenant.name}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+    <div class="text-center max-w-md mx-auto p-8 bg-white rounded-lg shadow-lg">
+        <i class="fas fa-ban text-6xl text-red-500 mb-4"></i>
+        <h1 class="text-2xl font-bold text-gray-800 mb-4">アクセスできません</h1>
+        <p class="text-gray-600 mb-6">現在、投稿を作成する権限がありません。</p>
+        <a href="/tenant/home?subdomain=${subdomain}" class="block w-full px-6 py-3 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold rounded-lg transition">
+            <i class="fas fa-home mr-2"></i>ホームに戻る
+        </a>
+    </div>
+</body>
+</html>`)
+    }
+    
+    // 会員ステータスが active の場合のみ、投稿作成ページを表示
+  } catch (error) {
+    console.error('認証エラー:', error)
+    return c.html(`<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>認証エラー - Commons</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+    <div class="text-center max-w-md mx-auto p-8">
+        <h1 class="text-3xl font-bold text-gray-800 mb-4">認証エラー</h1>
+        <p class="text-gray-600 mb-6">再度ログインしてください。</p>
+        <a href="/login?subdomain=${subdomain}" class="inline-block px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition">
+            <i class="fas fa-sign-in-alt mr-2"></i>ログインする
+        </a>
+    </div>
 </body>
 </html>`)
   }
