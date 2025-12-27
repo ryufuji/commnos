@@ -1201,23 +1201,27 @@ tenantPublic.get('/posts/new', async (c) => {
     <script>
         // 認証チェックと管理者判定
         async function checkAuthAndRole() {
-            const token = localStorage.getItem('authToken')
+            const token = getToken()  // Use getToken() from app.js
             if (!token) {
+                console.warn('No token found, redirecting to login')
                 window.location.href = '/login?subdomain=${subdomain}'
                 return
             }
             
             try {
-                // プロフィールAPIで会員ステータスと役割を確認
-                const response = await apiRequest('/api/profile')
-                if (!response.success) {
+                // Check localStorage membership data directly
+                const membershipStr = localStorage.getItem('membership')
+                if (!membershipStr) {
+                    console.warn('No membership found, redirecting to login')
                     window.location.href = '/login?subdomain=${subdomain}'
                     return
                 }
                 
-                // 会員ステータス確認
-                const membership = response.memberships?.find(m => m.tenant_subdomain === '${subdomain}')
-                if (!membership) {
+                const membership = JSON.parse(membershipStr)
+                console.log('Membership:', membership)
+                
+                // Check if subdomain matches
+                if (membership.subdomain !== '${subdomain}') {
                     alert('このコミュニティの会員ではありません')
                     window.location.href = '/tenant/home?subdomain=${subdomain}'
                     return
@@ -1240,6 +1244,8 @@ tenantPublic.get('/posts/new', async (c) => {
                 if (isAdmin) {
                     document.getElementById('visibilityField').style.display = 'block'
                 }
+                
+                console.log('Authentication check passed')
             } catch (error) {
                 console.error('認証エラー:', error)
                 window.location.href = '/login?subdomain=${subdomain}'
