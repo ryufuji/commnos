@@ -1518,10 +1518,15 @@ tenantPublic.get('/posts/new', async (c) => {
                     visibility: visibility
                 }
                 
+                console.log('Submitting post data:', postData)
+                console.log('Thumbnail URL in post data:', thumbnailUrl)
+                
                 const response = await apiRequest('/api/posts', {
                     method: 'POST',
                     body: JSON.stringify(postData)
                 })
+                
+                console.log('Post creation response:', response)
                 
                 if (response.success) {
                     showToast(response.message || (status === 'draft' ? '下書きを保存しました' : '投稿を公開しました'), 'success')
