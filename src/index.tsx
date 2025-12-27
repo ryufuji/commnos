@@ -140,12 +140,6 @@ app.get('/', (c) => {
                             </h1>
                             <p class="text-secondary-600 mt-2">誰でも5分で自分色のコミュニティを持てる世界</p>
                         </div>
-                        <!-- ダークモード切り替え -->
-                        <div class="flex items-center gap-3">
-                            <button onclick="toggleDarkMode()" class="p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200" title="ダークモード切り替え">
-                                <i class="fas fa-moon text-xl text-gray-700 dark:text-gray-300"></i>
-                            </button>
-                        </div>
                     </div>
                 </div>
             </header>
