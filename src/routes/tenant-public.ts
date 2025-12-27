@@ -1301,41 +1301,44 @@ tenantPublic.get('/posts/new', async (c) => {
         // ページ読み込み時に認証チェック
         checkAuthAndRole()
         
-        // モバイルメニュー切替
-        document.getElementById('mobileMenuToggle')?.addEventListener('click', () => {
-            const menu = document.getElementById('mobileMenu')
-            menu.classList.toggle('hidden')
-        })
-        
-        // サムネイル画像選択
-        const thumbnailInput = document.getElementById('thumbnail')
-        const selectThumbnailBtn = document.getElementById('selectThumbnailBtn')
-        const thumbnailPreview = document.getElementById('thumbnailPreview')
-        const thumbnailImg = document.getElementById('thumbnailImg')
-        
-        selectThumbnailBtn?.addEventListener('click', () => {
-            thumbnailInput.click()
-        })
-        
-        thumbnailInput?.addEventListener('change', (e) => {
-            const file = e.target.files[0]
-            if (file) {
-                // ファイルサイズチェック（5MB）
-                if (file.size > 5 * 1024 * 1024) {
-                    alert('ファイルサイズは5MB以下にしてください')
-                    thumbnailInput.value = ''
-                    return
+        // DOMContentLoaded後に実行
+        document.addEventListener('DOMContentLoaded', function() {
+            // モバイルメニュー切替
+            document.getElementById('mobileMenuToggle')?.addEventListener('click', () => {
+                const menu = document.getElementById('mobileMenu')
+                menu.classList.toggle('hidden')
+            })
+            
+            // サムネイル画像選択
+            const thumbnailInput = document.getElementById('thumbnail')
+            const selectThumbnailBtn = document.getElementById('selectThumbnailBtn')
+            const thumbnailPreview = document.getElementById('thumbnailPreview')
+            const thumbnailImg = document.getElementById('thumbnailImg')
+            
+            selectThumbnailBtn?.addEventListener('click', () => {
+                console.log('Thumbnail button clicked')
+                thumbnailInput.click()
+            })
+            
+            thumbnailInput?.addEventListener('change', (e) => {
+                const file = e.target.files[0]
+                if (file) {
+                    // ファイルサイズチェック（5MB）
+                    if (file.size > 5 * 1024 * 1024) {
+                        alert('ファイルサイズは5MB以下にしてください')
+                        thumbnailInput.value = ''
+                        return
+                    }
+                    
+                    // プレビュー表示
+                    const reader = new FileReader()
+                    reader.onload = (e) => {
+                        thumbnailImg.src = e.target.result
+                        thumbnailPreview.classList.remove('hidden')
+                    }
+                    reader.readAsDataURL(file)
                 }
-                
-                // プレビュー表示
-                const reader = new FileReader()
-                reader.onload = (e) => {
-                    thumbnailImg.src = e.target.result
-                    thumbnailPreview.classList.remove('hidden')
-                }
-                reader.readAsDataURL(file)
-            }
-        })
+            })
         
         // プレビュー機能
         const previewBtn = document.getElementById('previewBtn')
@@ -1522,20 +1525,7 @@ tenantPublic.get('/posts/new', async (c) => {
             }
         })
         
-        // プレビュー機能
-        const previewBtn = document.getElementById('previewBtn')
-        previewBtn?.addEventListener('click', () => {
-            const title = document.getElementById('title').value
-            const content = document.getElementById('content').value
-            
-            if (!title || !content) {
-                showToast('タイトルと本文を入力してください', 'error')
-                return
-            }
-            
-            // プレビューモーダルを表示（簡易版）
-            alert('プレビュー機能は今後実装予定です')
-        })
+        }) // End of DOMContentLoaded
     </script>
 </body>
 </html>`)
