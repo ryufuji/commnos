@@ -2025,6 +2025,16 @@ app.get('/dashboard', (c) => {
               }
             }
 
+            // Navigate to tenant post creation page
+            window.goToTenantPostNew = function() {
+              window.location.href = getTenantUrl() + '/posts/new';
+            }
+
+            // Navigate to tenant post list page
+            window.goToTenantPostList = function() {
+              window.location.href = getTenantUrl();
+            }
+
             // ページロード時
             loadDashboard()
         </script>
