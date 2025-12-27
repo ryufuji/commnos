@@ -92,11 +92,11 @@ tenant.get('/', tenantMiddleware, async (c) => {
                     </div>
                     <!-- デスクトップナビ -->
                     <div class="hidden md:flex items-center gap-4 ml-4">
-                        <a href="/join" class="bg-white text-gray-800 px-4 py-2 rounded-lg font-semibold hover:bg-gray-100 transition whitespace-nowrap">
+                        <a href="/tenant/register?subdomain=${tenantData.subdomain}" class="bg-white text-gray-800 px-4 py-2 rounded-lg font-semibold hover:bg-gray-100 transition whitespace-nowrap">
                             <i class="fas fa-user-plus mr-2"></i>
                             会員登録
                         </a>
-                        <a href="/member/login" class="text-white hover:text-gray-200 transition whitespace-nowrap">
+                        <a href="/login?subdomain=${tenantData.subdomain}" class="text-white hover:text-gray-200 transition whitespace-nowrap">
                             <i class="fas fa-sign-in-alt mr-2"></i>
                             ログイン
                         </a>
@@ -108,11 +108,11 @@ tenant.get('/', tenantMiddleware, async (c) => {
                 </div>
                 <!-- モバイルメニュー -->
                 <div id="mobileMenu" class="hidden md:hidden mt-4 space-y-2">
-                    <a href="/join" class="block bg-white text-gray-800 px-4 py-2 rounded-lg font-semibold text-center">
+                    <a href="/tenant/register?subdomain=${tenantData.subdomain}" class="block bg-white text-gray-800 px-4 py-2 rounded-lg font-semibold text-center">
                         <i class="fas fa-user-plus mr-2"></i>
                         会員登録
                     </a>
-                    <a href="/member/login" class="block text-white hover:bg-white/10 px-4 py-2 rounded-lg text-center">
+                    <a href="/login?subdomain=${tenantData.subdomain}" class="block text-white hover:bg-white/10 px-4 py-2 rounded-lg text-center">
                         <i class="fas fa-sign-in-alt mr-2"></i>
                         ログイン
                     </a>
@@ -152,7 +152,7 @@ tenant.get('/', tenantMiddleware, async (c) => {
                     </p>
                     ` : ''}
                     <div class="flex flex-col sm:flex-row gap-4 justify-center">
-                        <a href="/join" class="bg-white theme-text-primary px-6 md:px-8 py-3 md:py-4 rounded-lg font-bold text-base md:text-lg hover:bg-gray-100 transition shadow-lg">
+                        <a href="/tenant/register?subdomain=${tenantData.subdomain}" class="bg-white theme-text-primary px-6 md:px-8 py-3 md:py-4 rounded-lg font-bold text-base md:text-lg hover:bg-gray-100 transition shadow-lg">
                             <i class="fas fa-user-plus mr-2"></i>
                             今すぐ参加する
                         </a>
