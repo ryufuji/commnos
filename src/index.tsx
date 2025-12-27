@@ -153,9 +153,13 @@ app.get('/', (c) => {
                         技術不要、月額980円から。5分でコミュニティサイトが完成。
                     </p>
                     <div class="flex gap-4 justify-center flex-wrap">
-                        <a href="/register" class="btn-primary text-lg px-10 py-4">
+                        <a href="/communities" class="btn-primary text-lg px-10 py-4">
+                            <i class="fas fa-globe mr-2"></i>
+                            コミュニティを探す
+                        </a>
+                        <a href="/register" class="btn-secondary text-lg px-10 py-4">
                             <i class="fas fa-rocket mr-2"></i>
-                            無料で始める
+                            コミュニティを作る
                         </a>
                         <a href="/login" class="btn-secondary text-lg px-10 py-4">
                             <i class="fas fa-sign-in-alt mr-2"></i>
@@ -247,6 +251,179 @@ app.get('/', (c) => {
                 window.location.href = '/dashboard'
             }
         </script>
+    </body>
+    </html>
+  `)
+})
+
+// --------------------------------------------
+// コミュニティ一覧ページ
+// --------------------------------------------
+
+app.get('/communities', async (c) => {
+  const { DB } = c.env
+  const searchQuery = c.req.query('search') || ''
+  
+  // 公開コミュニティのみ取得
+  let whereConditions = 'status = ? AND is_public = ?'
+  const bindParams: any[] = ['active', 1]
+  
+  if (searchQuery) {
+    whereConditions += ' AND (name LIKE ? OR subtitle LIKE ?)'
+    const searchPattern = `%${searchQuery}%`
+    bindParams.push(searchPattern, searchPattern)
+  }
+  
+  const communitiesResult = await DB.prepare(`
+    SELECT id, subdomain, name, subtitle, member_count, created_at
+    FROM tenants
+    WHERE ${whereConditions}
+    ORDER BY created_at DESC
+    LIMIT 50
+  `).bind(...bindParams).all()
+  
+  const communities = communitiesResult.results || []
+  
+  // コミュニティカードHTML生成
+  let communitiesHTML = ''
+  if (communities.length === 0) {
+    communitiesHTML = '<div class="col-span-full text-center py-12"><p class="text-gray-600 text-lg">コミュニティが見つかりませんでした</p></div>'
+  } else {
+    communitiesHTML = communities.map((community: any) => {
+      const name = String(community.name || '')
+      const subtitle = String(community.subtitle || '')
+      const memberCount = community.member_count || 0
+      const subdomain = String(community.subdomain || '')
+      
+      return `
+        <a href="/tenant/home?subdomain=${subdomain}" 
+           class="block bg-white rounded-lg shadow-md hover:shadow-xl transition-shadow duration-300 p-6">
+          <div class="flex items-start justify-between mb-4">
+            <div class="flex-1">
+              <h3 class="text-xl font-bold text-gray-900 mb-2">${name}</h3>
+              ${subtitle ? `<p class="text-gray-600 text-sm">${subtitle}</p>` : ''}
+            </div>
+          </div>
+          <div class="flex items-center justify-between text-sm text-gray-500">
+            <div class="flex items-center gap-2">
+              <i class="fas fa-users"></i>
+              <span>${memberCount} 人のメンバー</span>
+            </div>
+            <div class="text-blue-600 font-semibold">
+              訪問する <i class="fas fa-arrow-right ml-1"></i>
+            </div>
+          </div>
+        </a>
+      `
+    }).join('')
+  }
+  
+  return c.html(`
+    <!DOCTYPE html>
+    <html lang="ja">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>コミュニティ一覧 - Commons</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+        <link href="/static/styles.css" rel="stylesheet">
+    </head>
+    <body class="bg-gray-50 min-h-screen" data-theme="modern-business">
+        <!-- ヘッダー -->
+        <header class="bg-white shadow-sm sticky top-0 z-50">
+            <div class="container mx-auto px-4 py-4">
+                <div class="flex items-center justify-between">
+                    <a href="/" class="text-2xl font-bold text-blue-600">
+                        <i class="fas fa-users mr-2"></i>
+                        Commons
+                    </a>
+                    <div class="flex items-center gap-4">
+                        <a href="/register" class="btn-primary">
+                            <i class="fas fa-plus mr-2"></i>
+                            コミュニティを作る
+                        </a>
+                        <a href="/login" class="btn-secondary">
+                            <i class="fas fa-sign-in-alt mr-2"></i>
+                            ログイン
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- メインコンテンツ -->
+        <main class="container mx-auto px-4 py-8">
+            <!-- ページヘッダー -->
+            <div class="mb-8 text-center">
+                <h1 class="text-4xl font-bold text-gray-900 mb-4">
+                    <i class="fas fa-globe mr-2 text-blue-600"></i>
+                    コミュニティ一覧
+                </h1>
+                <p class="text-gray-600 text-lg">
+                    興味のあるコミュニティを見つけて参加しよう
+                </p>
+            </div>
+            
+            <!-- 検索バー -->
+            <div class="mb-8 max-w-2xl mx-auto">
+                <form method="GET" action="/communities" class="flex gap-4">
+                    <input 
+                        type="text" 
+                        name="search"
+                        placeholder="コミュニティを検索..."
+                        value="${searchQuery}"
+                        class="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                    <button 
+                        type="submit"
+                        class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                    >
+                        <i class="fas fa-search mr-2"></i>検索
+                    </button>
+                </form>
+                ${searchQuery ? `
+                <div class="mt-4 text-center text-sm text-gray-600">
+                    <i class="fas fa-filter mr-2"></i>
+                    "${searchQuery}" の検索結果: ${communities.length} 件
+                    <a href="/communities" class="ml-4 text-blue-600 hover:underline">
+                        <i class="fas fa-times mr-1"></i>クリア
+                    </a>
+                </div>
+                ` : ''}
+            </div>
+
+            <!-- コミュニティグリッド -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                ${communitiesHTML}
+            </div>
+
+            <!-- フッター説明 -->
+            <div class="max-w-3xl mx-auto mt-16 text-center">
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-8">
+                    <i class="fas fa-info-circle text-4xl text-blue-600 mb-4"></i>
+                    <h3 class="text-xl font-bold text-gray-900 mb-2">
+                        あなたもコミュニティを作ってみませんか？
+                    </h3>
+                    <p class="text-gray-600 mb-6">
+                        5分で開設、月額980円から。技術知識不要で簡単にコミュニティサイトが作れます。
+                    </p>
+                    <a href="/register" class="btn-primary text-lg">
+                        <i class="fas fa-rocket mr-2"></i>
+                        無料で始める
+                    </a>
+                </div>
+            </div>
+        </main>
+
+        <!-- フッター -->
+        <footer class="bg-white border-t mt-16">
+            <div class="container mx-auto px-4 py-6 text-center text-gray-600">
+                <p>© 2025 Commons. All rights reserved.</p>
+            </div>
+        </footer>
+
+        <script src="/static/app.js"></script>
     </body>
     </html>
   `)
@@ -348,6 +525,42 @@ app.get('/register', (c) => {
                                    placeholder="週末ゴルフ仲間">
                         </div>
 
+                        <!-- 公開設定 -->
+                        <div>
+                            <label class="form-label">
+                                <i class="fas fa-eye mr-1 text-primary-500"></i>
+                                公開設定
+                            </label>
+                            <div class="space-y-3">
+                                <label class="flex items-start p-4 border-2 border-primary-200 rounded-lg cursor-pointer hover:bg-primary-50 transition-colors">
+                                    <input type="radio" name="isPublic" value="1" checked
+                                           class="mt-1 mr-3 text-primary-600 focus:ring-primary-500">
+                                    <div class="flex-1">
+                                        <div class="font-semibold text-gray-900">
+                                            <i class="fas fa-globe mr-1 text-primary-500"></i>
+                                            公開コミュニティ
+                                        </div>
+                                        <div class="text-sm text-secondary-600 mt-1">
+                                            コミュニティ一覧に表示され、誰でも参加申請できます
+                                        </div>
+                                    </div>
+                                </label>
+                                <label class="flex items-start p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                                    <input type="radio" name="isPublic" value="0"
+                                           class="mt-1 mr-3 text-primary-600 focus:ring-primary-500">
+                                    <div class="flex-1">
+                                        <div class="font-semibold text-gray-900">
+                                            <i class="fas fa-lock mr-1 text-gray-500"></i>
+                                            非公開コミュニティ
+                                        </div>
+                                        <div class="text-sm text-secondary-600 mt-1">
+                                            URLを知っている人のみアクセス可能。一覧には表示されません
+                                        </div>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+
                         <!-- 送信ボタン -->
                         <button type="submit" id="submitBtn" class="btn-primary w-full">
                             <i class="fas fa-rocket mr-2"></i>
@@ -379,7 +592,8 @@ app.get('/register', (c) => {
                     password: formData.get('password'),
                     subdomain: formData.get('subdomain').toLowerCase(),
                     communityName: formData.get('communityName'),
-                    subtitle: formData.get('subtitle') || undefined
+                    subtitle: formData.get('subtitle') || undefined,
+                    isPublic: parseInt(formData.get('isPublic') || '1')
                     // theme はデフォルトで 'modern-business' を使用（データベースのデフォルト値）
                 }
                 
@@ -1387,6 +1601,14 @@ app.get('/dashboard', (c) => {
                             <h3 class="font-bold text-gray-900 mb-2">テーマ設定</h3>
                             <p class="text-sm text-secondary-600">デザインを変更</p>
                         </button>
+                        
+                        <button onclick="openPrivacyModal()" class="card-interactive p-6 text-center">
+                            <div class="text-4xl mb-3 text-info-500">
+                                <i class="fas fa-eye"></i>
+                            </div>
+                            <h3 class="font-bold text-gray-900 mb-2">公開設定</h3>
+                            <p class="text-sm text-secondary-600">表示設定を変更</p>
+                        </button>
                     </div>
                 </div>
             </main>
@@ -1504,6 +1726,66 @@ app.get('/dashboard', (c) => {
                     </div>
                 </div>
             </div>
+            
+            <!-- 公開設定モーダル -->
+            <div id="privacyModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+                <div class="bg-white rounded-lg shadow-2xl max-w-lg w-full">
+                    <div class="p-6 border-b border-gray-200">
+                        <div class="flex justify-between items-center">
+                            <h2 class="text-2xl font-bold text-gray-900">
+                                <i class="fas fa-eye mr-2 text-info-500"></i>
+                                公開設定
+                            </h2>
+                            <button onclick="closePrivacyModal()" class="text-gray-500 hover:text-gray-700">
+                                <i class="fas fa-times text-xl"></i>
+                            </button>
+                        </div>
+                        <p class="text-sm text-secondary-600 mt-2">
+                            コミュニティの表示設定を変更します
+                        </p>
+                    </div>
+                    
+                    <div class="p-6" id="privacyContent">
+                        <div class="space-y-4">
+                            <label class="flex items-start p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                                <input type="radio" name="isPublic" value="1" class="mt-1 mr-3 text-primary-600 focus:ring-primary-500">
+                                <div class="flex-1">
+                                    <div class="font-semibold text-gray-900 mb-1">
+                                        <i class="fas fa-globe mr-1 text-primary-500"></i>
+                                        公開コミュニティ
+                                    </div>
+                                    <div class="text-sm text-secondary-600">
+                                        コミュニティ一覧に表示され、誰でも参加申請できます
+                                    </div>
+                                </div>
+                            </label>
+                            
+                            <label class="flex items-start p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                                <input type="radio" name="isPublic" value="0" class="mt-1 mr-3 text-primary-600 focus:ring-primary-500">
+                                <div class="flex-1">
+                                    <div class="font-semibold text-gray-900 mb-1">
+                                        <i class="fas fa-lock mr-1 text-gray-500"></i>
+                                        非公開コミュニティ
+                                    </div>
+                                    <div class="text-sm text-secondary-600">
+                                        URLを知っている人のみアクセス可能。一覧には表示されません
+                                    </div>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="p-6 border-t border-gray-200 flex gap-3 justify-end">
+                        <button onclick="closePrivacyModal()" class="btn-secondary">
+                            キャンセル
+                        </button>
+                        <button onclick="savePrivacySetting()" class="btn-primary">
+                            <i class="fas fa-save mr-2"></i>
+                            保存
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <script src="/static/app.js"></script>
@@ -1614,6 +1896,91 @@ app.get('/dashboard', (c) => {
                 } catch (error) {
                     showToast('テーマの保存に失敗しました', 'error')
                     console.error('Theme save error:', error)
+                }
+            }
+
+            // 公開設定モーダル制御
+            window.openPrivacyModal = async function() {
+                document.getElementById('privacyModal').classList.remove('hidden')
+                
+                // 現在の設定を取得
+                try {
+                    const token = localStorage.getItem('token')
+                    const response = await fetch('/api/admin/tenant/settings', {
+                        headers: {
+                            'Authorization': 'Bearer ' + token
+                        }
+                    })
+                    
+                    if (response.ok) {
+                        const data = await response.json()
+                        const isPublic = data.tenant?.is_public || 1
+                        
+                        // ラジオボタンの選択状態を設定
+                        document.querySelectorAll('input[name="isPublic"]').forEach(radio => {
+                            if (parseInt(radio.value) === isPublic) {
+                                radio.checked = true
+                                // 選択されたカードのスタイルを更新
+                                radio.closest('label').classList.add('border-primary-600', 'bg-primary-50')
+                                radio.closest('label').classList.remove('border-gray-200')
+                            }
+                        })
+                        
+                        // ラジオボタンの変更イベント
+                        document.querySelectorAll('input[name="isPublic"]').forEach(radio => {
+                            radio.addEventListener('change', function() {
+                                document.querySelectorAll('#privacyModal label').forEach(label => {
+                                    label.classList.remove('border-primary-600', 'bg-primary-50')
+                                    label.classList.add('border-gray-200')
+                                })
+                                
+                                if (this.checked) {
+                                    this.closest('label').classList.remove('border-gray-200')
+                                    this.closest('label').classList.add('border-primary-600', 'bg-primary-50')
+                                }
+                            })
+                        })
+                    }
+                } catch (error) {
+                    console.error('Failed to load privacy settings:', error)
+                }
+            }
+            
+            window.closePrivacyModal = function() {
+                document.getElementById('privacyModal').classList.add('hidden')
+            }
+            
+            window.savePrivacySetting = async function() {
+                const selectedValue = document.querySelector('input[name="isPublic"]:checked')?.value
+                
+                if (selectedValue === undefined) {
+                    showToast('設定を選択してください', 'error')
+                    return
+                }
+                
+                try {
+                    showToast('設定を保存しています...', 'info')
+                    
+                    const token = localStorage.getItem('token')
+                    const response = await fetch('/api/admin/tenant/privacy', {
+                        method: 'PUT',
+                        headers: {
+                            'Authorization': 'Bearer ' + token,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ isPublic: parseInt(selectedValue) })
+                    })
+                    
+                    if (response.ok) {
+                        closePrivacyModal()
+                        showToast('公開設定を変更しました！', 'success')
+                    } else {
+                        const error = await response.json()
+                        showToast(error.error || '設定の保存に失敗しました', 'error')
+                    }
+                } catch (error) {
+                    showToast('設定の保存に失敗しました', 'error')
+                    console.error('Privacy save error:', error)
                 }
             }
 

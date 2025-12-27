@@ -16,7 +16,7 @@ const auth = new Hono<AppContext>()
  */
 auth.post('/register', async (c) => {
   const body = await c.req.json<RegisterRequest>()
-  const { email, password, subdomain, communityName, subtitle, theme } = body
+  const { email, password, subdomain, communityName, subtitle, theme, isPublic } = body
 
   // バリデーション
   if (!email || !password || !subdomain || !communityName) {
@@ -89,10 +89,10 @@ auth.post('/register', async (c) => {
     // 2. テナント作成
     const tenantResult = await db
       .prepare(`
-        INSERT INTO tenants (subdomain, name, subtitle, owner_user_id, plan, status, storage_limit, member_count)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO tenants (subdomain, name, subtitle, owner_user_id, plan, status, storage_limit, member_count, is_public)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
       `)
-      .bind(subdomain, communityName, subtitle || null, user.id, 'free', 'active', 1073741824, 1)
+      .bind(subdomain, communityName, subtitle || null, user.id, 'free', 'active', 1073741824, 1, isPublic !== undefined ? isPublic : 1)
       .run()
 
     if (!tenantResult.success) {

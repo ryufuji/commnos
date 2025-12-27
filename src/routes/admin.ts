@@ -242,4 +242,63 @@ admin.get('/members/active', authMiddleware, requireRole('admin'), async (c) => 
   }
 })
 
+/**
+ * GET /api/admin/tenant/settings
+ * テナント設定取得
+ */
+admin.get('/tenant/settings', authMiddleware, requireRole('owner'), async (c) => {
+  const tenantId = c.get('tenantId')
+  const db = c.env.DB
+
+  try {
+    const tenant = await db
+      .prepare('SELECT id, subdomain, name, subtitle, is_public, plan, status FROM tenants WHERE id = ?')
+      .bind(tenantId)
+      .first()
+
+    return c.json({
+      success: true,
+      tenant
+    })
+  } catch (error) {
+    console.error('[Get Tenant Settings Error]', error)
+    return c.json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to get tenant settings'
+    }, 500)
+  }
+})
+
+/**
+ * PUT /api/admin/tenant/privacy
+ * 公開設定変更
+ */
+admin.put('/tenant/privacy', authMiddleware, requireRole('owner'), async (c) => {
+  const tenantId = c.get('tenantId')
+  const db = c.env.DB
+  const { isPublic } = await c.req.json<{ isPublic: number }>()
+
+  if (isPublic !== 0 && isPublic !== 1) {
+    return c.json({ success: false, error: 'Invalid isPublic value. Must be 0 or 1' }, 400)
+  }
+
+  try {
+    await db
+      .prepare('UPDATE tenants SET is_public = ? WHERE id = ?')
+      .bind(isPublic, tenantId)
+      .run()
+
+    return c.json({
+      success: true,
+      message: 'Privacy setting updated successfully'
+    })
+  } catch (error) {
+    console.error('[Update Privacy Setting Error]', error)
+    return c.json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to update privacy setting'
+    }, 500)
+  }
+})
+
 export default admin

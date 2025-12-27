@@ -39,6 +39,7 @@ export interface Tenant {
   storage_used: number
   storage_limit: number
   member_count: number
+  is_public: number // 1: 公開, 0: 非公開
   created_at: string
 }
 
@@ -164,6 +165,7 @@ export interface RegisterRequest {
   communityName: string
   subtitle?: string
   theme?: 'modern-business' | 'wellness-nature' | 'creative-studio' | 'tech-innovation'
+  isPublic?: number // 1: 公開, 0: 非公開（デフォルト: 1）
 }
 
 export interface LoginRequest {
