@@ -530,4 +530,152 @@ admin.patch('/members/:id/role', authMiddleware, requireRole('owner'), async (c)
   }
 })
 
+/**
+ * GET /api/admin/members/:id/notes
+ * 会員メモ一覧取得
+ */
+admin.get('/members/:id/notes', authMiddleware, requireRole('admin'), async (c) => {
+  const membershipId = parseInt(c.req.param('id'))
+  const tenantId = c.get('tenantId')
+  const db = c.env.DB
+
+  try {
+    // 会員情報取得
+    const member = await db
+      .prepare('SELECT user_id FROM tenant_memberships WHERE id = ? AND tenant_id = ?')
+      .bind(membershipId, tenantId)
+      .first<{ user_id: number }>()
+
+    if (!member) {
+      return c.json({ success: false, error: 'Member not found' }, 404)
+    }
+
+    // メモ一覧を取得
+    const notesResult = await db
+      .prepare(`
+        SELECT mn.id, mn.note, mn.created_at, mn.updated_at, u.nickname as admin_name
+        FROM member_notes mn
+        JOIN users u ON mn.admin_id = u.id
+        WHERE mn.tenant_id = ? AND mn.user_id = ?
+        ORDER BY mn.created_at DESC
+      `)
+      .bind(tenantId, member.user_id)
+      .all()
+
+    return c.json({
+      success: true,
+      notes: notesResult?.results || []
+    })
+  } catch (error) {
+    console.error('[Get Member Notes Error]', error)
+    return c.json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to get notes'
+    }, 500)
+  }
+})
+
+/**
+ * POST /api/admin/members/:id/notes
+ * 会員メモ追加
+ */
+admin.post('/members/:id/notes', authMiddleware, requireRole('admin'), async (c) => {
+  const membershipId = parseInt(c.req.param('id'))
+  const tenantId = c.get('tenantId')
+  const userId = c.get('userId')
+  const db = c.env.DB
+  const { note } = await c.req.json<{ note: string }>()
+
+  if (!note || note.trim().length === 0) {
+    return c.json({ success: false, error: 'Note is required' }, 400)
+  }
+
+  if (note.length > 1000) {
+    return c.json({ success: false, error: 'Note must be 1000 characters or less' }, 400)
+  }
+
+  try {
+    // 会員情報取得
+    const member = await db
+      .prepare('SELECT user_id FROM tenant_memberships WHERE id = ? AND tenant_id = ?')
+      .bind(membershipId, tenantId)
+      .first<{ user_id: number }>()
+
+    if (!member) {
+      return c.json({ success: false, error: 'Member not found' }, 404)
+    }
+
+    // メモを追加
+    const result = await db
+      .prepare(`
+        INSERT INTO member_notes (tenant_id, user_id, admin_id, note)
+        VALUES (?, ?, ?, ?)
+      `)
+      .bind(tenantId, member.user_id, userId, note.trim())
+      .run()
+
+    // 追加したメモを取得
+    const newNote = await db
+      .prepare(`
+        SELECT mn.id, mn.note, mn.created_at, mn.updated_at, u.nickname as admin_name
+        FROM member_notes mn
+        JOIN users u ON mn.admin_id = u.id
+        WHERE mn.id = ?
+      `)
+      .bind(result.meta.last_row_id)
+      .first()
+
+    return c.json({
+      success: true,
+      note: newNote
+    })
+  } catch (error) {
+    console.error('[Add Member Note Error]', error)
+    return c.json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to add note'
+    }, 500)
+  }
+})
+
+/**
+ * DELETE /api/admin/members/:id/notes/:noteId
+ * 会員メモ削除
+ */
+admin.delete('/members/:id/notes/:noteId', authMiddleware, requireRole('admin'), async (c) => {
+  const membershipId = parseInt(c.req.param('id'))
+  const noteId = parseInt(c.req.param('noteId'))
+  const tenantId = c.get('tenantId')
+  const db = c.env.DB
+
+  try {
+    // 会員情報取得
+    const member = await db
+      .prepare('SELECT user_id FROM tenant_memberships WHERE id = ? AND tenant_id = ?')
+      .bind(membershipId, tenantId)
+      .first<{ user_id: number }>()
+
+    if (!member) {
+      return c.json({ success: false, error: 'Member not found' }, 404)
+    }
+
+    // メモを削除
+    await db
+      .prepare('DELETE FROM member_notes WHERE id = ? AND tenant_id = ? AND user_id = ?')
+      .bind(noteId, tenantId, member.user_id)
+      .run()
+
+    return c.json({
+      success: true,
+      message: 'Note deleted successfully'
+    })
+  } catch (error) {
+    console.error('[Delete Member Note Error]', error)
+    return c.json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to delete note'
+    }, 500)
+  }
+})
+
 export default admin
