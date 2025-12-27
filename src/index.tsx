@@ -1571,14 +1571,7 @@ app.get('/dashboard', (c) => {
                         <i class="fas fa-rocket mr-2 text-primary-500"></i>
                         クイックアクション
                     </h2>
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <a href="/posts" class="card-interactive p-6 text-center">
-                            <div class="text-4xl mb-3 text-primary-500">
-                                <i class="fas fa-plus-circle"></i>
-                            </div>
-                            <h3 class="font-bold text-gray-900 mb-2">新規投稿</h3>
-                            <p class="text-sm text-secondary-600">記事を投稿する</p>
-                        </a>
+                    <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
 
                         <a href="/members" class="card-interactive p-6 text-center">
                             <div class="text-4xl mb-3 text-warning-500">
