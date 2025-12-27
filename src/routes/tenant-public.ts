@@ -908,53 +908,13 @@ tenantPublic.get('/posts/new', async (c) => {
 </html>`)
   }
   
-  // 認証チェック - ログインしていない場合はログインページへ
-  const authHeader = c.req.header('Authorization')
-  const hasAuthToken = authHeader && authHeader.startsWith('Bearer ')
+  // テナント情報を取得
+  const tenant = await DB.prepare(
+    'SELECT * FROM tenants WHERE subdomain = ? AND status = ?'
+  ).bind(subdomain, 'active').first()
   
-  if (!hasAuthToken) {
+  if (!tenant) {
     return c.html(`<!DOCTYPE html>
-<html lang="ja">
-<head>
-    <meta charset="UTF-8">
-    <title>ログインが必要です - Commons</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
-</head>
-<body class="bg-gray-100 flex items-center justify-center min-h-screen">
-    <div class="text-center max-w-md mx-auto p-8">
-        <i class="fas fa-lock text-6xl text-gray-400 mb-4"></i>
-        <h1 class="text-3xl font-bold text-gray-800 mb-4">ログインが必要です</h1>
-        <p class="text-gray-600 mb-6">投稿を作成するには、ログインする必要があります。</p>
-        <a href="/login?subdomain=${subdomain}" class="inline-block px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition">
-            <i class="fas fa-sign-in-alt mr-2"></i>ログインする
-        </a>
-    </div>
-    <script>
-        // localStorageにトークンがない場合、自動でログインページへ
-        if (!localStorage.getItem('authToken')) {
-            window.location.href = '/login?subdomain=${subdomain}'
-        }
-    </script>
-</body>
-</html>`)
-  }
-  
-  // 会員チェック - 認証済みだが会員でない場合は会員登録を促す
-  try {
-    const token = authHeader.replace('Bearer ', '')
-    const { jwtVerify } = await import('jose')
-    const secret = new TextEncoder().encode(c.env.JWT_SECRET || 'your-secret-key')
-    const { payload } = await jwtVerify(token, secret)
-    const userId = payload.userId as number
-    
-    // テナント情報を取得
-    const tenant = await DB.prepare(
-      'SELECT * FROM tenants WHERE subdomain = ? AND status = ?'
-    ).bind(subdomain, 'active').first()
-    
-    if (!tenant) {
-      return c.html(`<!DOCTYPE html>
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
@@ -968,102 +928,16 @@ tenantPublic.get('/posts/new', async (c) => {
     </div>
 </body>
 </html>`)
-    }
-    
-    // 会員ステータスと役割を確認
-    const membership = await DB.prepare(`
-      SELECT status, role FROM tenant_memberships 
-      WHERE tenant_id = ? AND user_id = ?
-    `).bind(tenant.id, userId).first()
-    
-    if (!membership) {
-      // 会員申請していない場合
-      return c.html(`<!DOCTYPE html>
-<html lang="ja">
-<head>
-    <meta charset="UTF-8">
-    <title>会員登録が必要です - ${tenant.name}</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
-</head>
-<body class="bg-gray-100 flex items-center justify-center min-h-screen">
-    <div class="text-center max-w-md mx-auto p-8 bg-white rounded-lg shadow-lg">
-        <i class="fas fa-user-plus text-6xl text-blue-500 mb-4"></i>
-        <h1 class="text-2xl font-bold text-gray-800 mb-4">会員登録が必要です</h1>
-        <p class="text-gray-600 mb-6">投稿を作成するには、「${tenant.name}」の会員になる必要があります。</p>
-        <div class="space-y-3">
-            <a href="/tenant/register?subdomain=${subdomain}" class="block w-full px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition">
-                <i class="fas fa-user-plus mr-2"></i>会員登録する
-            </a>
-            <a href="/tenant/home?subdomain=${subdomain}" class="block w-full px-6 py-3 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold rounded-lg transition">
-                <i class="fas fa-home mr-2"></i>ホームに戻る
-            </a>
-        </div>
-    </div>
-</body>
-</html>`)
-    }
-    
-    if (membership.status === 'pending') {
-      // 承認待ちの場合
-      return c.html(`<!DOCTYPE html>
-<html lang="ja">
-<head>
-    <meta charset="UTF-8">
-    <title>承認待ち - ${tenant.name}</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
-</head>
-<body class="bg-gray-100 flex items-center justify-center min-h-screen">
-    <div class="text-center max-w-md mx-auto p-8 bg-white rounded-lg shadow-lg">
-        <i class="fas fa-clock text-6xl text-yellow-500 mb-4"></i>
-        <h1 class="text-2xl font-bold text-gray-800 mb-4">承認待ち</h1>
-        <p class="text-gray-600 mb-6">会員申請を受け付けました。管理者の承認をお待ちください。</p>
-        <p class="text-sm text-gray-500 mb-6">承認後に投稿を作成できるようになります。</p>
-        <a href="/tenant/home?subdomain=${subdomain}" class="block w-full px-6 py-3 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold rounded-lg transition">
-            <i class="fas fa-home mr-2"></i>ホームに戻る
-        </a>
-    </div>
-</body>
-</html>`)
-    }
-    
-    if (membership.status !== 'active') {
-      // 停止中・退会済みなど
-      return c.html(`<!DOCTYPE html>
-<html lang="ja">
-<head>
-    <meta charset="UTF-8">
-    <title>アクセスできません - ${tenant.name}</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
-</head>
-<body class="bg-gray-100 flex items-center justify-center min-h-screen">
-    <div class="text-center max-w-md mx-auto p-8 bg-white rounded-lg shadow-lg">
-        <i class="fas fa-ban text-6xl text-red-500 mb-4"></i>
-        <h1 class="text-2xl font-bold text-gray-800 mb-4">アクセスできません</h1>
-        <p class="text-gray-600 mb-6">現在、投稿を作成する権限がありません。</p>
-        <a href="/tenant/home?subdomain=${subdomain}" class="block w-full px-6 py-3 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold rounded-lg transition">
-            <i class="fas fa-home mr-2"></i>ホームに戻る
-        </a>
-    </div>
-</body>
-</html>`)
-    }
-    
-    // 会員ステータスが active の場合のみ、投稿作成ページを表示
-    
-    // ユーザーの役割を取得
-    const userRole = membership.role || 'member'
-    const isAdmin = userRole === 'owner' || userRole === 'admin'
-    
-    // テーマ設定を取得
-    const customization = await DB.prepare(
-      'SELECT theme_preset FROM tenant_customization WHERE tenant_id = ?'
-    ).bind(tenant.id).first()
-    const theme = customization?.theme_preset || 'modern-business'
-    
-    return c.html(`<!DOCTYPE html>
+  }
+  
+  // テーマ設定を取得
+  const customization = await DB.prepare(
+    'SELECT theme_preset FROM tenant_customization WHERE tenant_id = ?'
+  ).bind(tenant.id).first()
+  const theme = customization?.theme_preset || 'modern-business'
+  
+  // クライアントサイドで管理者判定を行う（JavaScriptでAPIから取得）
+  return c.html(`<!DOCTYPE html>
 <html lang="ja" data-theme="${theme}">
 <head>
     <meta charset="UTF-8">
@@ -1227,9 +1101,8 @@ tenantPublic.get('/posts/new', async (c) => {
                     <p class="text-sm text-gray-500 mt-1">最大10,000文字</p>
                 </div>
 
-                ${isAdmin ? `
                 <!-- 公開範囲 (管理者のみ) -->
-                <div>
+                <div id="visibilityField" style="display: none;">
                     <label class="block text-sm font-medium text-gray-700 mb-2">
                         公開範囲 <span class="text-xs text-gray-500">(管理者のみ設定可能)</span>
                     </label>
@@ -1261,7 +1134,6 @@ tenantPublic.get('/posts/new', async (c) => {
                         </label>
                     </div>
                 </div>
-                ` : ''}
 
                 <!-- 公開設定 -->
                 <div>
@@ -1327,6 +1199,56 @@ tenantPublic.get('/posts/new', async (c) => {
     <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
     <script src="/static/app.js"></script>
     <script>
+        // 認証チェックと管理者判定
+        async function checkAuthAndRole() {
+            const token = localStorage.getItem('authToken')
+            if (!token) {
+                window.location.href = '/login?subdomain=${subdomain}'
+                return
+            }
+            
+            try {
+                // プロフィールAPIで会員ステータスと役割を確認
+                const response = await apiRequest('/api/profile')
+                if (!response.success) {
+                    window.location.href = '/login?subdomain=${subdomain}'
+                    return
+                }
+                
+                // 会員ステータス確認
+                const membership = response.memberships?.find(m => m.tenant_subdomain === '${subdomain}')
+                if (!membership) {
+                    alert('このコミュニティの会員ではありません')
+                    window.location.href = '/tenant/home?subdomain=${subdomain}'
+                    return
+                }
+                
+                if (membership.status === 'pending') {
+                    alert('会員申請は承認待ちです')
+                    window.location.href = '/tenant/home?subdomain=${subdomain}'
+                    return
+                }
+                
+                if (membership.status !== 'active') {
+                    alert('投稿を作成する権限がありません')
+                    window.location.href = '/tenant/home?subdomain=${subdomain}'
+                    return
+                }
+                
+                // 管理者の場合は公開範囲フィールドを表示
+                const isAdmin = membership.role === 'owner' || membership.role === 'admin'
+                if (isAdmin) {
+                    document.getElementById('visibilityField').style.display = 'block'
+                }
+            } catch (error) {
+                console.error('認証エラー:', error)
+                window.location.href = '/login?subdomain=${subdomain}'
+            }
+        }
+        
+        // ページ読み込み時に認証チェック
+        checkAuthAndRole()
+        
         // モバイルメニュー切替
         document.getElementById('mobileMenuToggle')?.addEventListener('click', () => {
             const menu = document.getElementById('mobileMenu')
@@ -1471,26 +1393,6 @@ tenantPublic.get('/posts/new', async (c) => {
     </script>
 </body>
 </html>`)
-  } catch (error) {
-    console.error('認証エラー:', error)
-    return c.html(`<!DOCTYPE html>
-<html lang="ja">
-<head>
-    <meta charset="UTF-8">
-    <title>認証エラー - Commons</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-gray-100 flex items-center justify-center min-h-screen">
-    <div class="text-center max-w-md mx-auto p-8">
-        <h1 class="text-3xl font-bold text-gray-800 mb-4">認証エラー</h1>
-        <p class="text-gray-600 mb-6">再度ログインしてください。</p>
-        <a href="/login?subdomain=${subdomain}" class="inline-block px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition">
-            <i class="fas fa-sign-in-alt mr-2"></i>ログインする
-        </a>
-    </div>
-</body>
-</html>`)
-  }
 })
 
 // --------------------------------------------
