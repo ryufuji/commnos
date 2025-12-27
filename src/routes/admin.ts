@@ -212,7 +212,7 @@ admin.post('/members/:id/reject', authMiddleware, requireRole('admin'), async (c
 
 /**
  * GET /api/admin/members/active
- * 承認済み会員一覧
+ * 承認済み会員一覧（active, suspended, withdrawn含む）
  */
 admin.get('/members/active', authMiddleware, requireRole('admin'), async (c) => {
   const tenantId = c.get('tenantId')
@@ -221,10 +221,10 @@ admin.get('/members/active', authMiddleware, requireRole('admin'), async (c) => 
   try {
     const result = await globalQuery<any>(
       db,
-      `SELECT tm.id, tm.user_id, tm.member_number, tm.role, tm.joined_at, u.email, u.nickname, u.avatar_url
+      `SELECT tm.id, tm.user_id, tm.member_number, tm.role, tm.status, tm.joined_at, u.email, u.nickname, u.avatar_url
        FROM tenant_memberships tm
        JOIN users u ON tm.user_id = u.id
-       WHERE tm.tenant_id = ? AND tm.status = 'active'
+       WHERE tm.tenant_id = ? AND tm.status IN ('active', 'suspended', 'withdrawn')
        ORDER BY tm.joined_at DESC`,
       [tenantId]
     )

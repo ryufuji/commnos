@@ -2317,6 +2317,9 @@ app.get('/members', (c) => {
                                     <span class="badge badge-success">\${member.member_number}</span>
                                     \${member.role === 'owner' ? '<span class="badge bg-purple-100 text-purple-700">オーナー</span>' : ''}
                                     \${member.role === 'admin' ? '<span class="badge bg-blue-100 text-blue-700">管理者</span>' : ''}
+                                    \${member.status === 'active' ? '<span class="badge bg-green-100 text-green-700">アクティブ</span>' : ''}
+                                    \${member.status === 'suspended' ? '<span class="badge bg-orange-100 text-orange-700">停止中</span>' : ''}
+                                    \${member.status === 'withdrawn' ? '<span class="badge bg-gray-100 text-gray-700">退会済み</span>' : ''}
                                 </div>
                                 <p class="text-sm text-gray-600">\${member.email}</p>
                                 <p class="text-xs text-gray-500 mt-1">
