@@ -693,7 +693,9 @@ tenantPublic.get('/home', async (c) => {
                     <span><i class="fas fa-calendar mr-1"></i>${createdDate}</span>
                 </div>
                 <a href="/tenant/posts/${post.id}?subdomain=${subdomain}" 
-                   class="block w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg text-center transition-colors">
+                   class="block w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg text-center transition-colors"
+                   data-subdomain="${subdomain}"
+                   data-post-id="${post.id}">
                     続きを読む <i class="fas fa-arrow-right ml-2"></i>
                 </a>
             </div>
@@ -1682,7 +1684,9 @@ tenantPublic.get('/posts', async (c) => {
                     </div>
                 </div>
                 <a href="/tenant/posts/${post.id}?subdomain=${subdomain}" 
-                   class="block w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg text-center transition-colors">
+                   class="block w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg text-center transition-colors"
+                   data-subdomain="${subdomain}"
+                   data-post-id="${post.id}">
                     続きを読む <i class="fas fa-arrow-right ml-2"></i>
                 </a>
             </div>
