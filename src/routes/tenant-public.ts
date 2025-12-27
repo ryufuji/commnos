@@ -736,7 +736,7 @@ tenantPublic.get('/home', async (c) => {
                     <a href="/tenant/posts/new?subdomain=${subdomain}" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition font-semibold">
                         <i class="fas fa-plus-circle mr-2"></i>投稿作成
                     </a>
-                    <a href="/tenant/tenant/members?subdomain=${subdomain}" class="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition">
+                    <a href="/tenant/members?subdomain=${subdomain}" class="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition">
                         <i class="fas fa-users mr-2"></i>メンバー
                     </a>
                     <a href="/login?subdomain=${subdomain}" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition">
@@ -759,7 +759,7 @@ tenantPublic.get('/home', async (c) => {
                 <a href="/tenant/posts/new?subdomain=${subdomain}" class="block px-4 py-2 bg-green-600 text-white rounded-lg text-center font-semibold">
                     <i class="fas fa-plus-circle mr-2"></i>投稿作成
                 </a>
-                <a href="/tenant/members-list?subdomain=${subdomain}" class="block px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg text-center">
+                <a href="/tenant/members?subdomain=${subdomain}" class="block px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg text-center">
                     <i class="fas fa-users mr-2"></i>メンバー
                 </a>
                 <a href="/login?subdomain=${subdomain}" class="block px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-center">
@@ -972,7 +972,7 @@ tenantPublic.get('/posts/new', async (c) => {
                     <a href="/tenant/posts/new?subdomain=${subdomain}" class="text-primary font-semibold">
                         <i class="fas fa-plus-circle mr-2"></i>投稿作成
                     </a>
-                    <a href="/tenant/tenant/members?subdomain=${subdomain}" class="text-gray-600 hover:text-primary transition">
+                    <a href="/tenant/members?subdomain=${subdomain}" class="text-gray-600 hover:text-primary transition">
                         <i class="fas fa-users mr-2"></i>メンバー
                     </a>
                     <a href="/login?subdomain=${subdomain}" class="text-gray-600 hover:text-primary transition">
@@ -997,7 +997,7 @@ tenantPublic.get('/posts/new', async (c) => {
                 <a href="/tenant/posts/new?subdomain=${subdomain}" class="block py-2 text-primary font-semibold">
                     <i class="fas fa-plus-circle mr-2"></i>投稿作成
                 </a>
-                <a href="/tenant/tenant/members?subdomain=${subdomain}" class="block py-2 text-gray-600 hover:text-primary transition">
+                <a href="/tenant/members?subdomain=${subdomain}" class="block py-2 text-gray-600 hover:text-primary transition">
                     <i class="fas fa-users mr-2"></i>メンバー
                 </a>
                 <a href="/login?subdomain=${subdomain}" class="block py-2 text-gray-600 hover:text-primary transition">
@@ -2359,7 +2359,7 @@ tenantPublic.get('/posts/:id', async (c) => {
                     <a href="/tenant/posts/new?subdomain=${subdomain}" class="text-gray-600 hover:text-primary transition">
                         <i class="fas fa-plus-circle mr-2"></i>投稿作成
                     </a>
-                    <a href="/tenant/tenant/members?subdomain=${subdomain}" class="text-gray-600 hover:text-primary transition">
+                    <a href="/tenant/members?subdomain=${subdomain}" class="text-gray-600 hover:text-primary transition">
                         <i class="fas fa-users mr-2"></i>メンバー
                     </a>
                     <a href="/login?subdomain=${subdomain}" class="text-gray-600 hover:text-primary transition">
@@ -2384,7 +2384,7 @@ tenantPublic.get('/posts/:id', async (c) => {
                 <a href="/tenant/posts/new?subdomain=${subdomain}" class="block py-2 text-gray-600 hover:text-primary transition">
                     <i class="fas fa-plus-circle mr-2"></i>投稿作成
                 </a>
-                <a href="/tenant/tenant/members?subdomain=${subdomain}" class="block py-2 text-gray-600 hover:text-primary transition">
+                <a href="/tenant/members?subdomain=${subdomain}" class="block py-2 text-gray-600 hover:text-primary transition">
                     <i class="fas fa-users mr-2"></i>メンバー
                 </a>
                 <a href="/login?subdomain=${subdomain}" class="block py-2 text-gray-600 hover:text-primary transition">
@@ -2972,7 +2972,7 @@ tenantPublic.get('/members', async (c) => {
                     <a href="/tenant/posts/new?subdomain=${subdomain}" class="text-gray-600 hover:text-primary transition">
                         <i class="fas fa-plus-circle mr-2"></i>投稿作成
                     </a>
-                    <a href="/tenant/tenant/members?subdomain=${subdomain}" class="text-primary font-semibold">
+                    <a href="/tenant/members?subdomain=${subdomain}" class="text-primary font-semibold">
                         <i class="fas fa-users mr-2"></i>メンバー
                     </a>
                     <a href="/login?subdomain=${subdomain}" class="text-gray-600 hover:text-primary transition">
@@ -2997,7 +2997,7 @@ tenantPublic.get('/members', async (c) => {
                 <a href="/tenant/posts/new?subdomain=${subdomain}" class="block py-2 text-gray-600 hover:text-primary transition">
                     <i class="fas fa-plus-circle mr-2"></i>投稿作成
                 </a>
-                <a href="/tenant/tenant/members?subdomain=${subdomain}" class="block py-2 text-primary font-semibold">
+                <a href="/tenant/members?subdomain=${subdomain}" class="block py-2 text-primary font-semibold">
                     <i class="fas fa-users mr-2"></i>メンバー
                 </a>
                 <a href="/login?subdomain=${subdomain}" class="block py-2 text-gray-600 hover:text-primary transition">
