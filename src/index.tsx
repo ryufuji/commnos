@@ -2031,7 +2031,7 @@ app.get('/dashboard', (c) => {
 
             // Navigate to tenant post list page
             window.goToTenantPostList = function() {
-              window.location.href = getTenantUrl();
+              window.location.href = getTenantUrl('/posts');
             }
 
             // ページロード時
