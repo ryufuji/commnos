@@ -2062,8 +2062,10 @@ tenantPublic.get('/posts/:id', async (c) => {
                         <i class="fas fa-arrow-left mr-2"></i>投稿一覧に戻る
                     </a>
                     <div class="flex items-center space-x-4">
-                        <button class="px-4 py-2 text-gray-600 hover:text-blue-600 transition">
-                            <i class="fas fa-thumbs-up mr-2"></i>いいね
+                        <button id="likeButton" data-post-id="${postId}" class="px-4 py-2 text-gray-600 hover:text-blue-600 transition">
+                            <i id="likeIcon" class="far fa-thumbs-up mr-2"></i>
+                            <span id="likeText">いいね</span>
+                            <span id="likeCount" class="ml-2 text-sm font-semibold">(0)</span>
                         </button>
                         <button class="px-4 py-2 text-gray-600 hover:text-blue-600 transition">
                             <i class="fas fa-share-alt mr-2"></i>シェア
@@ -2090,12 +2092,104 @@ tenantPublic.get('/posts/:id', async (c) => {
     </footer>
 
     <script src="/static/app.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
     <script>
         // モバイルメニュー切替
         document.getElementById('mobileMenuToggle')?.addEventListener('click', () => {
             const menu = document.getElementById('mobileMenu')
             menu.classList.toggle('hidden')
         })
+        
+        // いいね機能
+        const likeButton = document.getElementById('likeButton')
+        const likeIcon = document.getElementById('likeIcon')
+        const likeText = document.getElementById('likeText')
+        const likeCount = document.getElementById('likeCount')
+        
+        if (likeButton) {
+            const postId = likeButton.dataset.postId
+            const subdomain = '${subdomain}'
+            
+            let isLiked = false
+            let currentLikeCount = 0
+            
+            // いいね情報を読み込み
+            async function loadLikeStatus() {
+                try {
+                    const response = await axios.get('/api/likes/posts/' + postId + '?subdomain=' + subdomain)
+                    if (response.data.success) {
+                        currentLikeCount = response.data.likeCount || 0
+                        isLiked = response.data.liked || false
+                        updateLikeButton()
+                    }
+                } catch (error) {
+                    console.error('Failed to load like status:', error)
+                }
+            }
+            
+            // いいねボタンの表示を更新
+            function updateLikeButton() {
+                likeCount.textContent = '(' + currentLikeCount + ')'
+                if (isLiked) {
+                    likeIcon.className = 'fas fa-thumbs-up mr-2 text-blue-600'
+                    likeText.textContent = 'いいね済み'
+                    likeButton.classList.add('text-blue-600')
+                } else {
+                    likeIcon.className = 'far fa-thumbs-up mr-2'
+                    likeText.textContent = 'いいね'
+                    likeButton.classList.remove('text-blue-600')
+                }
+            }
+            
+            // いいねボタンのクリックイベント
+            likeButton.addEventListener('click', async () => {
+                const token = localStorage.getItem('authToken')
+                if (!token) {
+                    alert('いいねするにはログインが必要です')
+                    window.location.href = '/login?subdomain=' + subdomain
+                    return
+                }
+                
+                try {
+                    likeButton.disabled = true
+                    
+                    if (isLiked) {
+                        // いいねを取り消す
+                        const response = await axios.delete('/api/likes/posts/' + postId, {
+                            headers: { 'Authorization': 'Bearer ' + token }
+                        })
+                        if (response.data.success) {
+                            currentLikeCount = response.data.likeCount
+                            isLiked = false
+                            updateLikeButton()
+                        }
+                    } else {
+                        // いいねする
+                        const response = await axios.post('/api/likes/posts/' + postId, {}, {
+                            headers: { 'Authorization': 'Bearer ' + token }
+                        })
+                        if (response.data.success) {
+                            currentLikeCount = response.data.likeCount
+                            isLiked = true
+                            updateLikeButton()
+                        }
+                    }
+                } catch (error) {
+                    console.error('Like error:', error)
+                    if (error.response && error.response.status === 401) {
+                        alert('ログインセッションが切れました。再度ログインしてください')
+                        window.location.href = '/login?subdomain=' + subdomain
+                    } else {
+                        alert('エラーが発生しました')
+                    }
+                } finally {
+                    likeButton.disabled = false
+                }
+            })
+            
+            // ページ読み込み時にいいね情報を取得
+            loadLikeStatus()
+        }
     </script>
 </body>
 </html>`)
