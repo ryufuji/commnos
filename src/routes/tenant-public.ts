@@ -3656,32 +3656,33 @@ tenantPublic.get('/tenant/liked-posts', async (c) => {
 // 通知一覧ページ（Phase 5）
 // ============================================
 tenantPublic.get('/tenant/notifications', async (c) => {
-  const { DB } = c.env
-  const subdomain = c.req.query('subdomain')
-  
-  if (!subdomain) {
-    return c.html(`
-      <!DOCTYPE html>
-      <html lang="ja">
-      <head>
-          <meta charset="UTF-8">
-          <title>開発環境</title>
-      </head>
-      <body>
-          <h1>開発環境です</h1>
-          <p>URLに ?subdomain=your-subdomain を追加してください。</p>
-      </body>
-      </html>
-    `)
-  }
+  try {
+    const { DB } = c.env
+    const subdomain = c.req.query('subdomain')
+    
+    if (!subdomain) {
+      return c.html(`
+        <!DOCTYPE html>
+        <html lang="ja">
+        <head>
+            <meta charset="UTF-8">
+            <title>開発環境</title>
+        </head>
+        <body>
+            <h1>開発環境です</h1>
+            <p>URLに ?subdomain=your-subdomain を追加してください。</p>
+        </body>
+        </html>
+      `)
+    }
 
-  // JWTトークンから認証情報を取得
-  const authHeader = c.req.header('Authorization')
-  if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return c.redirect('/login?subdomain=' + subdomain)
-  }
+    // JWTトークンから認証情報を取得
+    const authHeader = c.req.header('Authorization')
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return c.redirect('/login?subdomain=' + subdomain)
+    }
 
-  // TODO: JWT検証して userId を取得
+    // TODO: JWT検証して userId を取得
   const userId = 1
 
   // Tenantを取得
@@ -3776,6 +3777,7 @@ tenantPublic.get('/tenant/notifications', async (c) => {
     notificationsHTML = notifications.map((notif: any) => {
       const isUnread = notif.is_read === 0
       const createdAt = new Date(notif.created_at).toLocaleString('ja-JP')
+      const actorName = notif.actor_name || 'Unknown'
       const actorAvatar = notif.actor_avatar || '/static/default-avatar.png'
       
       // 通知タイプに応じたアイコン
@@ -3801,18 +3803,19 @@ tenantPublic.get('/tenant/notifications', async (c) => {
       const bgClass = isUnread ? 'bg-blue-50' : 'bg-white'
       const fontClass = isUnread ? 'font-semibold' : ''
       const newBadge = isUnread ? '<span class="bg-blue-600 text-white text-xs px-2 py-1 rounded">NEW</span>' : ''
+      const message = String(notif.message || '')
       
       return '<a href="' + linkUrl + '" ' +
            'class="block p-4 ' + bgClass + ' rounded-lg shadow hover:shadow-md transition mb-3" ' +
            'data-notification-id="' + notif.id + '">' +
             '<div class="flex items-start space-x-4">' +
-                '<img src="' + actorAvatar + '" alt="' + notif.actor_name + '" class="w-12 h-12 rounded-full object-cover">' +
+                '<img src="' + actorAvatar + '" alt="' + actorName + '" class="w-12 h-12 rounded-full object-cover">' +
                 '<div class="flex-grow">' +
                     '<div class="flex items-center space-x-2 mb-1">' +
                         '<i class="fas ' + icon + ' ' + iconColor + '"></i>' +
                         newBadge +
                     '</div>' +
-                    '<p class="text-gray-900 ' + fontClass + '">' + notif.message + '</p>' +
+                    '<p class="text-gray-900 ' + fontClass + '">' + message + '</p>' +
                     '<p class="text-xs text-gray-500 mt-2">' + createdAt + '</p>' +
                 '</div>' +
             '</div>' +
@@ -3852,172 +3855,111 @@ tenantPublic.get('/tenant/notifications', async (c) => {
     paginationHTML += '</div>'
   }
 
-  return c.html(`
-<!DOCTYPE html>
-<html lang="ja">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>通知 - ${tenant.name}</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
-    <link href="/static/styles.css" rel="stylesheet">
-</head>
-<body class="bg-gray-50">
-    <!-- ヘッダー -->
-    <header class="bg-white shadow-sm sticky top-0 z-50">
-        <div class="container mx-auto px-4 py-4">
-            <div class="flex items-center justify-between">
-                <a href="/tenant/home?subdomain=${subdomain}" class="text-2xl font-bold text-blue-600">
-                    ${tenant.name}
-                </a>
-                <nav class="hidden md:flex items-center space-x-6">
-                    <a href="/tenant/home?subdomain=${subdomain}" class="text-gray-600 hover:text-blue-600">
-                        <i class="fas fa-home mr-1"></i>ホーム
-                    </a>
-                    <a href="/tenant/posts?subdomain=${subdomain}" class="text-gray-600 hover:text-blue-600">
-                        <i class="fas fa-newspaper mr-1"></i>投稿
-                    </a>
-                    <a href="/tenant/members?subdomain=${subdomain}" class="text-gray-600 hover:text-blue-600">
-                        <i class="fas fa-users mr-1"></i>メンバー
-                    </a>
-                    <a href="/tenant/notifications?subdomain=${subdomain}" class="text-blue-600 font-semibold">
-                        <i class="fas fa-bell mr-1"></i>通知
-                        ${unreadBadgeHTML}
-                    </a>
-                    <a href="/tenant/mypage?subdomain=${subdomain}" class="text-gray-600 hover:text-blue-600">
-                        <i class="fas fa-user mr-1"></i>マイページ
-                    </a>
-                </nav>
-                
-                <!-- モバイルメニュー -->
-                <button id="mobileMenuToggle" class="md:hidden">
-                    <i class="fas fa-bars text-2xl text-gray-600"></i>
-                </button>
-            </div>
-            
-            <!-- モバイルメニューコンテンツ -->
-            <div id="mobileMenu" class="hidden md:hidden mt-4 pb-4 border-t pt-4">
-                <nav class="flex flex-col space-y-3">
-                    <a href="/tenant/home?subdomain=${subdomain}" class="text-gray-600 hover:text-blue-600">
-                        <i class="fas fa-home mr-2"></i>ホーム
-                    </a>
-                    <a href="/tenant/posts?subdomain=${subdomain}" class="text-gray-600 hover:text-blue-600">
-                        <i class="fas fa-newspaper mr-2"></i>投稿
-                    </a>
-                    <a href="/tenant/members?subdomain=${subdomain}" class="text-gray-600 hover:text-blue-600">
-                        <i class="fas fa-users mr-2"></i>メンバー
-                    </a>
-                    <a href="/tenant/notifications?subdomain=${subdomain}" class="text-blue-600 font-semibold">
-                        <i class="fas fa-bell mr-2"></i>通知
-                        ${unreadBadgeHTML}
-                    </a>
-                    <a href="/tenant/mypage?subdomain=${subdomain}" class="text-gray-600 hover:text-blue-600">
-                        <i class="fas fa-user mr-2"></i>マイページ
-                    </a>
-                </nav>
-            </div>
-        </div>
-    </header>
+  // HTMLを文字列連結で構築
+  const html = '<!DOCTYPE html>' +
+  '<html lang="ja">' +
+  '<head>' +
+    '<meta charset="UTF-8">' +
+    '<meta name="viewport" content="width=device-width, initial-scale=1.0">' +
+    '<title>通知 - ' + tenant.name + '</title>' +
+    '<script src="https://cdn.tailwindcss.com"></script>' +
+    '<link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">' +
+    '<link href="/static/styles.css" rel="stylesheet">' +
+  '</head>' +
+  '<body class="bg-gray-50">' +
+    '<header class="bg-white shadow-sm sticky top-0 z-50">' +
+      '<div class="container mx-auto px-4 py-4">' +
+        '<div class="flex items-center justify-between">' +
+          '<a href="/tenant/home?subdomain=' + subdomain + '" class="text-2xl font-bold text-blue-600">' + tenant.name + '</a>' +
+          '<nav class="hidden md:flex items-center space-x-6">' +
+            '<a href="/tenant/home?subdomain=' + subdomain + '" class="text-gray-600 hover:text-blue-600"><i class="fas fa-home mr-1"></i>ホーム</a>' +
+            '<a href="/tenant/posts?subdomain=' + subdomain + '" class="text-gray-600 hover:text-blue-600"><i class="fas fa-newspaper mr-1"></i>投稿</a>' +
+            '<a href="/tenant/members?subdomain=' + subdomain + '" class="text-gray-600 hover:text-blue-600"><i class="fas fa-users mr-1"></i>メンバー</a>' +
+            '<a href="/tenant/notifications?subdomain=' + subdomain + '" class="text-blue-600 font-semibold"><i class="fas fa-bell mr-1"></i>通知' + unreadBadgeHTML + '</a>' +
+            '<a href="/tenant/mypage?subdomain=' + subdomain + '" class="text-gray-600 hover:text-blue-600"><i class="fas fa-user mr-1"></i>マイページ</a>' +
+          '</nav>' +
+          '<button id="mobileMenuToggle" class="md:hidden"><i class="fas fa-bars text-2xl text-gray-600"></i></button>' +
+        '</div>' +
+        '<div id="mobileMenu" class="hidden md:hidden mt-4 pb-4 border-t pt-4">' +
+          '<nav class="flex flex-col space-y-3">' +
+            '<a href="/tenant/home?subdomain=' + subdomain + '" class="text-gray-600 hover:text-blue-600"><i class="fas fa-home mr-2"></i>ホーム</a>' +
+            '<a href="/tenant/posts?subdomain=' + subdomain + '" class="text-gray-600 hover:text-blue-600"><i class="fas fa-newspaper mr-2"></i>投稿</a>' +
+            '<a href="/tenant/members?subdomain=' + subdomain + '" class="text-gray-600 hover:text-blue-600"><i class="fas fa-users mr-2"></i>メンバー</a>' +
+            '<a href="/tenant/notifications?subdomain=' + subdomain + '" class="text-blue-600 font-semibold"><i class="fas fa-bell mr-2"></i>通知' + unreadBadgeHTML + '</a>' +
+            '<a href="/tenant/mypage?subdomain=' + subdomain + '" class="text-gray-600 hover:text-blue-600"><i class="fas fa-user mr-2"></i>マイページ</a>' +
+          '</nav>' +
+        '</div>' +
+      '</div>' +
+    '</header>' +
+    '<main class="container mx-auto px-4 py-8">' +
+      '<div class="bg-white rounded-lg shadow-lg p-8 mb-8">' +
+        '<div class="flex items-center justify-between mb-4">' +
+          '<h1 class="text-3xl font-bold text-gray-900"><i class="fas fa-bell text-blue-500 mr-3"></i>通知</h1>' +
+          markAllReadButtonHTML +
+        '</div>' +
+        '<p class="text-gray-600">全' + totalCount + '件の通知 ' + unreadCountText + '</p>' +
+      '</div>' +
+      '<div>' + notificationsHTML + '</div>' +
+      paginationHTML +
+    '</main>' +
+    '<footer class="bg-white border-t mt-16">' +
+      '<div class="container mx-auto px-4 py-6 text-center text-gray-600">' +
+        '<p>© 2025 ' + tenant.name + '. All rights reserved.</p>' +
+      '</div>' +
+    '</footer>' +
+    '<script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>' +
+    '<script>' +
+      'const mobileMenuToggle = document.getElementById("mobileMenuToggle");' +
+      'const mobileMenu = document.getElementById("mobileMenu");' +
+      'if (mobileMenuToggle && mobileMenu) {' +
+        'mobileMenuToggle.addEventListener("click", () => {' +
+          'mobileMenu.classList.toggle("hidden");' +
+        '});' +
+      '}' +
+      'document.querySelectorAll("[data-notification-id]").forEach(notifLink => {' +
+        'notifLink.addEventListener("click", async (e) => {' +
+          'const notificationId = notifLink.getAttribute("data-notification-id");' +
+          'const authToken = localStorage.getItem("authToken");' +
+          'if (authToken && notificationId) {' +
+            'try {' +
+              'await axios.put("/api/notifications/" + notificationId + "/read", {}, { headers: { "Authorization": "Bearer " + authToken } });' +
+            '} catch (error) {' +
+              'console.error("Failed to mark notification as read:", error);' +
+            '}' +
+          '}' +
+        '});' +
+      '});' +
+      'const markAllReadBtn = document.getElementById("markAllReadBtn");' +
+      'if (markAllReadBtn) {' +
+        'markAllReadBtn.addEventListener("click", async () => {' +
+          'const authToken = localStorage.getItem("authToken");' +
+          'if (!authToken) {' +
+            'alert("ログインが必要です");' +
+            'window.location.href = "/login?subdomain=' + subdomain + '";' +
+            'return;' +
+          '}' +
+          'try {' +
+            'markAllReadBtn.disabled = true;' +
+            'markAllReadBtn.innerHTML = "<i class=\\"fas fa-spinner fa-spin mr-2\\"></i>処理中...";' +
+            'await axios.put("/api/notifications/read-all", {}, { headers: { "Authorization": "Bearer " + authToken } });' +
+            'window.location.reload();' +
+          '} catch (error) {' +
+            'console.error("Failed to mark all as read:", error);' +
+            'alert("エラーが発生しました");' +
+            'markAllReadBtn.disabled = false;' +
+            'markAllReadBtn.innerHTML = "<i class=\\"fas fa-check-double mr-2\\"></i>すべて既読にする";' +
+          '}' +
+        '});' +
+      '}' +
+    '</script>' +
+  '</body>' +
+  '</html>'
 
-    <!-- メインコンテンツ -->
-    <main class="container mx-auto px-4 py-8">
-        <!-- ページヘッダー -->
-        <div class="bg-white rounded-lg shadow-lg p-8 mb-8">
-            <div class="flex items-center justify-between mb-4">
-                <h1 class="text-3xl font-bold text-gray-900">
-                    <i class="fas fa-bell text-blue-500 mr-3"></i>通知
-                </h1>
-                ${markAllReadButtonHTML}
-            </div>
-            <p class="text-gray-600">
-                全${totalCount}件の通知 ${unreadCountText}
-            </p>
-        </div>
-
-        <!-- 通知一覧 -->
-        <div>
-            ${notificationsHTML}
-        </div>
-
-        <!-- ページネーション -->
-        ${paginationHTML}
-    </main>
-
-    <!-- フッター -->
-    <footer class="bg-white border-t mt-16">
-        <div class="container mx-auto px-4 py-6 text-center text-gray-600">
-            <p>© 2025 ${tenant.name}. All rights reserved.</p>
-        </div>
-    </footer>
-
-    <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
-    <script>
-        // モバイルメニューの切り替え
-        const mobileMenuToggle = document.getElementById('mobileMenuToggle');
-        const mobileMenu = document.getElementById('mobileMenu');
-        
-        if (mobileMenuToggle && mobileMenu) {
-            mobileMenuToggle.addEventListener('click', () => {
-                mobileMenu.classList.toggle('hidden');
-            });
-        }
-
-        // 通知クリック時に既読にする
-        document.querySelectorAll('[data-notification-id]').forEach(notifLink => {
-            notifLink.addEventListener('click', async (e) => {
-                const notificationId = notifLink.getAttribute('data-notification-id');
-                const authToken = localStorage.getItem('authToken');
-                
-                if (authToken && notificationId) {
-                    try {
-                        await axios.put(
-                            '/api/notifications/' + notificationId + '/read',
-                            {},
-                            { headers: { 'Authorization': 'Bearer ' + authToken } }
-                        );
-                    } catch (error) {
-                        console.error('Failed to mark notification as read:', error);
-                    }
-                }
-            });
-        });
-
-        // すべて既読にするボタン
-        const markAllReadBtn = document.getElementById('markAllReadBtn');
-        if (markAllReadBtn) {
-            markAllReadBtn.addEventListener('click', async () => {
-                const authToken = localStorage.getItem('authToken');
-                
-                if (!authToken) {
-                    alert('ログインが必要です');
-                    window.location.href = '/login?subdomain=${subdomain}';
-                    return;
-                }
-
-                try {
-                    markAllReadBtn.disabled = true;
-                    markAllReadBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>処理中...';
-                    
-                    await axios.put(
-                        '/api/notifications/read-all',
-                        {},
-                        { headers: { 'Authorization': 'Bearer ' + authToken } }
-                    );
-                    
-                    // ページをリロード
-                    window.location.reload();
-                } catch (error) {
-                    console.error('Failed to mark all as read:', error);
-                    alert('エラーが発生しました');
-                    markAllReadBtn.disabled = false;
-                    markAllReadBtn.innerHTML = '<i class="fas fa-check-double mr-2"></i>すべて既読にする';
-                }
-            });
-        }
-    </script>
-</body>
-</html>`)
+  return c.html(html)
+  } catch (error) {
+    console.error('Notification page error:', error)
+    return c.html('<html><body><h1>Error</h1><pre>' + String(error) + '</pre></body></html>', 500)
+  }
 })
 
 export default tenantPublic
