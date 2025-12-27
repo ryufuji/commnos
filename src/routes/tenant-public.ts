@@ -14,7 +14,7 @@ tenantPublic.get('/test', (c) => {
 })
 
 // テスト用会員IDルート
-tenantPublic.get('/tenant/members/:memberId/test', async (c) => {
+tenantPublic.get('/members/:memberId/test', async (c) => {
   const memberId = c.req.param('memberId')
   const subdomain = c.req.query('subdomain')
   return c.text(`Member ID: ${memberId}, Subdomain: ${subdomain}`)
@@ -2383,7 +2383,7 @@ tenantPublic.get('/posts/:id', async (c) => {
 // ============================================
 // 会員一覧ページ（Phase 3: Week 18-19）
 // ============================================
-tenantPublic.get('/tenant/members', async (c) => {
+tenantPublic.get('/members', async (c) => {
   const { DB } = c.env
   const subdomain = c.req.query('subdomain')
   
@@ -3055,7 +3055,7 @@ tenantPublic.get('/notifications', async (c) => {
 // ============================================
 // 会員プロフィール詳細ページ（Phase 3: Week 18-19）
 // ============================================
-tenantPublic.get('/tenant/members/:memberId', async (c) => {
+tenantPublic.get('/members/:memberId', async (c) => {
   const { DB } = c.env
   const subdomain = c.req.query('subdomain') || ''
   const memberId = c.req.param('memberId')
@@ -3224,7 +3224,7 @@ tenantPublic.get('/tenant/members/:memberId', async (c) => {
 // ============================================
 // マイページ（Phase 3: Week 20）
 // ============================================
-tenantPublic.get('/tenant/mypage', async (c) => {
+tenantPublic.get('/mypage', async (c) => {
   const { DB } = c.env
   const subdomain = c.req.query('subdomain')
   
@@ -3645,7 +3645,7 @@ tenantPublic.get('/liked-posts', async (c) => {
 // ============================================
 // いいね一覧ページ（Phase 4）
 // ============================================
-tenantPublic.get('/tenant/liked-posts', async (c) => {
+tenantPublic.get('/liked-posts', async (c) => {
   const { DB } = c.env
   const subdomain = c.req.query('subdomain')
   
