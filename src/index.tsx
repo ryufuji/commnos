@@ -12,6 +12,7 @@ import type { AppContext } from './types'
 import auth from './routes/auth'
 import members from './routes/members'
 import admin from './routes/admin'
+import adminPosts from './routes/admin-posts' // 管理者用投稿管理
 import tenant from './routes/tenant'
 import profile from './routes/profile' // Week 5-6
 import posts from './routes/posts' // Week 7-8
@@ -57,6 +58,9 @@ app.route('/api/members', members)
 
 // 管理者ルート
 app.route('/api/admin', admin)
+
+// 管理者用投稿管理ルート
+app.route('/api/admin/posts', adminPosts)
 
 // 画像アップロードルート（Phase 2）
 app.route('/api/upload', upload)
@@ -1589,12 +1593,12 @@ app.get('/dashboard', (c) => {
                             <p class="text-sm text-secondary-600">新しい投稿を作成</p>
                         </a>
 
-                        <a href="#" onclick="goToTenantPostList(event)" class="card-interactive p-6 text-center">
+                        <a href="/posts-admin" class="card-interactive p-6 text-center">
                             <div class="text-4xl mb-3 text-success-500">
-                                <i class="fas fa-file-alt"></i>
+                                <i class="fas fa-tasks"></i>
                             </div>
-                            <h3 class="font-bold text-gray-900 mb-2">投稿一覧</h3>
-                            <p class="text-sm text-secondary-600">投稿を管理</p>
+                            <h3 class="font-bold text-gray-900 mb-2">投稿管理</h3>
+                            <p class="text-sm text-secondary-600">投稿の編集・削除</p>
                         </a>
 
                         <a href="/profile" class="card-interactive p-6 text-center">
