@@ -396,6 +396,102 @@ body {
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
 }
 
+/* Warning Button */
+.btn-warning {
+  padding: 0.75rem 1.5rem;
+  background-color: #F59E0B;
+  color: white;
+  font-weight: 500;
+  border-radius: 0.5rem;
+  border: none;
+  cursor: pointer;
+  transition: all 200ms ease-in-out;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-warning:hover {
+  background-color: #D97706;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.btn-outline-warning {
+  padding: 0.75rem 1.5rem;
+  background-color: transparent;
+  color: #F59E0B;
+  font-weight: 500;
+  border-radius: 0.5rem;
+  border: 2px solid #F59E0B;
+  cursor: pointer;
+  transition: all 200ms ease-in-out;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-outline-warning:hover {
+  background-color: #FEF3C7;
+}
+
+/* Error Button */
+.btn-error {
+  padding: 0.75rem 1.5rem;
+  background-color: var(--danger-500);
+  color: white;
+  font-weight: 500;
+  border-radius: 0.5rem;
+  border: none;
+  cursor: pointer;
+  transition: all 200ms ease-in-out;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-error:hover {
+  background-color: var(--danger-700);
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+.btn-outline-error {
+  padding: 0.75rem 1.5rem;
+  background-color: transparent;
+  color: var(--danger-500);
+  font-weight: 500;
+  border-radius: 0.5rem;
+  border: 2px solid var(--danger-500);
+  cursor: pointer;
+  transition: all 200ms ease-in-out;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-outline-error:hover {
+  background-color: var(--danger-100);
+}
+
+.btn-outline-success {
+  padding: 0.75rem 1.5rem;
+  background-color: transparent;
+  color: var(--success-500);
+  font-weight: 500;
+  border-radius: 0.5rem;
+  border: 2px solid var(--success-500);
+  cursor: pointer;
+  transition: all 200ms ease-in-out;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-outline-success:hover {
+  background-color: var(--success-100);
+}
+
 /* Input Fields */
 .input-field {
   width: 100%;
