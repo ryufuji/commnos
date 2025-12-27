@@ -389,7 +389,19 @@ async function changeMemberStatus(memberId, newStatus) {
 
         if (response.data.success) {
             showToast('ステータスを「' + statusNames[newStatus] + '」に変更しました', 'success')
-            closeMemberDetailModal()
+            
+            // モーダルを閉じずに、最新の会員情報を再取得してモーダルを更新
+            const memberResponse = await axios.get('/api/admin/members/' + memberId, {
+                headers: { Authorization: 'Bearer ' + token }
+            })
+            
+            if (memberResponse.data.success) {
+                // モーダルを更新
+                closeMemberDetailModal()
+                showMemberDetailModal(memberResponse.data.member)
+            }
+            
+            // 会員リストも更新
             setTimeout(() => loadActiveMembers(), 500)
         } else {
             showToast(response.data.error || 'ステータス変更に失敗しました', 'error')
@@ -419,7 +431,19 @@ async function changeMemberRole(memberId, newRole) {
 
         if (response.data.success) {
             showToast('役割を「' + roleNames[newRole] + '」に変更しました', 'success')
-            closeMemberDetailModal()
+            
+            // モーダルを閉じずに、最新の会員情報を再取得してモーダルを更新
+            const memberResponse = await axios.get('/api/admin/members/' + memberId, {
+                headers: { Authorization: 'Bearer ' + token }
+            })
+            
+            if (memberResponse.data.success) {
+                // モーダルを更新
+                closeMemberDetailModal()
+                showMemberDetailModal(memberResponse.data.member)
+            }
+            
+            // 会員リストも更新
             setTimeout(() => loadActiveMembers(), 500)
         } else {
             showToast(response.data.error || '役割変更に失敗しました', 'error')
