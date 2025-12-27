@@ -3,7 +3,9 @@
 async function showMemberMenu(memberId) {
     try {
         const token = getToken()
+        console.log('Token:', token ? 'exists' : 'missing')
         if (!token) {
+            showToast('ログインが必要です', 'error')
             window.location.href = '/login'
             return
         }
@@ -20,7 +22,12 @@ async function showMemberMenu(memberId) {
         }
     } catch (error) {
         console.error('Get member detail error:', error)
-        showToast('会員情報の取得に失敗しました', 'error')
+        if (error.response && error.response.status === 401) {
+            showToast('認証エラー: 再度ログインしてください', 'error')
+            setTimeout(() => window.location.href = '/login', 1500)
+        } else {
+            showToast('会員情報の取得に失敗しました', 'error')
+        }
     }
 }
 
