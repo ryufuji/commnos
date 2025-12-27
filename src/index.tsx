@@ -2051,11 +2051,11 @@ app.get('/members', (c) => {
                     <div class="bg-white rounded-lg shadow p-2 flex gap-2 overflow-x-auto">
                         <button id="tabPending" onclick="switchTab('pending')" 
                             class="px-4 md:px-6 py-2 rounded-md font-semibold transition whitespace-nowrap"
-                            style="background-color: #6366F1; color: white;">
+                            style="background-color: #6366F1 !important; color: white !important;">
                             <i class="fas fa-hourglass-half mr-1 md:mr-2"></i>
                             <span class="hidden sm:inline">承認待ち</span>
                             <span class="sm:hidden">Pending</span>
-                            <span id="pendingCount" class="ml-1 md:ml-2 bg-white px-2 py-0.5 rounded-full text-xs font-bold" style="color: #6366F1;">0</span>
+                            <span id="pendingCount" class="ml-1 md:ml-2 bg-white px-2 py-0.5 rounded-full text-xs font-bold" style="color: #6366F1 !important;">0</span>
                         </button>
                         <button id="tabActive" onclick="switchTab('active')" 
                             class="px-4 md:px-6 py-2 rounded-md font-semibold transition text-gray-600 hover:bg-gray-100 whitespace-nowrap">
@@ -2111,21 +2111,17 @@ app.get('/members', (c) => {
                 
                 if (tab === 'pending') {
                     tabPending.className = 'px-4 md:px-6 py-2 rounded-md font-semibold transition whitespace-nowrap'
-                    tabPending.style.backgroundColor = '#6366F1'
-                    tabPending.style.color = 'white'
+                    tabPending.style.cssText = 'background-color: #6366F1 !important; color: white !important;'
                     tabActive.className = 'px-4 md:px-6 py-2 rounded-md font-semibold transition text-gray-600 hover:bg-gray-100 whitespace-nowrap'
-                    tabActive.style.backgroundColor = ''
-                    tabActive.style.color = ''
+                    tabActive.style.cssText = ''
                     document.getElementById('pendingSection').classList.remove('hidden')
                     document.getElementById('activeSection').classList.add('hidden')
                     loadPendingMembers()
                 } else {
                     tabActive.className = 'px-4 md:px-6 py-2 rounded-md font-semibold transition whitespace-nowrap'
-                    tabActive.style.backgroundColor = '#6366F1'
-                    tabActive.style.color = 'white'
+                    tabActive.style.cssText = 'background-color: #6366F1 !important; color: white !important;'
                     tabPending.className = 'px-4 md:px-6 py-2 rounded-md font-semibold transition text-gray-600 hover:bg-gray-100 whitespace-nowrap'
-                    tabPending.style.backgroundColor = ''
-                    tabPending.style.color = ''
+                    tabPending.style.cssText = ''
                     document.getElementById('activeSection').classList.remove('hidden')
                     document.getElementById('pendingSection').classList.add('hidden')
                     loadActiveMembers()
