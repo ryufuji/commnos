@@ -3109,4 +3109,488 @@ tenantPublic.get('/tenant/mypage', async (c) => {
 </html>`)
 })
 
+// --------------------------------------------
+// いいね一覧ページ
+// --------------------------------------------
+tenantPublic.get('/liked-posts', async (c) => {
+  const { DB } = c.env
+  const subdomain = c.req.query('subdomain')
+  
+  // 認証チェック（簡易版）
+  const token = c.req.header('Authorization')?.replace('Bearer ', '') || 
+                c.req.query('token') || ''
+  
+  if (!subdomain) {
+    return c.html(`<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>Development - Commons</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+    <div class="text-center">
+        <h1 class="text-4xl font-bold text-gray-800 mb-4">Development Environment</h1>
+        <p class="text-xl text-gray-600 mb-4">Please add ?subdomain=your-subdomain to URL</p>
+        <a href="/" class="text-blue-600 hover:underline">Back to Home</a>
+    </div>
+</body>
+</html>`)
+  }
+  
+  // テナント情報を取得
+  const tenant = await DB.prepare(
+    'SELECT * FROM tenants WHERE subdomain = ? AND status = ?'
+  ).bind(subdomain, 'active').first()
+  
+  if (!tenant) {
+    return c.html(`<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>Community not found - Commons</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+    <div class="text-center">
+        <h1 class="text-4xl font-bold text-gray-800 mb-4">404</h1>
+        <p class="text-xl text-gray-600 mb-4">Community not found</p>
+        <a href="/" class="text-blue-600 hover:underline">Back to Home</a>
+    </div>
+</body>
+</html>`)
+  }
+  
+  // ログインチェック（クライアント側）
+  if (!token) {
+    return c.html(`<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>Login Required - Commons</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 min-h-screen flex items-center justify-center">
+    <div class="text-center">
+        <h1 class="text-3xl font-bold text-gray-900 mb-4">Login Required</h1>
+        <p class="text-gray-600 mb-6">Please login to view your liked posts</p>
+        <a href="/login?subdomain=${subdomain}" class="inline-block px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+            Login
+        </a>
+    </div>
+    <script>
+        // Check for token in localStorage
+        const authToken = localStorage.getItem('authToken')
+        if (authToken) {
+            // Reload with token
+            window.location.href = '/tenant/liked-posts?subdomain=${subdomain}&token=' + authToken
+        }
+    </script>
+</body>
+</html>`)
+  }
+  
+  // TODO: JWT検証を実装（現時点では簡易版）
+  // 仮のユーザーID（テスト用）
+  const userId = 3
+  
+  // いいねした投稿を取得
+  const likedPostsResult = await DB.prepare(`
+    SELECT p.*, u.nickname as author_name, pl.created_at as liked_at,
+           (SELECT COUNT(*) FROM post_likes WHERE post_id = p.id) as like_count
+    FROM post_likes pl
+    INNER JOIN posts p ON pl.post_id = p.id
+    LEFT JOIN users u ON p.author_id = u.id
+    WHERE pl.user_id = ? AND pl.tenant_id = ? AND p.status = 'published'
+    ORDER BY pl.created_at DESC
+    LIMIT 50
+  `).bind(userId, tenant.id).all()
+  
+  const likedPosts = likedPostsResult.results || []
+  
+  const tenantName = String(tenant.name || '')
+  const tenantSubtitle = String(tenant.subtitle || '')
+  
+  // 投稿カードHTML生成
+  let postsHTML = ''
+  if (likedPosts.length === 0) {
+    postsHTML = '<div class="text-center py-12"><p class="text-gray-600 text-lg">You have not liked any posts yet</p></div>'
+  } else {
+    postsHTML = likedPosts.map((post: any) => {
+      const postTitle = String(post.title || '')
+      const postContent = String(post.content || '')
+      const postExcerpt = String(post.excerpt || postContent.substring(0, 150))
+      const authorName = String(post.author_name || 'Unknown')
+      const likeCount = Number(post.like_count || 0)
+      const likedDate = new Date(String(post.liked_at)).toLocaleDateString('ja-JP')
+      
+      return `
+        <div class="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 p-6">
+            <div class="flex items-start space-x-4">
+                <div class="w-20 h-20 bg-gradient-to-br from-blue-400 to-blue-600 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <i class="fas fa-file-alt text-3xl text-white opacity-50"></i>
+                </div>
+                <div class="flex-grow">
+                    <h3 class="text-xl font-bold text-gray-900 mb-2">${postTitle}</h3>
+                    <p class="text-gray-600 mb-3 line-clamp-2">${postExcerpt}...</p>
+                    <div class="flex items-center justify-between text-sm text-gray-500">
+                        <div class="flex items-center space-x-4">
+                            <span><i class="fas fa-user mr-1"></i>${authorName}</span>
+                            <span><i class="far fa-thumbs-up mr-1"></i>${likeCount}</span>
+                            <span><i class="far fa-eye mr-1"></i>${post.view_count || 0}</span>
+                        </div>
+                        <span class="text-xs text-gray-400">Liked on ${likedDate}</span>
+                    </div>
+                    <a href="/tenant/posts/${post.id}?subdomain=${subdomain}" 
+                       class="mt-4 inline-block px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold rounded-lg transition-colors">
+                        Read More <i class="fas fa-arrow-right ml-1"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+      `
+    }).join('')
+  }
+  
+  return c.html(`<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Liked Posts - ${tenantName}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="/static/styles.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Header -->
+    <header class="bg-white shadow-sm sticky top-0 z-50">
+        <div class="container mx-auto px-4 py-4">
+            <div class="flex items-center justify-between">
+                <a href="/tenant/home?subdomain=${subdomain}" class="text-2xl font-bold text-blue-600">
+                    ${tenantName}
+                </a>
+                <nav class="flex items-center space-x-6">
+                    <a href="/tenant/home?subdomain=${subdomain}" class="text-gray-600 hover:text-blue-600">
+                        <i class="fas fa-home mr-1"></i>Home
+                    </a>
+                    <a href="/tenant/posts?subdomain=${subdomain}" class="text-gray-600 hover:text-blue-600">
+                        <i class="fas fa-newspaper mr-1"></i>Posts
+                    </a>
+                    <a href="/tenant/liked-posts?subdomain=${subdomain}" class="text-blue-600 font-semibold">
+                        <i class="fas fa-heart mr-1"></i>Liked
+                    </a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 py-8">
+        <!-- Page Header -->
+        <div class="mb-8">
+            <h1 class="text-3xl md:text-4xl font-bold text-gray-900 mb-2">
+                <i class="fas fa-heart mr-2 text-red-500"></i>Liked Posts
+            </h1>
+            <p class="text-gray-600">Posts you have liked (${likedPosts.length})</p>
+        </div>
+        
+        <!-- Posts List -->
+        <div class="space-y-4">
+            ${postsHTML}
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t mt-16">
+        <div class="container mx-auto px-4 py-6 text-center text-gray-600">
+            <p>© 2025 ${tenantName}. All rights reserved.</p>
+        </div>
+    </footer>
+</body>
+</html>`)
+})
+
+// ============================================
+// いいね一覧ページ（Phase 4）
+// ============================================
+tenantPublic.get('/tenant/liked-posts', async (c) => {
+  const { DB } = c.env
+  const subdomain = c.req.query('subdomain')
+  
+  // 開発環境での確認用
+  if (!subdomain) {
+    return c.html(`
+      <!DOCTYPE html>
+      <html lang="ja">
+      <head>
+          <meta charset="UTF-8">
+          <title>開発環境</title>
+      </head>
+      <body>
+          <h1>開発環境です</h1>
+          <p>URLに ?subdomain=your-subdomain を追加してください。</p>
+      </body>
+      </html>
+    `)
+  }
+
+  // JWTトークンから認証情報を取得
+  const authHeader = c.req.header('Authorization')
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    // 未認証の場合はログインページへ
+    return c.redirect('/login?subdomain=' + subdomain)
+  }
+
+  // TODO: JWT検証して userId を取得
+  // 仮実装: テストユーザーID
+  const userId = 1
+
+  // Tenantを取得
+  const tenant = await DB.prepare(`
+    SELECT id, name, subdomain, subtitle, status
+    FROM tenants
+    WHERE subdomain = ? AND status = 'active'
+  `).bind(subdomain).first()
+
+  if (!tenant) {
+    return c.html(`
+      <!DOCTYPE html>
+      <html lang="ja">
+      <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>コミュニティが見つかりません</title>
+          <script src="https://cdn.tailwindcss.com"></script>
+          <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+      </head>
+      <body class="bg-gray-50">
+          <div class="min-h-screen flex items-center justify-center">
+              <div class="text-center">
+                  <i class="fas fa-exclamation-triangle text-6xl text-yellow-500 mb-4"></i>
+                  <h1 class="text-2xl font-bold text-gray-800 mb-4">コミュニティが見つかりません</h1>
+                  <p class="text-gray-600 mb-6">subdomain: ${subdomain}</p>
+                  <a href="/" class="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                      <i class="fas fa-home mr-2"></i>ホームに戻る
+                  </a>
+              </div>
+          </div>
+      </body>
+      </html>
+    `)
+  }
+
+  // テーマの取得
+  const themeResult = await DB.prepare(`
+    SELECT theme_preset FROM tenant_customization WHERE tenant_id = ?
+  `).bind(tenant.id).first()
+  const theme = themeResult?.theme_preset || 'modern-business'
+
+  // ページネーション設定
+  const page = Number(c.req.query('page')) || 1
+  const perPage = 12
+  const offset = (page - 1) * perPage
+
+  // いいねした投稿の総数を取得
+  const countResult = await DB.prepare(`
+    SELECT COUNT(*) as count
+    FROM post_likes
+    WHERE user_id = ? AND tenant_id = ?
+  `).bind(userId, tenant.id).first()
+  const totalLikes = countResult?.count || 0
+  const totalPages = Math.ceil(totalLikes / perPage)
+
+  // いいねした投稿を取得（投稿情報も含む）
+  const likedPosts = await DB.prepare(`
+    SELECT 
+      p.id,
+      p.title,
+      p.content,
+      p.thumbnail_url,
+      p.view_count,
+      p.created_at,
+      u.nickname as author_name,
+      u.avatar_url as author_avatar,
+      (SELECT COUNT(*) FROM post_likes WHERE post_id = p.id AND tenant_id = ?) as like_count,
+      pl.created_at as liked_at
+    FROM post_likes pl
+    INNER JOIN posts p ON pl.post_id = p.id
+    LEFT JOIN users u ON p.user_id = u.id
+    WHERE pl.user_id = ? AND pl.tenant_id = ? AND p.status = 'published'
+    ORDER BY pl.created_at DESC
+    LIMIT ? OFFSET ?
+  `).bind(tenant.id, userId, tenant.id, perPage, offset).all()
+
+  // 投稿HTMLを生成
+  let postsHTML = ''
+  if (likedPosts.results.length === 0) {
+    postsHTML = '<div class="text-center py-12 text-gray-500"><i class="fas fa-heart text-4xl mb-4"></i><p>まだいいねした投稿がありません</p></div>'
+  } else {
+    postsHTML = likedPosts.results.map((post: any) => {
+      const excerpt = post.content.substring(0, 100) + (post.content.length > 100 ? '...' : '')
+      const likedDate = new Date(post.liked_at).toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric' })
+      
+      return '<div class="bg-white rounded-lg shadow p-6 hover:shadow-lg transition">' +
+        '<div class="flex items-start justify-between mb-3">' +
+        '<h3 class="text-xl font-bold text-gray-900 flex-grow">' +
+        '<a href="/tenant/posts/' + post.id + '?subdomain=' + subdomain + '" class="hover:text-blue-600">' + post.title + '</a>' +
+        '</h3></div>' +
+        '<p class="text-gray-600 mb-4">' + excerpt + '</p>' +
+        '<div class="flex items-center justify-between text-sm text-gray-500">' +
+        '<div class="flex items-center space-x-4">' +
+        '<span><i class="fas fa-user mr-1"></i>' + (post.author_name || '不明') + '</span>' +
+        '<span><i class="fas fa-heart text-blue-600 mr-1"></i>' + post.like_count + '</span>' +
+        '<span><i class="fas fa-eye mr-1"></i>' + post.view_count + '</span>' +
+        '</div>' +
+        '<span class="text-xs text-gray-400">' + likedDate + ' にいいね</span>' +
+        '</div></div>'
+    }).join('')
+  }
+
+  // ページネーションHTML生成
+  let paginationHTML = ''
+  if (totalPages > 1) {
+    paginationHTML = '<div class="flex justify-center items-center space-x-2 mt-8">'
+    
+    // 前へボタン
+    if (page > 1) {
+      paginationHTML += '<a href="/tenant/liked-posts?subdomain=' + subdomain + '&page=' + (page - 1) + '" class="px-4 py-2 border rounded-lg hover:bg-gray-50">前へ</a>'
+    } else {
+      paginationHTML += '<span class="px-4 py-2 border rounded-lg text-gray-400 cursor-not-allowed">前へ</span>'
+    }
+    
+    // ページ番号
+    for (let i = 1; i <= totalPages; i++) {
+      if (i === 1 || i === totalPages || (i >= page - 2 && i <= page + 2)) {
+        if (i === page) {
+          paginationHTML += '<span class="px-4 py-2 bg-blue-600 text-white rounded-lg">' + i + '</span>'
+        } else {
+          paginationHTML += '<a href="/tenant/liked-posts?subdomain=' + subdomain + '&page=' + i + '" class="px-4 py-2 border rounded-lg hover:bg-gray-50">' + i + '</a>'
+        }
+      } else if (i === page - 3 || i === page + 3) {
+        paginationHTML += '<span class="px-4 py-2">...</span>'
+      }
+    }
+    
+    // 次へボタン
+    if (page < totalPages) {
+      paginationHTML += '<a href="/tenant/liked-posts?subdomain=' + subdomain + '&page=' + (page + 1) + '" class="px-4 py-2 border rounded-lg hover:bg-gray-50">次へ</a>'
+    } else {
+      paginationHTML += '<span class="px-4 py-2 border rounded-lg text-gray-400 cursor-not-allowed">次へ</span>'
+    }
+    
+    paginationHTML += '</div>'
+  }
+
+  return c.html(`
+<!DOCTYPE html>
+<html lang="ja" data-theme="${theme}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>いいねした投稿 - ${tenant.name}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="/static/styles.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50">
+    <!-- ヘッダー -->
+    <header class="bg-white shadow-sm sticky top-0 z-50">
+        <div class="container mx-auto px-4 py-4">
+            <div class="flex items-center justify-between">
+                <a href="/tenant/home?subdomain=${subdomain}" class="text-2xl font-bold text-blue-600">
+                    ${tenant.name}
+                </a>
+                <nav class="hidden md:flex items-center space-x-6">
+                    <a href="/tenant/home?subdomain=${subdomain}" class="text-gray-600 hover:text-blue-600">
+                        <i class="fas fa-home mr-1"></i>ホーム
+                    </a>
+                    <a href="/tenant/posts?subdomain=${subdomain}" class="text-gray-600 hover:text-blue-600">
+                        <i class="fas fa-newspaper mr-1"></i>投稿
+                    </a>
+                    <a href="/tenant/members?subdomain=${subdomain}" class="text-gray-600 hover:text-blue-600">
+                        <i class="fas fa-users mr-1"></i>メンバー
+                    </a>
+                    <a href="/tenant/liked-posts?subdomain=${subdomain}" class="text-blue-600 font-semibold">
+                        <i class="fas fa-heart mr-1"></i>いいね
+                    </a>
+                    <a href="/tenant/mypage?subdomain=${subdomain}" class="text-gray-600 hover:text-blue-600">
+                        <i class="fas fa-user mr-1"></i>マイページ
+                    </a>
+                </nav>
+                
+                <!-- モバイルメニュー -->
+                <button id="mobileMenuToggle" class="md:hidden">
+                    <i class="fas fa-bars text-2xl text-gray-600"></i>
+                </button>
+            </div>
+            
+            <!-- モバイルメニューコンテンツ -->
+            <div id="mobileMenu" class="hidden md:hidden mt-4 pb-4 border-t pt-4">
+                <nav class="flex flex-col space-y-3">
+                    <a href="/tenant/home?subdomain=${subdomain}" class="text-gray-600 hover:text-blue-600">
+                        <i class="fas fa-home mr-2"></i>ホーム
+                    </a>
+                    <a href="/tenant/posts?subdomain=${subdomain}" class="text-gray-600 hover:text-blue-600">
+                        <i class="fas fa-newspaper mr-2"></i>投稿
+                    </a>
+                    <a href="/tenant/members?subdomain=${subdomain}" class="text-gray-600 hover:text-blue-600">
+                        <i class="fas fa-users mr-2"></i>メンバー
+                    </a>
+                    <a href="/tenant/liked-posts?subdomain=${subdomain}" class="text-blue-600 font-semibold">
+                        <i class="fas fa-heart mr-2"></i>いいね
+                    </a>
+                    <a href="/tenant/mypage?subdomain=${subdomain}" class="text-gray-600 hover:text-blue-600">
+                        <i class="fas fa-user mr-2"></i>マイページ
+                    </a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- メインコンテンツ -->
+    <main class="container mx-auto px-4 py-8">
+        <!-- ページヘッダー -->
+        <div class="bg-white rounded-lg shadow-lg p-8 mb-8">
+            <h1 class="text-3xl font-bold text-gray-900 mb-2">
+                <i class="fas fa-heart text-red-500 mr-3"></i>いいねした投稿
+            </h1>
+            <p class="text-gray-600">
+                あなたがいいねした投稿一覧です（全${totalLikes}件）
+            </p>
+        </div>
+
+        <!-- 投稿一覧 -->
+        <div class="space-y-4">
+            ${postsHTML}
+        </div>
+
+        <!-- ページネーション -->
+        ${paginationHTML}
+    </main>
+
+    <!-- フッター -->
+    <footer class="bg-white border-t mt-16">
+        <div class="container mx-auto px-4 py-6 text-center text-gray-600">
+            <p>© 2025 ${tenant.name}. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+    <script src="/static/app.js"></script>
+    <script>
+        // モバイルメニューの切り替え
+        const mobileMenuToggle = document.getElementById('mobileMenuToggle');
+        const mobileMenu = document.getElementById('mobileMenu');
+        
+        if (mobileMenuToggle && mobileMenu) {
+            mobileMenuToggle.addEventListener('click', () => {
+                mobileMenu.classList.toggle('hidden');
+            });
+        }
+    </script>
+</body>
+</html>`)
+})
+
 export default tenantPublic
