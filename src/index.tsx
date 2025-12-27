@@ -1589,7 +1589,7 @@ app.get('/dashboard', (c) => {
                             <p class="text-sm text-secondary-600">新しい投稿を作成</p>
                         </a>
 
-                        <a href="#" onclick="goToTenant(event)" class="card-interactive p-6 text-center">
+                        <a href="#" onclick="goToTenantPostList(event)" class="card-interactive p-6 text-center">
                             <div class="text-4xl mb-3 text-success-500">
                                 <i class="fas fa-file-alt"></i>
                             </div>
@@ -2025,12 +2025,14 @@ app.get('/dashboard', (c) => {
             }
 
             // Navigate to tenant post creation page
-            window.goToTenantPostNew = function() {
+            window.goToTenantPostNew = function(event) {
+              if (event) event.preventDefault();
               window.location.href = getTenantUrl('/posts/new');
             }
 
             // Navigate to tenant post list page
-            window.goToTenantPostList = function() {
+            window.goToTenantPostList = function(event) {
+              if (event) event.preventDefault();
               window.location.href = getTenantUrl('/posts');
             }
 
