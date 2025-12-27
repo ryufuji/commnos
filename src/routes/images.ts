@@ -10,14 +10,18 @@ const images = new Hono<{ Bindings: Bindings }>()
 images.get('/:path{.+}', async (c) => {
   try {
     const path = c.req.param('path')
+    console.log('[Images API] Fetching image:', path)
     
     // R2からオブジェクトを取得
     const object = await c.env.R2.get(path)
 
     if (!object) {
+      console.log('[Images API] Image not found in R2:', path)
       return c.notFound()
     }
 
+    console.log('[Images API] Image found, content-type:', object.httpMetadata?.contentType)
+    
     // 画像データとメタデータを返す
     return new Response(object.body, {
       headers: {
@@ -28,7 +32,7 @@ images.get('/:path{.+}', async (c) => {
     })
 
   } catch (error: any) {
-    console.error('Image fetch error:', error)
+    console.error('[Images API] Image fetch error:', error)
     return c.json({ 
       success: false, 
       error: error.message || 'Image not found' 
