@@ -2380,6 +2380,17 @@ app.route('/tenant', tenantPublic)
 // ヘルスチェック
 // --------------------------------------------
 
+// ============================================
+// /join リダイレクト（レガシー対応）
+// ============================================
+app.get('/join', (c) => {
+  const subdomain = c.req.query('subdomain')
+  if (subdomain) {
+    return c.redirect(`/tenant/register?subdomain=${subdomain}`)
+  }
+  return c.redirect('/register')
+})
+
 app.get('/health', (c) => {
   return c.json({ status: 'ok', timestamp: new Date().toISOString() })
 })
