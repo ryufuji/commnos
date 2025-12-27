@@ -1784,6 +1784,7 @@ app.get('/dashboard', (c) => {
         </div>
 
         <script src="/static/app.js"></script>
+        <script src="/static/member-modal.js"></script>
         <script>
             // ユーザー情報を表示
             async function loadDashboard() {
