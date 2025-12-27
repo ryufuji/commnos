@@ -2456,6 +2456,378 @@ app.get('/members', (c) => {
 })
 
 // --------------------------------------------
+// 投稿管理ページ（管理者専用）
+// --------------------------------------------
+
+app.get('/posts-admin', (c) => {
+  return c.html(`
+    <!DOCTYPE html>
+    <html lang="ja">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>投稿管理 - Commons</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+        <link href="/static/styles.css" rel="stylesheet">
+    </head>
+    <body class="bg-gray-50">
+        <!-- ヘッダー -->
+        <header class="bg-white shadow-sm sticky top-0 z-50">
+            <div class="container mx-auto px-4 py-4">
+                <div class="flex items-center justify-between">
+                    <h1 class="text-2xl font-bold text-gray-900">
+                        <i class="fas fa-tasks mr-2 text-blue-600"></i>
+                        投稿管理
+                    </h1>
+                    <div class="flex gap-2">
+                        <a href="/dashboard" class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition">
+                            <i class="fas fa-arrow-left mr-2"></i>ダッシュボード
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- メインコンテンツ -->
+        <main class="container mx-auto px-4 py-8">
+            <!-- フィルター -->
+            <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+                <div class="flex flex-wrap gap-4 items-center">
+                    <div>
+                        <label class="text-sm font-medium text-gray-700 mb-2 block">ステータスで絞り込み</label>
+                        <select id="statusFilter" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                            <option value="all">すべて</option>
+                            <option value="published">公開済み</option>
+                            <option value="draft">下書き</option>
+                        </select>
+                    </div>
+                    <div class="ml-auto">
+                        <span id="totalCount" class="text-sm text-gray-600 font-medium">-</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 投稿一覧 -->
+            <div id="postsList" class="space-y-4">
+                <div class="text-center py-12">
+                    <i class="fas fa-spinner fa-spin text-4xl text-gray-400 mb-4"></i>
+                    <p class="text-gray-600">読み込み中...</p>
+                </div>
+            </div>
+
+            <!-- ページネーション -->
+            <div id="pagination" class="mt-8 flex justify-center gap-2"></div>
+        </main>
+
+        <!-- 編集モーダル -->
+        <div id="editModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
+            <div class="bg-white rounded-lg shadow-2xl max-w-4xl w-full my-8">
+                <div class="p-6 border-b border-gray-200 sticky top-0 bg-white rounded-t-lg">
+                    <div class="flex justify-between items-center">
+                        <h2 class="text-2xl font-bold text-gray-900">
+                            <i class="fas fa-edit mr-2 text-blue-600"></i>
+                            投稿を編集
+                        </h2>
+                        <button onclick="closeEditModal()" class="text-gray-500 hover:text-gray-700">
+                            <i class="fas fa-times text-xl"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <form id="editForm" class="p-6 space-y-6">
+                    <input type="hidden" id="editPostId">
+                    
+                    <div>
+                        <label for="editTitle" class="block text-sm font-medium text-gray-700 mb-2">
+                            タイトル <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" id="editTitle" required maxlength="200"
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                    </div>
+
+                    <div>
+                        <label for="editContent" class="block text-sm font-medium text-gray-700 mb-2">
+                            本文 <span class="text-red-500">*</span>
+                        </label>
+                        <textarea id="editContent" required rows="12" maxlength="10000"
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"></textarea>
+                    </div>
+
+                    <div class="grid md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">公開ステータス</label>
+                            <select id="editStatus" class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                                <option value="published">公開</option>
+                                <option value="draft">下書き</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">公開範囲</label>
+                            <select id="editVisibility" class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                                <option value="public">パブリック（誰でも閲覧可能）</option>
+                                <option value="members_only">会員限定</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div id="mediaInfo" class="text-sm text-gray-600"></div>
+
+                    <div class="flex gap-4 pt-4">
+                        <button type="submit" id="saveBtn"
+                            class="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-semibold">
+                            <i class="fas fa-save mr-2"></i>更新する
+                        </button>
+                        <button type="button" onclick="closeEditModal()"
+                            class="px-6 py-3 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition">
+                            キャンセル
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+        <script src="/static/app.js"></script>
+        <script>
+            let currentPage = 1
+            let currentStatus = 'all'
+            let currentPost = null
+            let allPosts = []
+
+            document.addEventListener('DOMContentLoaded', () => {
+                // 認証チェック
+                const token = getToken()
+                if (!token) {
+                    window.location.href = '/login'
+                    return
+                }
+
+                loadPosts()
+                
+                document.getElementById('statusFilter').addEventListener('change', (e) => {
+                    currentStatus = e.target.value
+                    currentPage = 1
+                    loadPosts()
+                })
+
+                document.getElementById('editForm').addEventListener('submit', async (e) => {
+                    e.preventDefault()
+                    await savePost()
+                })
+            })
+
+            async function loadPosts() {
+                try {
+                    const token = getToken()
+                    const response = await axios.get('/api/admin/posts', {
+                        params: { page: currentPage, limit: 20, status: currentStatus },
+                        headers: { 'Authorization': 'Bearer ' + token }
+                    })
+
+                    if (response.data.success) {
+                        allPosts = response.data.posts
+                        renderPosts(response.data.posts)
+                        renderPagination(response.data.pagination)
+                        document.getElementById('totalCount').textContent = '全 ' + response.data.pagination.total + ' 件'
+                    }
+                } catch (error) {
+                    console.error('Error loading posts:', error)
+                    showToast('投稿の読み込みに失敗しました', 'error')
+                    if (error.response?.status === 401 || error.response?.status === 403) {
+                        showToast('管理者権限が必要です', 'error')
+                        setTimeout(() => window.location.href = '/dashboard', 2000)
+                    }
+                }
+            }
+
+            function renderPosts(posts) {
+                const container = document.getElementById('postsList')
+                
+                if (posts.length === 0) {
+                    container.innerHTML = '<div class="text-center py-12"><i class="fas fa-inbox text-6xl text-gray-300 mb-4"></i><p class="text-gray-600">投稿がありません</p></div>'
+                    return
+                }
+
+                container.innerHTML = posts.map(post => {
+                    const statusBadge = post.status === 'published' 
+                        ? '<span class="px-3 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded-full">公開</span>'
+                        : '<span class="px-3 py-1 bg-gray-100 text-gray-700 text-xs font-semibold rounded-full">下書き</span>'
+                    
+                    const visibilityBadge = post.visibility === 'public'
+                        ? '<span class="px-3 py-1 bg-blue-100 text-blue-700 text-xs font-semibold rounded-full">パブリック</span>'
+                        : '<span class="px-3 py-1 bg-purple-100 text-purple-700 text-xs font-semibold rounded-full">会員限定</span>'
+
+                    const mediaBadges = []
+                    if (post.thumbnail_url) mediaBadges.push('<i class="fas fa-image text-blue-500" title="画像あり"></i>')
+                    if (post.video_url) mediaBadges.push('<i class="fas fa-video text-blue-500" title="動画あり"></i>')
+
+                    const title = String(post.title || '').replace(/'/g, '\\\\\'').replace(/"/g, '&quot;')
+                    
+                    return \`
+                        <div class="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition">
+                            <div class="flex items-start justify-between gap-4">
+                                <div class="flex-1 min-w-0">
+                                    <div class="flex items-center gap-2 mb-2 flex-wrap">
+                                        \${statusBadge}
+                                        \${visibilityBadge}
+                                        \${mediaBadges.join(' ')}
+                                    </div>
+                                    <h3 class="text-xl font-bold text-gray-900 mb-2 truncate">\${post.title}</h3>
+                                    <p class="text-gray-600 mb-4 line-clamp-2">\${post.excerpt || ''}</p>
+                                    <div class="flex items-center gap-4 text-sm text-gray-500 flex-wrap">
+                                        <span><i class="fas fa-user mr-1"></i>\${post.author_name || '不明'}</span>
+                                        <span><i class="fas fa-eye mr-1"></i>\${post.view_count || 0}</span>
+                                        <span><i class="fas fa-heart mr-1"></i>\${post.like_count || 0}</span>
+                                        <span><i class="fas fa-comment mr-1"></i>\${post.comment_count || 0}</span>
+                                        <span><i class="fas fa-calendar mr-1"></i>\${new Date(post.created_at).toLocaleDateString('ja-JP')}</span>
+                                    </div>
+                                </div>
+                                <div class="flex flex-col gap-2">
+                                    <button onclick="editPost(\${post.id})"
+                                        class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm whitespace-nowrap">
+                                        <i class="fas fa-edit mr-1"></i>編集
+                                    </button>
+                                    <button onclick="deletePost(\${post.id}, '\${title}')"
+                                        class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition text-sm whitespace-nowrap">
+                                        <i class="fas fa-trash mr-1"></i>削除
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    \`
+                }).join('')
+            }
+
+            function renderPagination(pagination) {
+                const container = document.getElementById('pagination')
+                if (pagination.totalPages <= 1) {
+                    container.innerHTML = ''
+                    return
+                }
+
+                let html = ''
+                if (pagination.page > 1) {
+                    html += \`<button onclick="changePage(\${pagination.page - 1})" class="px-4 py-2 bg-white border rounded-lg hover:bg-gray-50">前へ</button>\`
+                }
+                for (let i = 1; i <= pagination.totalPages; i++) {
+                    if (i === pagination.page) {
+                        html += \`<button class="px-4 py-2 bg-blue-600 text-white rounded-lg">\${i}</button>\`
+                    } else {
+                        html += \`<button onclick="changePage(\${i})" class="px-4 py-2 bg-white border rounded-lg hover:bg-gray-50">\${i}</button>\`
+                    }
+                }
+                if (pagination.page < pagination.totalPages) {
+                    html += \`<button onclick="changePage(\${pagination.page + 1})" class="px-4 py-2 bg-white border rounded-lg hover:bg-gray-50">次へ</button>\`
+                }
+                container.innerHTML = html
+            }
+
+            function changePage(page) {
+                currentPage = page
+                loadPosts()
+                window.scrollTo({ top: 0, behavior: 'smooth' })
+            }
+
+            async function editPost(postId) {
+                const post = allPosts.find(p => p.id === postId)
+                if (!post) {
+                    showToast('投稿が見つかりません', 'error')
+                    return
+                }
+
+                currentPost = post
+                document.getElementById('editPostId').value = post.id
+                document.getElementById('editTitle').value = post.title
+                document.getElementById('editContent').value = post.content
+                document.getElementById('editStatus').value = post.status
+                document.getElementById('editVisibility').value = post.visibility
+
+                let mediaHTML = '<div class="p-4 bg-gray-50 rounded-lg"><p class="font-medium mb-2">添付メディア：</p>'
+                if (post.thumbnail_url) {
+                    mediaHTML += '<div class="mb-2"><i class="fas fa-image mr-2 text-blue-600"></i>画像が添付されています</div>'
+                }
+                if (post.video_url) {
+                    mediaHTML += '<div class="mb-2"><i class="fas fa-video mr-2 text-blue-600"></i>動画が添付されています</div>'
+                }
+                if (!post.thumbnail_url && !post.video_url) {
+                    mediaHTML += '<p class="text-gray-500">メディアなし</p>'
+                }
+                mediaHTML += '</div>'
+                document.getElementById('mediaInfo').innerHTML = mediaHTML
+
+                document.getElementById('editModal').classList.remove('hidden')
+            }
+
+            async function savePost() {
+                try {
+                    const postId = document.getElementById('editPostId').value
+                    const token = getToken()
+                    const saveBtn = document.getElementById('saveBtn')
+                    
+                    saveBtn.disabled = true
+                    saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>更新中...'
+
+                    const data = {
+                        title: document.getElementById('editTitle').value,
+                        content: document.getElementById('editContent').value,
+                        status: document.getElementById('editStatus').value,
+                        visibility: document.getElementById('editVisibility').value,
+                        thumbnail_url: currentPost.thumbnail_url,
+                        video_url: currentPost.video_url
+                    }
+
+                    const response = await axios.put('/api/admin/posts/' + postId, data, {
+                        headers: { 'Authorization': 'Bearer ' + token }
+                    })
+
+                    if (response.data.success) {
+                        showToast('投稿を更新しました', 'success')
+                        closeEditModal()
+                        loadPosts()
+                    }
+                } catch (error) {
+                    console.error('Error saving post:', error)
+                    showToast('投稿の更新に失敗しました', 'error')
+                } finally {
+                    const saveBtn = document.getElementById('saveBtn')
+                    saveBtn.disabled = false
+                    saveBtn.innerHTML = '<i class="fas fa-save mr-2"></i>更新する'
+                }
+            }
+
+            function closeEditModal() {
+                document.getElementById('editModal').classList.add('hidden')
+                currentPost = null
+            }
+
+            async function deletePost(postId, title) {
+                if (!confirm('「' + title + '」を削除してもよろしいですか？\\n\\nこの操作は取り消せません。')) {
+                    return
+                }
+
+                try {
+                    const token = getToken()
+                    const response = await axios.delete('/api/admin/posts/' + postId, {
+                        headers: { 'Authorization': 'Bearer ' + token }
+                    })
+
+                    if (response.data.success) {
+                        showToast('投稿を削除しました', 'success')
+                        loadPosts()
+                    }
+                } catch (error) {
+                    console.error('Error deleting post:', error)
+                    showToast('投稿の削除に失敗しました', 'error')
+                }
+            }
+        </script>
+    </body>
+    </html>
+  `)
+})
+
+// --------------------------------------------
 // テナント公開ページ（Phase 3）
 // --------------------------------------------
 app.route('/tenant', tenantPublic)
