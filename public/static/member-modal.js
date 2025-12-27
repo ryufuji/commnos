@@ -2,7 +2,7 @@
 
 async function showMemberMenu(memberId) {
     try {
-        const token = localStorage.getItem('authToken')
+        const token = getToken()
         if (!token) {
             window.location.href = '/login'
             return
@@ -234,7 +234,7 @@ function switchMemberTab(tab, memberId) {
 // メモ一覧を読み込み
 async function loadMemberNotes(memberId) {
     try {
-        const token = localStorage.getItem('authToken')
+        const token = getToken()
         if (!token) {
             window.location.href = '/login'
             return
@@ -294,7 +294,7 @@ async function addMemberNote(memberId) {
     }
     
     try {
-        const token = localStorage.getItem('authToken')
+        const token = getToken()
         if (!token) {
             window.location.href = '/login'
             return
@@ -325,7 +325,7 @@ async function deleteMemberNote(memberId, noteId) {
     if (!confirm('このメモを削除しますか？')) return
     
     try {
-        const token = localStorage.getItem('authToken')
+        const token = getToken()
         if (!token) {
             window.location.href = '/login'
             return
@@ -359,7 +359,7 @@ async function changeMemberStatus(memberId, newStatus) {
     if (!confirm('この会員のステータスを「' + statusNames[newStatus] + '」に変更しますか？')) return
     
     try {
-        const token = localStorage.getItem('authToken')
+        const token = getToken()
         if (!token) {
             window.location.href = '/login'
             return
@@ -389,7 +389,7 @@ async function changeMemberRole(memberId, newRole) {
     if (!confirm('この会員の役割を「' + roleNames[newRole] + '」に変更しますか？')) return
     
     try {
-        const token = localStorage.getItem('authToken')
+        const token = getToken()
         if (!token) {
             window.location.href = '/login'
             return
