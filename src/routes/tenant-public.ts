@@ -908,6 +908,37 @@ tenantPublic.get('/posts/new', async (c) => {
 </html>`)
   }
   
+  // 認証チェック - ログインしていない場合はログインページへ
+  const authHeader = c.req.header('Authorization')
+  const hasAuthToken = authHeader && authHeader.startsWith('Bearer ')
+  
+  if (!hasAuthToken) {
+    return c.html(`<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>ログインが必要です - Commons</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+    <div class="text-center max-w-md mx-auto p-8">
+        <i class="fas fa-lock text-6xl text-gray-400 mb-4"></i>
+        <h1 class="text-3xl font-bold text-gray-800 mb-4">ログインが必要です</h1>
+        <p class="text-gray-600 mb-6">投稿を作成するには、ログインする必要があります。</p>
+        <a href="/login?subdomain=${subdomain}" class="inline-block px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition">
+            <i class="fas fa-sign-in-alt mr-2"></i>ログインする
+        </a>
+    </div>
+    <script>
+        // localStorageにトークンがない場合、自動でログインページへ
+        if (!localStorage.getItem('authToken')) {
+            window.location.href = '/login?subdomain=${subdomain}'
+        }
+    </script>
+</body>
+</html>`)
+  }
+  
   // テナント情報を取得
   const tenant = await DB.prepare(
     'SELECT * FROM tenants WHERE subdomain = ? AND status = ?'
