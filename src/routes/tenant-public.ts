@@ -1354,6 +1354,19 @@ tenantPublic.get('/posts', async (c) => {
   
   const posts = postsResult.results || []
   
+  // 人気投稿を取得（いいね数上位5件）
+  const popularPostsResult = await DB.prepare(`
+    SELECT p.*, u.nickname as author_name,
+           (SELECT COUNT(*) FROM post_likes WHERE post_id = p.id) as like_count
+    FROM posts p
+    LEFT JOIN users u ON p.author_id = u.id
+    WHERE p.tenant_id = ? AND p.status = ?
+    ORDER BY like_count DESC, p.view_count DESC
+    LIMIT 5
+  `).bind(tenant.id, 'published').all()
+  
+  const popularPosts = popularPostsResult.results || []
+  
   const tenantName = String(tenant.name || '')
   const tenantSubtitle = String(tenant.subtitle || '')
   
@@ -1394,6 +1407,40 @@ tenantPublic.get('/posts', async (c) => {
                 </a>
             </div>
         </div>
+      `
+    }).join('')
+  }
+  
+  // 人気投稿HTMLを生成
+  let popularPostsHTML = ''
+  if (popularPosts.length > 0) {
+    popularPostsHTML = popularPosts.map((post: any, index: number) => {
+      const postTitle = String(post.title || '')
+      const authorName = String(post.author_name || '不明')
+      const likeCount = Number(post.like_count || 0)
+      const viewCount = Number(post.view_count || 0)
+      
+      // ランキングバッジの色
+      let badgeClass = 'bg-gray-500'
+      if (index === 0) badgeClass = 'bg-yellow-500'
+      else if (index === 1) badgeClass = 'bg-gray-400'
+      else if (index === 2) badgeClass = 'bg-orange-600'
+      
+      return `
+        <a href="/tenant/posts/${post.id}?subdomain=${subdomain}" 
+           class="flex items-center p-4 bg-white rounded-lg shadow hover:shadow-md transition">
+            <div class="${badgeClass} text-white font-bold w-8 h-8 rounded-full flex items-center justify-center mr-4">
+                ${index + 1}
+            </div>
+            <div class="flex-grow">
+                <h4 class="font-semibold text-gray-900 mb-1 line-clamp-1">${postTitle}</h4>
+                <div class="flex items-center space-x-4 text-xs text-gray-500">
+                    <span><i class="fas fa-user mr-1"></i>${authorName}</span>
+                    <span><i class="far fa-thumbs-up mr-1"></i>${likeCount}</span>
+                    <span><i class="far fa-eye mr-1"></i>${viewCount}</span>
+                </div>
+            </div>
+        </a>
       `
     }).join('')
   }
@@ -1522,6 +1569,18 @@ tenantPublic.get('/posts', async (c) => {
             </h2>
             <p class="text-gray-600">全 ${totalPosts} 件の投稿</p>
         </div>
+
+        <!-- 人気投稿ランキング -->
+        ${popularPostsHTML ? `
+        <div class="mb-8 bg-gradient-to-r from-yellow-50 to-orange-50 rounded-lg p-6 border border-yellow-200">
+            <h3 class="text-2xl font-bold text-gray-900 mb-4">
+                <i class="fas fa-fire text-orange-500 mr-2"></i>人気投稿ランキング
+            </h3>
+            <div class="space-y-3">
+                ${popularPostsHTML}
+            </div>
+        </div>
+        ` : ''}
 
         <!-- 投稿グリッド -->
         <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
