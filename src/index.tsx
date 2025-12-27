@@ -1581,8 +1581,24 @@ app.get('/dashboard', (c) => {
                             <p class="text-sm text-secondary-600">申請の承認・会員一覧</p>
                         </a>
 
-                        <a href="/profile" class="card-interactive p-6 text-center">
+                        <a href="/tenant/posts/new" class="card-interactive p-6 text-center">
+                            <div class="text-4xl mb-3 text-primary-500">
+                                <i class="fas fa-plus-circle"></i>
+                            </div>
+                            <h3 class="font-bold text-gray-900 mb-2">投稿作成</h3>
+                            <p class="text-sm text-secondary-600">新しい投稿を作成</p>
+                        </a>
+
+                        <a href="/tenant" class="card-interactive p-6 text-center">
                             <div class="text-4xl mb-3 text-success-500">
+                                <i class="fas fa-file-alt"></i>
+                            </div>
+                            <h3 class="font-bold text-gray-900 mb-2">投稿一覧</h3>
+                            <p class="text-sm text-secondary-600">投稿を管理</p>
+                        </a>
+
+                        <a href="/profile" class="card-interactive p-6 text-center">
+                            <div class="text-4xl mb-3 text-info-500">
                                 <i class="fas fa-user-edit"></i>
                             </div>
                             <h3 class="font-bold text-gray-900 mb-2">プロフィール編集</h3>
