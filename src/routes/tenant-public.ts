@@ -1918,6 +1918,18 @@ tenantPublic.get('/posts/:id', async (c) => {
     'UPDATE posts SET view_count = view_count + 1 WHERE id = ?'
   ).bind(postId).run()
   
+  // コメントを取得（いいね数を含む）
+  const commentsResult = await DB.prepare(`
+    SELECT c.*, u.nickname as user_name, u.avatar_url as user_avatar,
+           (SELECT COUNT(*) FROM comment_likes WHERE comment_id = c.id) as like_count
+    FROM comments c
+    LEFT JOIN users u ON c.user_id = u.id
+    WHERE c.post_id = ? AND c.tenant_id = ?
+    ORDER BY c.created_at DESC
+  `).bind(postId, tenant.id).all()
+  
+  const comments = commentsResult.results || []
+  
   const tenantName = String(tenant.name || '')
   const tenantSubtitle = String(tenant.subtitle || '')
   const postTitle = String(post.title || '')
@@ -2083,12 +2095,59 @@ tenantPublic.get('/posts/:id', async (c) => {
             </div>
         </article>
         
-        <!-- コメントセクション（今後実装） -->
+        <!-- コメントセクション -->
         <div class="mt-8 bg-white rounded-lg shadow-md p-8">
-            <h2 class="text-2xl font-bold text-gray-900 mb-4">
-                <i class="fas fa-comments mr-2 text-blue-600"></i>コメント
+            <h2 class="text-2xl font-bold text-gray-900 mb-6">
+                <i class="fas fa-comments mr-2 text-blue-600"></i>コメント (${comments.length})
             </h2>
-            <p class="text-gray-600">コメント機能は今後実装予定です。</p>
+            
+            ${comments.length === 0 ? `
+                <p class="text-gray-600 text-center py-8">まだコメントがありません。最初のコメントを投稿しましょう！</p>
+            ` : comments.map((comment: any) => {
+                const commentUserName = String(comment.user_name || '匿名')
+                const commentUserAvatar = String(comment.user_avatar || '')
+                const commentContent = String(comment.content || '')
+                const commentLikeCount = Number(comment.like_count || 0)
+                const commentDate = new Date(String(comment.created_at)).toLocaleDateString('ja-JP', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                })
+                
+                return `
+                    <div class="border-b border-gray-200 py-6 last:border-b-0" data-comment-id="${comment.id}">
+                        <div class="flex items-start space-x-4">
+                            <div class="flex-shrink-0">
+                                ${commentUserAvatar ? `
+                                    <img src="${commentUserAvatar}" alt="${commentUserName}" class="w-12 h-12 rounded-full object-cover">
+                                ` : `
+                                    <div class="w-12 h-12 rounded-full bg-gray-300 flex items-center justify-center">
+                                        <i class="fas fa-user text-gray-600"></i>
+                                    </div>
+                                `}
+                            </div>
+                            <div class="flex-grow">
+                                <div class="flex items-center justify-between mb-2">
+                                    <div>
+                                        <span class="font-semibold text-gray-900">${commentUserName}</span>
+                                        <span class="text-sm text-gray-500 ml-2">${commentDate}</span>
+                                    </div>
+                                </div>
+                                <p class="text-gray-700 mb-3 whitespace-pre-wrap">${commentContent}</p>
+                                <div class="flex items-center space-x-4">
+                                    <button class="comment-like-btn text-sm text-gray-600 hover:text-blue-600 transition" data-comment-id="${comment.id}">
+                                        <i class="far fa-thumbs-up mr-1"></i>
+                                        <span class="comment-like-text">いいね</span>
+                                        <span class="comment-like-count ml-1">(${commentLikeCount})</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `
+            }).join('')}
         </div>
     </main>
 
@@ -2198,6 +2257,62 @@ tenantPublic.get('/posts/:id', async (c) => {
             // ページ読み込み時にいいね情報を取得
             loadLikeStatus()
         }
+        
+        // コメントのいいね機能
+        const commentLikeButtons = document.querySelectorAll('.comment-like-btn')
+        commentLikeButtons.forEach(button => {
+            button.addEventListener('click', async (e) => {
+                const token = localStorage.getItem('authToken')
+                if (!token) {
+                    alert('いいねするにはログインが必要です')
+                    window.location.href = '/login?subdomain=' + subdomain
+                    return
+                }
+                
+                const commentId = button.dataset.commentId
+                const likeIcon = button.querySelector('i')
+                const likeText = button.querySelector('.comment-like-text')
+                const likeCountSpan = button.querySelector('.comment-like-count')
+                
+                try {
+                    button.disabled = true
+                    
+                    if (likeIcon.classList.contains('fas')) {
+                        // いいねを取り消す
+                        const response = await axios.delete('/api/likes/comments/' + commentId, {
+                            headers: { 'Authorization': 'Bearer ' + token }
+                        })
+                        if (response.data.success) {
+                            likeIcon.className = 'far fa-thumbs-up mr-1'
+                            likeText.textContent = 'いいね'
+                            likeCountSpan.textContent = '(' + response.data.likeCount + ')'
+                            button.classList.remove('text-blue-600')
+                        }
+                    } else {
+                        // いいねする
+                        const response = await axios.post('/api/likes/comments/' + commentId, {}, {
+                            headers: { 'Authorization': 'Bearer ' + token }
+                        })
+                        if (response.data.success) {
+                            likeIcon.className = 'fas fa-thumbs-up mr-1'
+                            likeText.textContent = 'いいね済み'
+                            likeCountSpan.textContent = '(' + response.data.likeCount + ')'
+                            button.classList.add('text-blue-600')
+                        }
+                    }
+                } catch (error) {
+                    console.error('Comment like error:', error)
+                    if (error.response && error.response.status === 401) {
+                        alert('ログインセッションが切れました。再度ログインしてください')
+                        window.location.href = '/login?subdomain=' + subdomain
+                    } else {
+                        alert('エラーが発生しました')
+                    }
+                } finally {
+                    button.disabled = false
+                }
+            })
+        })
     </script>
 </body>
 </html>`)
