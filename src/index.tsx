@@ -2362,7 +2362,7 @@ app.get('/members', (c) => {
             // ページロード時：ユーザー役割を取得してlocalStorageに保存
             async function initializeDashboard() {
                 try {
-                    const token = localStorage.getItem('authToken')
+                    const token = getToken()
                     if (!token) {
                         window.location.href = '/login'
                         return
