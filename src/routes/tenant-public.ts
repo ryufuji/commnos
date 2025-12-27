@@ -2438,11 +2438,6 @@ tenantPublic.get('/tenant/members', async (c) => {
 })
 
 // --------------------------------------------
-// 会員プロフィール詳細ページ
-// --------------------------------------------
-// ============================================
-// 会員プロフィール詳細ページ（Phase 3: Week 18-19）
-// ============================================
 
 // ============================================
 // 会員プロフィール詳細ページ（Phase 3: Week 18-19）
@@ -2456,22 +2451,14 @@ tenantPublic.get('/tenant/members/:memberId', async (c) => {
     return c.text('Subdomain is required', 400)
   }
 
-  // Get tenant by subdomain
-  const tenant = await DB.prepare(`
-    SELECT * FROM tenants WHERE subdomain = ? AND status = ?
-  `).bind(subdomain, 'active').first() as any
+  const tenant = await DB.prepare(
+    'SELECT * FROM tenants WHERE subdomain = ? AND status = ?'
+  ).bind(subdomain, 'active').first() as any
 
   if (!tenant) {
     return c.text('Tenant not found', 404)
   }
 
-  // Get theme
-  const customization = await DB.prepare(`
-    SELECT theme_preset FROM tenant_customization WHERE tenant_id = ?
-  `).bind(tenant.id).first() as any
-  const theme = customization?.theme_preset || 'modern-business'
-  
-  // Get member info
   const member = await DB.prepare(`
     SELECT 
       u.id, u.nickname, u.email, u.avatar_url, u.bio, u.created_at,
@@ -2483,36 +2470,25 @@ tenantPublic.get('/tenant/members/:memberId', async (c) => {
   
   if (!member) {
     return c.html(`<!DOCTYPE html>
-<html lang="ja" data-theme="${theme}">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>会員が見つかりません - ${tenant.name}</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-</head>
+<html><head><meta charset="UTF-8"><title>会員が見つかりません</title>
+<script src="https://cdn.tailwindcss.com"></script></head>
 <body class="bg-gray-50 min-h-screen flex items-center justify-center">
-    <div class="text-center">
-        <h1 class="text-4xl font-bold text-gray-800 mb-4">会員が見つかりません</h1>
-        <a href="/tenant/tenant/members?subdomain=${subdomain}" class="text-blue-600 hover:underline">会員一覧に戻る</a>
-    </div>
-</body>
-</html>`)
+<div class="text-center"><h1 class="text-4xl font-bold text-gray-800 mb-4">会員が見つかりません</h1>
+<a href="/tenant/members?subdomain=${subdomain}" class="text-blue-600 hover:underline">会員一覧に戻る</a>
+</div></body></html>`)
   }
   
-  // Get member's posts
   const postsResult = await DB.prepare(`
-    SELECT p.*, COUNT(DISTINCT c.id) as comment_count
+    SELECT p.id, p.title, p.content, p.excerpt, p.view_count, p.created_at,
+           COUNT(DISTINCT c.id) as comment_count
     FROM posts p
     LEFT JOIN comments c ON c.post_id = p.id
     WHERE p.tenant_id = ? AND p.author_id = ? AND p.status = ?
-    GROUP BY p.id
-    ORDER BY p.created_at DESC
-    LIMIT 10
+    GROUP BY p.id ORDER BY p.created_at DESC LIMIT 10
   `).bind(tenant.id, memberId, 'published').all()
   
   const posts = postsResult.results || []
   
-  // Get stats
   const statsResult = await DB.prepare(`
     SELECT 
       COUNT(DISTINCT p.id) as post_count,
@@ -2524,175 +2500,109 @@ tenantPublic.get('/tenant/members/:memberId', async (c) => {
     WHERE u.id = ?
   `).bind(tenant.id, 'published', tenant.id, memberId).first() as any
   
-  const postCount = statsResult?.post_count || 0
-  const commentCount = statsResult?.comment_count || 0
-  const totalViews = statsResult?.total_views || 0
+  const postCount = Number(statsResult?.post_count || 0)
+  const commentCount = Number(statsResult?.comment_count || 0)
+  const totalViews = Number(statsResult?.total_views || 0)
   
-  const nickname = member.nickname || '不明'
-  const bio = member.bio || 'プロフィールが設定されていません'
-  const avatarUrl = member.avatar_url || ''
-  const role = member.role || 'member'
-  const joinedDate = new Date(member.joined_at).toLocaleDateString('ja-JP', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric'
+  const nickname = String(member.nickname || '不明')
+  const bio = String(member.bio || 'プロフィールが設定されていません')
+  const avatarUrl = member.avatar_url ? String(member.avatar_url) : ''
+  const role = String(member.role || 'member')
+  const joinedDate = new Date(String(member.joined_at)).toLocaleDateString('ja-JP', {
+    year: 'numeric', month: 'long', day: 'numeric'
   })
   
-  // Role badge
-  let roleBadge = ''
+  let roleBadgeHTML = ''
   if (role === 'owner') {
-    roleBadge = '<span class="px-3 py-1 bg-purple-100 text-purple-700 text-sm font-semibold rounded-full">オーナー</span>'
+    roleBadgeHTML = '<span class="px-3 py-1 bg-purple-100 text-purple-700 text-sm font-semibold rounded-full">オーナー</span>'
   } else if (role === 'admin') {
-    roleBadge = '<span class="px-3 py-1 bg-blue-100 text-blue-700 text-sm font-semibold rounded-full">管理者</span>'
+    roleBadgeHTML = '<span class="px-3 py-1 bg-blue-100 text-blue-700 text-sm font-semibold rounded-full">管理者</span>'
   } else if (role === 'moderator') {
-    roleBadge = '<span class="px-3 py-1 bg-green-100 text-green-700 text-sm font-semibold rounded-full">モデレーター</span>'
+    roleBadgeHTML = '<span class="px-3 py-1 bg-green-100 text-green-700 text-sm font-semibold rounded-full">モデレーター</span>'
   } else {
-    roleBadge = '<span class="px-3 py-1 bg-gray-100 text-gray-700 text-sm font-semibold rounded-full">メンバー</span>'
+    roleBadgeHTML = '<span class="px-3 py-1 bg-gray-100 text-gray-700 text-sm font-semibold rounded-full">メンバー</span>'
   }
   
-  // Posts HTML
+  const avatarHTML = avatarUrl 
+    ? `<img src="${avatarUrl}" alt="${nickname}" class="w-32 h-32 rounded-full object-cover border-4 border-blue-100">`
+    : '<div class="w-32 h-32 rounded-full bg-blue-100 flex items-center justify-center border-4 border-blue-200"><i class="fas fa-user text-5xl text-blue-400"></i></div>'
+  
   let postsHTML = ''
   if (posts.length === 0) {
     postsHTML = '<div class="text-center py-12 text-gray-600">まだ投稿がありません</div>'
   } else {
-    postsHTML = posts.map((post: any) => `
-      <div class="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow">
-          <a href="/tenant/posts/${post.id}?subdomain=${subdomain}" class="block">
-              <h3 class="text-xl font-bold text-gray-900 mb-2 hover:text-blue-600 transition">${post.title}</h3>
-              <p class="text-gray-600 mb-4 line-clamp-2">${(post.excerpt || post.content || '').substring(0, 100)}...</p>
-              <div class="flex items-center justify-between text-sm text-gray-500">
-                  <div class="flex items-center gap-4">
-                      <span><i class="fas fa-eye mr-1"></i>${post.view_count || 0} 閲覧</span>
-                      <span><i class="fas fa-comments mr-1"></i>${post.comment_count || 0} コメント</span>
-                  </div>
-                  <span><i class="fas fa-calendar mr-1"></i>${new Date(post.created_at).toLocaleDateString('ja-JP')}</span>
-              </div>
-          </a>
-      </div>
-    `).join('')
+    const postItems = posts.map((post: any) => {
+      const postTitle = String(post.title || '')
+      const postExcerpt = String(post.excerpt || post.content || '').substring(0, 100)
+      const postViewCount = Number(post.view_count || 0)
+      const postCommentCount = Number(post.comment_count || 0)
+      const postCreatedDate = new Date(String(post.created_at)).toLocaleDateString('ja-JP')
+      
+      return `<div class="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow">
+<a href="/tenant/posts/${post.id}?subdomain=${subdomain}" class="block">
+<h3 class="text-xl font-bold text-gray-900 mb-2 hover:text-blue-600 transition">${postTitle}</h3>
+<p class="text-gray-600 mb-4">${postExcerpt}...</p>
+<div class="flex items-center justify-between text-sm text-gray-500">
+<div class="flex items-center gap-4">
+<span><i class="fas fa-eye mr-1"></i>${postViewCount} 閲覧</span>
+<span><i class="fas fa-comments mr-1"></i>${postCommentCount} コメント</span>
+</div>
+<span><i class="fas fa-calendar mr-1"></i>${postCreatedDate}</span>
+</div>
+</a></div>`
+    })
+    postsHTML = postItems.join('')
   }
 
-  return c.html(`<!DOCTYPE html>
-<html lang="ja" data-theme="${theme}">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>${nickname} - ${tenant.name}</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
-</head>
-<body class="bg-gray-50 min-h-screen">
-    <!-- ヘッダー -->
-    <header class="bg-white shadow-sm sticky top-0 z-50">
-        <div class="container mx-auto px-4 py-4">
-            <div class="flex items-center justify-between">
-                <a href="/tenant/home?subdomain=${subdomain}" class="text-2xl font-bold text-blue-600">
-                    ${tenant.name}
-                </a>
-                <nav class="hidden md:flex items-center space-x-6">
-                    <a href="/tenant/home?subdomain=${subdomain}" class="text-gray-600 hover:text-blue-600 transition">
-                        <i class="fas fa-home mr-1"></i>ホーム
-                    </a>
-                    <a href="/tenant/posts?subdomain=${subdomain}" class="text-gray-600 hover:text-blue-600 transition">
-                        <i class="fas fa-newspaper mr-1"></i>投稿
-                    </a>
-                    <a href="/tenant/tenant/members?subdomain=${subdomain}" class="text-blue-600 font-semibold">
-                        <i class="fas fa-users mr-1"></i>メンバー
-                    </a>
-                    <a href="/login?subdomain=${subdomain}" class="text-gray-600 hover:text-blue-600 transition">
-                        <i class="fas fa-sign-in-alt mr-1"></i>ログイン
-                    </a>
-                </nav>
-            </div>
-        </div>
-    </header>
+  const html = `<!DOCTYPE html>
+<html lang="ja"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>${nickname} - ${tenant.name}</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+</head><body class="bg-gray-50 min-h-screen">
+<header class="bg-white shadow-sm sticky top-0 z-50">
+<div class="container mx-auto px-4 py-4">
+<div class="flex items-center justify-between">
+<a href="/tenant/home?subdomain=${subdomain}" class="text-2xl font-bold text-blue-600">${tenant.name}</a>
+<nav class="hidden md:flex items-center space-x-6">
+<a href="/tenant/home?subdomain=${subdomain}" class="text-gray-600 hover:text-blue-600"><i class="fas fa-home mr-1"></i>ホーム</a>
+<a href="/tenant/posts?subdomain=${subdomain}" class="text-gray-600 hover:text-blue-600"><i class="fas fa-newspaper mr-1"></i>投稿</a>
+<a href="/tenant/members?subdomain=${subdomain}" class="text-blue-600 font-semibold"><i class="fas fa-users mr-1"></i>メンバー</a>
+<a href="/login?subdomain=${subdomain}" class="text-gray-600 hover:text-blue-600"><i class="fas fa-sign-in-alt mr-1"></i>ログイン</a>
+</nav></div></div></header>
+<main class="container mx-auto px-4 py-8">
+<div class="bg-white rounded-lg shadow-lg p-8 mb-8">
+<div class="flex flex-col md:flex-row items-center md:items-start gap-8">
+<div class="flex-shrink-0">${avatarHTML}</div>
+<div class="flex-grow text-center md:text-left">
+<div class="flex flex-col md:flex-row items-center md:items-start gap-3 mb-4">
+<h1 class="text-3xl font-bold text-gray-900">${nickname}</h1>${roleBadgeHTML}</div>
+<p class="text-gray-600 mb-6 whitespace-pre-wrap">${bio}</p>
+<div class="grid grid-cols-3 gap-4 mb-6">
+<div class="text-center p-4 bg-blue-50 rounded-lg">
+<div class="text-2xl font-bold text-blue-600">${postCount}</div>
+<div class="text-sm text-gray-600">投稿</div></div>
+<div class="text-center p-4 bg-green-50 rounded-lg">
+<div class="text-2xl font-bold text-green-600">${commentCount}</div>
+<div class="text-sm text-gray-600">コメント</div></div>
+<div class="text-center p-4 bg-purple-50 rounded-lg">
+<div class="text-2xl font-bold text-purple-600">${totalViews}</div>
+<div class="text-sm text-gray-600">閲覧数</div></div></div>
+<div class="text-sm text-gray-500"><i class="fas fa-calendar mr-2"></i>${joinedDate}に参加</div>
+</div></div></div>
+<div class="bg-white rounded-lg shadow-lg p-8">
+<div class="flex items-center justify-between mb-6">
+<h2 class="text-2xl font-bold text-gray-900"><i class="fas fa-newspaper mr-2 text-blue-600"></i>最近の投稿</h2>
+</div><div class="space-y-4">${postsHTML}</div></div>
+<div class="mt-8 text-center">
+<a href="/tenant/members?subdomain=${subdomain}" class="inline-block px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition">
+<i class="fas fa-arrow-left mr-2"></i>会員一覧に戻る</a></div></main>
+<footer class="bg-white border-t mt-16">
+<div class="container mx-auto px-4 py-6 text-center text-gray-600">
+<p>&copy; 2025 ${tenant.name}. All rights reserved.</p></div></footer>
+</body></html>`
 
-    <!-- メインコンテンツ -->
-    <main class="container mx-auto px-4 py-8">
-        <!-- プロフィールカード -->
-        <div class="bg-white rounded-lg shadow-lg p-8 mb-8">
-            <div class="flex flex-col md:flex-row items-center md:items-start gap-8">
-                <!-- アバター -->
-                <div class="flex-shrink-0">
-                    ${avatarUrl 
-                      ? `<img src="${avatarUrl}" alt="${nickname}" class="w-32 h-32 rounded-full object-cover border-4 border-blue-100">`
-                      : `<div class="w-32 h-32 rounded-full bg-blue-100 flex items-center justify-center border-4 border-blue-200">
-                           <i class="fas fa-user text-5xl text-blue-400"></i>
-                         </div>`
-                    }
-                </div>
-                
-                <!-- プロフィール情報 -->
-                <div class="flex-grow text-center md:text-left">
-                    <div class="flex flex-col md:flex-row items-center md:items-start gap-3 mb-4">
-                        <h1 class="text-3xl font-bold text-gray-900">${nickname}</h1>
-                        ${roleBadge}
-                    </div>
-                    <p class="text-gray-600 mb-6 whitespace-pre-wrap">${bio}</p>
-                    
-                    <!-- 統計 -->
-                    <div class="grid grid-cols-3 gap-4 mb-6">
-                        <div class="text-center p-4 bg-blue-50 rounded-lg">
-                            <div class="text-2xl font-bold text-blue-600">${postCount}</div>
-                            <div class="text-sm text-gray-600">投稿</div>
-                        </div>
-                        <div class="text-center p-4 bg-green-50 rounded-lg">
-                            <div class="text-2xl font-bold text-green-600">${commentCount}</div>
-                            <div class="text-sm text-gray-600">コメント</div>
-                        </div>
-                        <div class="text-center p-4 bg-purple-50 rounded-lg">
-                            <div class="text-2xl font-bold text-purple-600">${totalViews}</div>
-                            <div class="text-sm text-gray-600">閲覧数</div>
-                        </div>
-                    </div>
-                    
-                    <!-- 参加日 -->
-                    <div class="text-sm text-gray-500">
-                        <i class="fas fa-calendar mr-2"></i>
-                        ${joinedDate}に参加
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- 最近の投稿 -->
-        <div class="bg-white rounded-lg shadow-lg p-8">
-            <div class="flex items-center justify-between mb-6">
-                <h2 class="text-2xl font-bold text-gray-900">
-                    <i class="fas fa-newspaper mr-2 text-blue-600"></i>
-                    最近の投稿
-                </h2>
-                ${posts.length > 0 
-                  ? `<a href="/tenant/posts?subdomain=${subdomain}" class="text-blue-600 hover:text-blue-700 font-semibold">
-                       すべての投稿を見る <i class="fas fa-arrow-right ml-1"></i>
-                     </a>`
-                  : ''
-                }
-            </div>
-            
-            <div class="space-y-4">
-                ${postsHTML}
-            </div>
-        </div>
-        
-        <!-- 戻るボタン -->
-        <div class="mt-8 text-center">
-            <a href="/tenant/tenant/members?subdomain=${subdomain}" 
-               class="inline-block px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition">
-                <i class="fas fa-arrow-left mr-2"></i>
-                会員一覧に戻る
-            </a>
-        </div>
-    </main>
-
-    <!-- フッター -->
-    <footer class="bg-white border-t mt-16">
-        <div class="container mx-auto px-4 py-6 text-center text-gray-600">
-            <p>&copy; 2025 ${tenant.name}. All rights reserved.</p>
-        </div>
-    </footer>
-</body>
-</html>`)
+  return c.html(html)
 })
 
 export default tenantPublic
