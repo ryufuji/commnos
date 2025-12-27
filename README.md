@@ -1,4 +1,4 @@
-# Commons - Phase 3 進行中（Week 14-17）
+# Commons - Phase 3 Week 18-19 完成！
 
 ## プロジェクト概要
 
@@ -32,43 +32,47 @@
   - ✅ 投稿作成ページ（/tenant/posts/new）
   - ✅ 投稿詳細ページ（/tenant/posts/:id）
   - ✅ 会員一覧ページ（/tenant/members）
+  - ✅ 会員プロフィール詳細ページ（/tenant/members/:id）✨ Week 18-19
+  - ✅ 会員検索機能（キーワード + 役割フィルター）✨ Week 18-19
   - ✅ 投稿作成API（POST /api/posts）- 認証済み全会員が投稿可能
   - ✅ 画像アップロード統合（サムネイル対応）
   - ✅ 下書き保存機能
   - ✅ 閲覧数カウント機能
   - ✅ ページネーション機能
 
-⏳ **Phase 3 今後の実装予定（Week 18-21）:**
-- 会員プロフィール詳細ページ
-- 会員検索機能
+⏳ **Phase 3 今後の実装予定（Week 20-21）:**
 - マイページ（自分の投稿・コメント管理）
+- アクティビティ履歴
 - 通知センター（ブラウザ内通知）
+- 通知一覧ページ
 
 ## URLs
 
 ### 本番環境（Cloudflare Pages）
-- **最新デプロイ**: https://789692c9.commons-webapp.pages.dev
-- **新規登録**: https://789692c9.commons-webapp.pages.dev/register
-- **ログイン**: https://789692c9.commons-webapp.pages.dev/login
-- **ダッシュボード**: https://789692c9.commons-webapp.pages.dev/dashboard
-- **会員管理**: https://789692c9.commons-webapp.pages.dev/members
-- **プロフィール**: https://789692c9.commons-webapp.pages.dev/profile
+- **最新デプロイ**: https://464ef7d2.commons-webapp.pages.dev
+- **新規登録**: https://464ef7d2.commons-webapp.pages.dev/register
+- **ログイン**: https://464ef7d2.commons-webapp.pages.dev/login
+- **ダッシュボード**: https://464ef7d2.commons-webapp.pages.dev/dashboard
+- **会員管理**: https://464ef7d2.commons-webapp.pages.dev/members
+- **プロフィール**: https://464ef7d2.commons-webapp.pages.dev/profile
 
 ### テナント公開ページ（本番環境）
-- **テナントホーム**: https://789692c9.commons-webapp.pages.dev/tenant/home?subdomain=test-phase2
-- **テナント会員登録**: https://789692c9.commons-webapp.pages.dev/register?subdomain=test-phase2
-- **テナント会員ログイン**: https://789692c9.commons-webapp.pages.dev/login?subdomain=test-phase2
-- **投稿一覧**: https://789692c9.commons-webapp.pages.dev/tenant/posts?subdomain=test-phase2
-- **投稿作成**: https://789692c9.commons-webapp.pages.dev/tenant/posts/new?subdomain=test-phase2
-- **投稿詳細**: https://789692c9.commons-webapp.pages.dev/tenant/posts/1?subdomain=test-phase2
-- **会員一覧**: https://789692c9.commons-webapp.pages.dev/tenant/members?subdomain=test-phase2
+- **テナントホーム**: https://464ef7d2.commons-webapp.pages.dev/tenant/home?subdomain=test-phase2
+- **テナント会員登録**: https://464ef7d2.commons-webapp.pages.dev/register?subdomain=test-phase2
+- **テナント会員ログイン**: https://464ef7d2.commons-webapp.pages.dev/login?subdomain=test-phase2
+- **投稿一覧**: https://464ef7d2.commons-webapp.pages.dev/tenant/posts?subdomain=test-phase2
+- **投稿作成**: https://464ef7d2.commons-webapp.pages.dev/tenant/posts/new?subdomain=test-phase2
+- **投稿詳細**: https://464ef7d2.commons-webapp.pages.dev/tenant/posts/1?subdomain=test-phase2
+- **会員一覧**: https://464ef7d2.commons-webapp.pages.dev/tenant/members?subdomain=test-phase2
+- **会員プロフィール**: https://464ef7d2.commons-webapp.pages.dev/tenant/members/3?subdomain=test-phase2
+- **会員検索**: https://464ef7d2.commons-webapp.pages.dev/tenant/members?subdomain=test-phase2&search=Phase2
 
 ### サンドボックス環境
 - **ホーム**: https://3000-imu7i4bdyc519gbijlo4z-5185f4aa.sandbox.novita.ai
 
 ### GitHub
 - **リポジトリ**: https://github.com/ryufuji/commnos
-- **最新コミット**: 0de771e
+- **最新コミット**: 0eafb4d
 
 ## データアーキテクチャ
 
