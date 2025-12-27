@@ -970,9 +970,9 @@ tenantPublic.get('/posts/new', async (c) => {
 </html>`)
     }
     
-    // 会員ステータスを確認
+    // 会員ステータスと役割を確認
     const membership = await DB.prepare(`
-      SELECT status FROM tenant_memberships 
+      SELECT status, role FROM tenant_memberships 
       WHERE tenant_id = ? AND user_id = ?
     `).bind(tenant.id, userId).first()
     
@@ -1052,56 +1052,18 @@ tenantPublic.get('/posts/new', async (c) => {
     }
     
     // 会員ステータスが active の場合のみ、投稿作成ページを表示
-  } catch (error) {
-    console.error('認証エラー:', error)
+    
+    // ユーザーの役割を取得
+    const userRole = membership.role || 'member'
+    const isAdmin = userRole === 'owner' || userRole === 'admin'
+    
+    // テーマ設定を取得
+    const customization = await DB.prepare(
+      'SELECT theme_preset FROM tenant_customization WHERE tenant_id = ?'
+    ).bind(tenant.id).first()
+    const theme = customization?.theme_preset || 'modern-business'
+    
     return c.html(`<!DOCTYPE html>
-<html lang="ja">
-<head>
-    <meta charset="UTF-8">
-    <title>認証エラー - Commons</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-gray-100 flex items-center justify-center min-h-screen">
-    <div class="text-center max-w-md mx-auto p-8">
-        <h1 class="text-3xl font-bold text-gray-800 mb-4">認証エラー</h1>
-        <p class="text-gray-600 mb-6">再度ログインしてください。</p>
-        <a href="/login?subdomain=${subdomain}" class="inline-block px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition">
-            <i class="fas fa-sign-in-alt mr-2"></i>ログインする
-        </a>
-    </div>
-</body>
-</html>`)
-  }
-  
-  // テナント情報を取得
-  const tenant = await DB.prepare(
-    'SELECT * FROM tenants WHERE subdomain = ? AND status = ?'
-  ).bind(subdomain, 'active').first()
-  
-  if (!tenant) {
-    return c.html(`<!DOCTYPE html>
-<html lang="ja">
-<head>
-    <meta charset="UTF-8">
-    <title>コミュニティが見つかりません - Commons</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-gray-100 flex items-center justify-center min-h-screen">
-    <div class="text-center">
-        <h1 class="text-4xl font-bold text-gray-800 mb-4">コミュニティが見つかりません</h1>
-        <a href="/" class="text-blue-600 hover:underline">ホームに戻る</a>
-    </div>
-</body>
-</html>`)
-  }
-  
-  // テーマ設定を取得
-  const customization = await DB.prepare(
-    'SELECT theme_preset FROM tenant_customization WHERE tenant_id = ?'
-  ).bind(tenant.id).first()
-  const theme = customization?.theme_preset || 'modern-business'
-  
-  return c.html(`<!DOCTYPE html>
 <html lang="ja" data-theme="${theme}">
 <head>
     <meta charset="UTF-8">
@@ -1265,6 +1227,42 @@ tenantPublic.get('/posts/new', async (c) => {
                     <p class="text-sm text-gray-500 mt-1">最大10,000文字</p>
                 </div>
 
+                ${isAdmin ? `
+                <!-- 公開範囲 (管理者のみ) -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        公開範囲 <span class="text-xs text-gray-500">(管理者のみ設定可能)</span>
+                    </label>
+                    <div class="space-y-2">
+                        <label class="flex items-center p-3 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition">
+                            <input 
+                                type="radio" 
+                                name="visibility" 
+                                value="public" 
+                                checked
+                                class="mr-3 w-4 h-4 text-primary"
+                            >
+                            <div>
+                                <span class="font-medium text-gray-700">パブリック</span>
+                                <p class="text-sm text-gray-500">誰でも閲覧できます（非会員も閲覧可能）</p>
+                            </div>
+                        </label>
+                        <label class="flex items-center p-3 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition">
+                            <input 
+                                type="radio" 
+                                name="visibility" 
+                                value="members_only"
+                                class="mr-3 w-4 h-4 text-primary"
+                            >
+                            <div>
+                                <span class="font-medium text-gray-700">会員限定</span>
+                                <p class="text-sm text-gray-500">コミュニティの会員のみ閲覧できます</p>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+                ` : ''}
+
                 <!-- 公開設定 -->
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">
@@ -1425,12 +1423,14 @@ tenantPublic.get('/posts/new', async (c) => {
                 }
                 
                 // 投稿作成APIリクエスト
+                const visibility = document.querySelector('input[name="visibility"]:checked')?.value || 'public'
                 const postData = {
                     title: title.trim(),
                     content: content.trim(),
                     category: category || null,
                     status: status,
-                    thumbnail_url: thumbnailUrl
+                    thumbnail_url: thumbnailUrl,
+                    visibility: visibility
                 }
                 
                 const response = await apiRequest('/api/posts', {
@@ -1471,6 +1471,26 @@ tenantPublic.get('/posts/new', async (c) => {
     </script>
 </body>
 </html>`)
+  } catch (error) {
+    console.error('認証エラー:', error)
+    return c.html(`<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>認証エラー - Commons</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 flex items-center justify-center min-h-screen">
+    <div class="text-center max-w-md mx-auto p-8">
+        <h1 class="text-3xl font-bold text-gray-800 mb-4">認証エラー</h1>
+        <p class="text-gray-600 mb-6">再度ログインしてください。</p>
+        <a href="/login?subdomain=${subdomain}" class="inline-block px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition">
+            <i class="fas fa-sign-in-alt mr-2"></i>ログインする
+        </a>
+    </div>
+</body>
+</html>`)
+  }
 })
 
 // --------------------------------------------
