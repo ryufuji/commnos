@@ -14,6 +14,7 @@ const profile = new Hono<AppContext>()
  */
 profile.get('/', authMiddleware, async (c) => {
   const userId = c.get('userId')
+  const tenantId = c.get('tenantId')
   const db = c.env.DB
 
   try {
@@ -26,9 +27,23 @@ profile.get('/', authMiddleware, async (c) => {
       return c.json({ success: false, error: 'User not found' }, 404)
     }
 
+    // テナント情報がある場合、そのテナントでの役割を取得
+    let role = null
+    if (tenantId) {
+      const membership = await db
+        .prepare('SELECT role FROM tenant_memberships WHERE user_id = ? AND tenant_id = ?')
+        .bind(userId, tenantId)
+        .first<{ role: string }>()
+      
+      role = membership?.role || 'member'
+    }
+
     return c.json({
       success: true,
-      user
+      user: {
+        ...user,
+        role
+      }
     })
   } catch (error) {
     console.error('[Get Profile Error]', error)

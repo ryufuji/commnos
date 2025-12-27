@@ -2099,6 +2099,7 @@ app.get('/members', (c) => {
 
         <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
         <script src="/static/app.js"></script>
+        <script src="/static/member-modal.js"></script>
         <script>
             let currentTab = 'pending'
 
@@ -2333,10 +2334,7 @@ app.get('/members', (c) => {
                 \`).join('')
             }
 
-            // 会員メニュー表示（今後実装）
-            function showMemberMenu(memberId) {
-                showToast('会員管理機能は今後実装予定です', 'info')
-            }
+            // 会員管理機能のスクリプトを読み込み
 
             // ログアウト（デスクトップ）
             document.getElementById('logoutBtn').addEventListener('click', async () => {
@@ -2360,8 +2358,33 @@ app.get('/members', (c) => {
                 })
             }
 
-            // ページロード時
-            loadPendingMembers()
+            // ページロード時：ユーザー役割を取得してlocalStorageに保存
+            async function initializeDashboard() {
+                try {
+                    const token = localStorage.getItem('authToken')
+                    if (!token) {
+                        window.location.href = '/login'
+                        return
+                    }
+
+                    // プロフィールAPIから役割を取得
+                    const response = await axios.get('/api/profile', {
+                        headers: { Authorization: 'Bearer ' + token }
+                    })
+
+                    if (response.data.success && response.data.user && response.data.user.role) {
+                        // ユーザーの役割をlocalStorageに保存
+                        localStorage.setItem('userRole', response.data.user.role)
+                    }
+                } catch (error) {
+                    console.error('Initialize dashboard error:', error)
+                }
+
+                // 承認待ちメンバーを読み込み
+                loadPendingMembers()
+            }
+
+            initializeDashboard()
         </script>
     </body>
     </html>

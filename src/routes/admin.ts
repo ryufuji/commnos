@@ -301,4 +301,199 @@ admin.put('/tenant/privacy', authMiddleware, requireRole('owner'), async (c) => 
   }
 })
 
+/**
+ * GET /api/admin/members/:id
+ * 会員詳細取得
+ */
+admin.get('/members/:id', authMiddleware, requireRole('admin'), async (c) => {
+  const membershipId = parseInt(c.req.param('id'))
+  const tenantId = c.get('tenantId')
+  const db = c.env.DB
+
+  try {
+    // 会員情報取得
+    const member = await db
+      .prepare(`
+        SELECT 
+          tm.id, tm.user_id, tm.member_number, tm.role, tm.status, tm.joined_at,
+          u.email, u.nickname, u.avatar_url, u.bio
+        FROM tenant_memberships tm
+        JOIN users u ON tm.user_id = u.id
+        WHERE tm.id = ? AND tm.tenant_id = ?
+      `)
+      .bind(membershipId, tenantId)
+      .first<any>()
+
+    if (!member) {
+      return c.json({ success: false, error: 'Member not found' }, 404)
+    }
+
+    // 会員の投稿数を取得
+    const postCount = await db
+      .prepare('SELECT COUNT(*) as count FROM posts WHERE author_id = ? AND tenant_id = ?')
+      .bind(member.user_id, tenantId)
+      .first<{ count: number }>()
+
+    // 会員のコメント数を取得
+    const commentCount = await db
+      .prepare('SELECT COUNT(*) as count FROM comments WHERE user_id = ?')
+      .bind(member.user_id)
+      .first<{ count: number }>()
+
+    return c.json({
+      success: true,
+      member: {
+        ...member,
+        post_count: postCount?.count || 0,
+        comment_count: commentCount?.count || 0
+      }
+    })
+  } catch (error) {
+    console.error('[Get Member Detail Error]', error)
+    return c.json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to get member detail'
+    }, 500)
+  }
+})
+
+/**
+ * PATCH /api/admin/members/:id/status
+ * 会員ステータス変更
+ */
+admin.patch('/members/:id/status', authMiddleware, requireRole('admin'), async (c) => {
+  const membershipId = parseInt(c.req.param('id'))
+  const tenantId = c.get('tenantId')
+  const db = c.env.DB
+  const { status } = await c.req.json<{ status: string }>()
+
+  // ステータスの検証
+  const validStatuses = ['active', 'suspended', 'withdrawn']
+  if (!validStatuses.includes(status)) {
+    return c.json({ 
+      success: false, 
+      error: 'Invalid status. Must be one of: active, suspended, withdrawn' 
+    }, 400)
+  }
+
+  try {
+    // 会員情報取得
+    const member = await db
+      .prepare('SELECT * FROM tenant_memberships WHERE id = ? AND tenant_id = ?')
+      .bind(membershipId, tenantId)
+      .first<any>()
+
+    if (!member) {
+      return c.json({ success: false, error: 'Member not found' }, 404)
+    }
+
+    // オーナーのステータスは変更できない
+    if (member.role === 'owner') {
+      return c.json({ 
+        success: false, 
+        error: 'Cannot change owner status' 
+      }, 403)
+    }
+
+    const oldStatus = member.status
+
+    // ステータス更新
+    await db
+      .prepare('UPDATE tenant_memberships SET status = ? WHERE id = ?')
+      .bind(status, membershipId)
+      .run()
+
+    // アクティブ会員数を更新
+    if (oldStatus === 'active' && status !== 'active') {
+      // アクティブ → 非アクティブ
+      await db
+        .prepare('UPDATE tenants SET member_count = member_count - 1 WHERE id = ?')
+        .bind(tenantId)
+        .run()
+    } else if (oldStatus !== 'active' && status === 'active') {
+      // 非アクティブ → アクティブ
+      await db
+        .prepare('UPDATE tenants SET member_count = member_count + 1 WHERE id = ?')
+        .bind(tenantId)
+        .run()
+    }
+
+    return c.json({
+      success: true,
+      message: 'Status updated successfully',
+      member: {
+        id: membershipId,
+        status
+      }
+    })
+  } catch (error) {
+    console.error('[Update Member Status Error]', error)
+    return c.json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to update status'
+    }, 500)
+  }
+})
+
+/**
+ * PATCH /api/admin/members/:id/role
+ * 会員役割変更（オーナーのみ）
+ */
+admin.patch('/members/:id/role', authMiddleware, requireRole('owner'), async (c) => {
+  const membershipId = parseInt(c.req.param('id'))
+  const tenantId = c.get('tenantId')
+  const db = c.env.DB
+  const { role } = await c.req.json<{ role: string }>()
+
+  // 役割の検証
+  const validRoles = ['member', 'admin']
+  if (!validRoles.includes(role)) {
+    return c.json({ 
+      success: false, 
+      error: 'Invalid role. Must be one of: member, admin' 
+    }, 400)
+  }
+
+  try {
+    // 会員情報取得
+    const member = await db
+      .prepare('SELECT * FROM tenant_memberships WHERE id = ? AND tenant_id = ?')
+      .bind(membershipId, tenantId)
+      .first<any>()
+
+    if (!member) {
+      return c.json({ success: false, error: 'Member not found' }, 404)
+    }
+
+    // オーナーの役割は変更できない
+    if (member.role === 'owner') {
+      return c.json({ 
+        success: false, 
+        error: 'Cannot change owner role' 
+      }, 403)
+    }
+
+    // 役割更新
+    await db
+      .prepare('UPDATE tenant_memberships SET role = ? WHERE id = ?')
+      .bind(role, membershipId)
+      .run()
+
+    return c.json({
+      success: true,
+      message: 'Role updated successfully',
+      member: {
+        id: membershipId,
+        role
+      }
+    })
+  } catch (error) {
+    console.error('[Update Member Role Error]', error)
+    return c.json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to update role'
+    }, 500)
+  }
+})
+
 export default admin
