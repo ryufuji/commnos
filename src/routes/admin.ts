@@ -365,11 +365,18 @@ admin.get('/members/:id', authMiddleware, requireRole('admin'), async (c) => {
       .bind(member.user_id, tenantId)
       .all()
 
-    // いいね数を取得
-    const likeCount = await db
-      .prepare('SELECT COUNT(*) as count FROM likes WHERE user_id = ?')
-      .bind(member.user_id)
-      .first<{ count: number }>()
+    // いいね数を取得（テーブルが存在しない場合は0を返す）
+    let likeCount = { count: 0 }
+    try {
+      const result = await db
+        .prepare('SELECT COUNT(*) as count FROM likes WHERE user_id = ?')
+        .bind(member.user_id)
+        .first<{ count: number }>()
+      likeCount = result || { count: 0 }
+    } catch (error) {
+      console.warn('[Likes table not found]', error)
+      // likesテーブルが存在しない場合は0を返す
+    }
 
     return c.json({
       success: true,

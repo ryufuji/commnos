@@ -26,9 +26,12 @@ async function showMemberMenu(memberId) {
         console.error('Get member detail error:', error)
         if (error.response) {
             console.error('Error response:', error.response.status, error.response.data)
+            console.error('Full error:', JSON.stringify(error.response.data, null, 2))
             if (error.response.status === 401) {
                 showToast('認証エラー: 再度ログインしてください', 'error')
                 setTimeout(() => window.location.href = '/login', 1500)
+            } else if (error.response.status === 500) {
+                showToast('サーバーエラー: ' + (error.response.data?.error || '詳細不明'), 'error')
             } else {
                 showToast(error.response.data?.error || '会員情報の取得に失敗しました', 'error')
             }
