@@ -2000,6 +2000,7 @@ app.get('/dashboard', (c) => {
             function getTenantUrl() {
               const membershipStr = localStorage.getItem('membership');
               if (!membershipStr) {
+                console.warn('No membership found, using fallback URL');
                 return '/tenant';  // Fallback
               }
               
@@ -2008,16 +2009,14 @@ app.get('/dashboard', (c) => {
                 const subdomain = membership.subdomain || membership.tenant?.subdomain;
                 
                 if (!subdomain) {
+                  console.warn('No subdomain found in membership, using fallback URL');
                   return '/tenant';  // Fallback
                 }
                 
-                // In production, use subdomain-based URL
-                if (window.location.hostname.includes('commons.com') || 
-                    window.location.hostname.includes('pages.dev')) {
-                  return \`https://\${subdomain}.commons.com\`;
-                }
+                console.log('Building tenant URL with subdomain:', subdomain);
                 
-                // In development, use query parameter
+                // Always use query parameter for now
+                // TODO: Switch to subdomain-based routing when DNS is configured
                 return \`/tenant?subdomain=\${subdomain}\`;
               } catch (e) {
                 console.error('Failed to parse membership:', e);
