@@ -2673,4 +2673,223 @@ tenantPublic.get('/tenant/members/:memberId', async (c) => {
   return c.html(html)
 })
 
+// ============================================
+// マイページ（Phase 3: Week 20）
+// ============================================
+tenantPublic.get('/tenant/mypage', async (c) => {
+  const { DB } = c.env
+  const subdomain = c.req.query('subdomain')
+  
+  if (!subdomain) {
+    return c.text('Subdomain is required', 400)
+  }
+  
+  // 認証チェック（簡易版 - クッキーまたはクエリパラメータからトークン取得）
+  const authHeader = c.req.header('Authorization')
+  const token = authHeader?.replace('Bearer ', '')
+  
+  if (!token) {
+    return c.html(`<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>ログインが必要です - Commons</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 min-h-screen flex items-center justify-center">
+    <div class="text-center">
+        <h1 class="text-3xl font-bold text-gray-900 mb-4">ログインが必要です</h1>
+        <p class="text-gray-600 mb-6">マイページにアクセスするにはログインしてください</p>
+        <a href="/login?subdomain=${subdomain}" class="inline-block px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+            ログインページへ
+        </a>
+    </div>
+    <script>
+        // JavaScriptでトークンチェック
+        const token = localStorage.getItem('token')
+        if (token) {
+            // トークンがある場合はページを再読み込み（Authorization ヘッダー付き）
+            fetch('/tenant/mypage?subdomain=${subdomain}', {
+                headers: { 'Authorization': 'Bearer ' + token }
+            }).then(response => response.text())
+              .then(html => {
+                  document.open()
+                  document.write(html)
+                  document.close()
+              })
+        }
+    </script>
+</body>
+</html>`)
+  }
+  
+  // TODO: JWTトークン検証（簡易版では省略）
+  // 実際にはトークンからユーザーIDとテナントIDを取得
+  
+  // 仮のユーザーID取得（後でJWT検証に置き換え）
+  const userId = 3 // テスト用
+  
+  const tenant = await DB.prepare(
+    'SELECT * FROM tenants WHERE subdomain = ? AND status = ?'
+  ).bind(subdomain, 'active').first() as any
+  
+  if (!tenant) {
+    return c.text('Tenant not found', 404)
+  }
+  
+  // 自分の投稿一覧を取得
+  const postsResult = await DB.prepare(`
+    SELECT p.id, p.title, p.content, p.excerpt, p.status, p.view_count, p.created_at,
+           COUNT(DISTINCT c.id) as comment_count
+    FROM posts p
+    LEFT JOIN comments c ON c.post_id = p.id
+    WHERE p.tenant_id = ? AND p.author_id = ?
+    GROUP BY p.id
+    ORDER BY p.created_at DESC
+    LIMIT 50
+  `).bind(tenant.id, userId).all()
+  
+  const posts = postsResult.results || []
+  
+  // 統計情報
+  const totalPosts = posts.length
+  const publishedPosts = posts.filter((p: any) => p.status === 'published').length
+  const draftPosts = posts.filter((p: any) => p.status === 'draft').length
+  const totalViews = posts.reduce((sum: number, p: any) => sum + (p.view_count || 0), 0)
+  
+  // 投稿HTML生成
+  let postsHTML = ''
+  if (posts.length === 0) {
+    postsHTML = '<div class="text-center py-12 text-gray-600">まだ投稿がありません</div>'
+  } else {
+    postsHTML = posts.map((post: any) => {
+      const title = String(post.title || '')
+      const excerpt = String(post.excerpt || post.content || '').substring(0, 100)
+      const status = String(post.status || 'draft')
+      const viewCount = Number(post.view_count || 0)
+      const commentCount = Number(post.comment_count || 0)
+      const createdDate = new Date(String(post.created_at)).toLocaleDateString('ja-JP')
+      
+      const statusBadge = status === 'published' 
+        ? '<span class="px-2 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded">公開中</span>'
+        : '<span class="px-2 py-1 bg-yellow-100 text-yellow-700 text-xs font-semibold rounded">下書き</span>'
+      
+      return `
+        <div class="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow">
+            <div class="flex items-start justify-between mb-3">
+                <h3 class="text-xl font-bold text-gray-900 flex-1">${title}</h3>
+                ${statusBadge}
+            </div>
+            <p class="text-gray-600 mb-4">${excerpt}...</p>
+            <div class="flex items-center justify-between text-sm text-gray-500">
+                <div class="flex items-center gap-4">
+                    <span><i class="fas fa-eye mr-1"></i>${viewCount} 閲覧</span>
+                    <span><i class="fas fa-comments mr-1"></i>${commentCount} コメント</span>
+                    <span><i class="fas fa-calendar mr-1"></i>${createdDate}</span>
+                </div>
+                <a href="/tenant/posts/${post.id}?subdomain=${subdomain}" 
+                   class="text-blue-600 hover:text-blue-700 font-semibold">
+                    詳細を見る <i class="fas fa-arrow-right ml-1"></i>
+                </a>
+            </div>
+        </div>
+      `
+    }).join('')
+  }
+  
+  return c.html(`<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>マイページ - ${tenant.name}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- ヘッダー -->
+    <header class="bg-white shadow-sm sticky top-0 z-50">
+        <div class="container mx-auto px-4 py-4">
+            <div class="flex items-center justify-between">
+                <a href="/tenant/home?subdomain=${subdomain}" class="text-2xl font-bold text-blue-600">
+                    ${tenant.name}
+                </a>
+                <nav class="hidden md:flex items-center space-x-6">
+                    <a href="/tenant/home?subdomain=${subdomain}" class="text-gray-600 hover:text-blue-600">
+                        <i class="fas fa-home mr-1"></i>ホーム
+                    </a>
+                    <a href="/tenant/posts?subdomain=${subdomain}" class="text-gray-600 hover:text-blue-600">
+                        <i class="fas fa-newspaper mr-1"></i>投稿
+                    </a>
+                    <a href="/tenant/members?subdomain=${subdomain}" class="text-gray-600 hover:text-blue-600">
+                        <i class="fas fa-users mr-1"></i>メンバー
+                    </a>
+                    <a href="/tenant/mypage?subdomain=${subdomain}" class="text-blue-600 font-semibold">
+                        <i class="fas fa-user mr-1"></i>マイページ
+                    </a>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- メインコンテンツ -->
+    <main class="container mx-auto px-4 py-8">
+        <!-- ページヘッダー -->
+        <div class="mb-8">
+            <h1 class="text-3xl md:text-4xl font-bold text-gray-900 mb-2">
+                <i class="fas fa-user-circle mr-2 text-blue-600"></i>マイページ
+            </h1>
+            <p class="text-gray-600">あなたの活動状況</p>
+        </div>
+        
+        <!-- 統計カード -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+            <div class="bg-white rounded-lg shadow-sm p-6 border-l-4 border-blue-500">
+                <div class="text-3xl font-bold text-blue-600 mb-1">${totalPosts}</div>
+                <div class="text-sm text-gray-600">総投稿数</div>
+            </div>
+            <div class="bg-white rounded-lg shadow-sm p-6 border-l-4 border-green-500">
+                <div class="text-3xl font-bold text-green-600 mb-1">${publishedPosts}</div>
+                <div class="text-sm text-gray-600">公開中</div>
+            </div>
+            <div class="bg-white rounded-lg shadow-sm p-6 border-l-4 border-yellow-500">
+                <div class="text-3xl font-bold text-yellow-600 mb-1">${draftPosts}</div>
+                <div class="text-sm text-gray-600">下書き</div>
+            </div>
+            <div class="bg-white rounded-lg shadow-sm p-6 border-l-4 border-purple-500">
+                <div class="text-3xl font-bold text-purple-600 mb-1">${totalViews}</div>
+                <div class="text-sm text-gray-600">総閲覧数</div>
+            </div>
+        </div>
+        
+        <!-- タブナビゲーション -->
+        <div class="bg-white rounded-lg shadow-sm mb-6">
+            <div class="border-b border-gray-200">
+                <nav class="flex">
+                    <button class="px-6 py-4 text-blue-600 border-b-2 border-blue-600 font-semibold">
+                        <i class="fas fa-newspaper mr-2"></i>投稿
+                    </button>
+                    <button class="px-6 py-4 text-gray-600 hover:text-gray-900">
+                        <i class="fas fa-comments mr-2"></i>コメント
+                    </button>
+                </nav>
+            </div>
+        </div>
+        
+        <!-- 投稿一覧 -->
+        <div class="space-y-4">
+            ${postsHTML}
+        </div>
+    </main>
+
+    <!-- フッター -->
+    <footer class="bg-white border-t mt-16">
+        <div class="container mx-auto px-4 py-6 text-center text-gray-600">
+            <p>© 2025 ${tenant.name}. All rights reserved.</p>
+        </div>
+    </footer>
+</body>
+</html>`)
+})
+
 export default tenantPublic
