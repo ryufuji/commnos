@@ -1179,7 +1179,7 @@ tenantPublic.get('/posts/new', async (c) => {
                         <button 
                             type="submit" 
                             id="submitBtn"
-                            class="px-6 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition"
+                            class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-semibold"
                         >
                             <i class="fas fa-paper-plane mr-2"></i>投稿する
                         </button>
