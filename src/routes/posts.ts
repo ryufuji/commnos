@@ -6,6 +6,7 @@ import { Hono } from 'hono'
 import { marked } from 'marked'
 import type { AppContext } from '../types'
 import { authMiddleware, roleMiddleware, tenantMiddleware } from '../middleware/auth'
+import { createNotification } from './notifications'
 
 const posts = new Hono<AppContext>()
 
@@ -430,6 +431,25 @@ posts.post('/:id/comments', authMiddleware, async (c) => {
 
     if (!result.success) {
       throw new Error('Failed to create comment')
+    }
+
+    // 通知を作成（投稿者へのコメント通知）
+    if (post.user_id !== userId) {
+      const commenter = await db.prepare(
+        'SELECT nickname FROM users WHERE id = ?'
+      ).bind(userId).first()
+      
+      const contentPreview = content.substring(0, 30) + (content.length > 30 ? '...' : '')
+      
+      await createNotification(db, {
+        tenantId,
+        userId: post.user_id,
+        actorId: userId,
+        type: 'comment',
+        targetType: 'post',
+        targetId: postId,
+        message: `${commenter?.nickname || 'Someone'}さんがあなたの投稿「${post.title}」にコメントしました: ${contentPreview}`
+      })
     }
 
     // 作成したコメントを取得

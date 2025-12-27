@@ -21,6 +21,7 @@ import images from './routes/images' // Phase 2 - 画像取得
 import tenantPublic from './routes/tenant-public' // Phase 3 - テナント公開ページ
 import tenantAuth from './routes/tenant-auth' // Phase 2 - テナント会員認証
 import likes from './routes/likes' // Phase 4 - いいね機能
+import notifications from './routes/notifications' // Phase 5 - 通知機能
 
 const app = new Hono<AppContext>()
 
@@ -68,6 +69,9 @@ app.route('/api/tenant', tenantAuth)
 
 // いいねルート（Phase 4）
 app.route('/api/likes', likes)
+
+// 通知ルート（Phase 5）
+app.route('/api/notifications', notifications)
 
 // --------------------------------------------
 // ルーティングロジック

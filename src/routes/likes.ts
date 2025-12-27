@@ -5,6 +5,7 @@
 import { Hono } from 'hono'
 import type { AppContext } from '../types'
 import { authMiddleware } from '../middleware/auth'
+import { createNotification } from './notifications'
 
 const likes = new Hono<AppContext>()
 
@@ -25,7 +26,7 @@ likes.post('/posts/:postId', authMiddleware, async (c) => {
   try {
     // 投稿が存在し、同じテナントに属しているか確認
     const post = await DB.prepare(
-      'SELECT id FROM posts WHERE id = ? AND tenant_id = ?'
+      'SELECT id, user_id, title FROM posts WHERE id = ? AND tenant_id = ?'
     ).bind(postId, tenantId).first()
 
     if (!post) {
@@ -37,6 +38,23 @@ likes.post('/posts/:postId', authMiddleware, async (c) => {
       await DB.prepare(
         'INSERT INTO post_likes (tenant_id, post_id, user_id) VALUES (?, ?, ?)'
       ).bind(tenantId, postId, userId).run()
+
+      // 通知を作成（投稿者が自分でない場合）
+      if (post.user_id !== userId) {
+        const actor = await DB.prepare(
+          'SELECT nickname FROM users WHERE id = ?'
+        ).bind(userId).first()
+        
+        await createNotification(DB, {
+          tenantId,
+          userId: post.user_id,
+          actorId: userId,
+          type: 'post_like',
+          targetType: 'post',
+          targetId: postId,
+          message: `${actor?.nickname || 'Someone'}さんがあなたの投稿「${post.title}」にいいねしました`
+        })
+      }
 
       // いいね数を取得
       const likeCountResult = await DB.prepare(
@@ -183,7 +201,7 @@ likes.post('/comments/:commentId', authMiddleware, async (c) => {
   try {
     // コメントが存在し、同じテナントに属しているか確認
     const comment = await DB.prepare(
-      'SELECT id FROM comments WHERE id = ? AND tenant_id = ?'
+      'SELECT c.id, c.user_id, c.content, p.title as post_title FROM comments c INNER JOIN posts p ON c.post_id = p.id WHERE c.id = ? AND c.tenant_id = ?'
     ).bind(commentId, tenantId).first()
 
     if (!comment) {
@@ -195,6 +213,25 @@ likes.post('/comments/:commentId', authMiddleware, async (c) => {
       await DB.prepare(
         'INSERT INTO comment_likes (tenant_id, comment_id, user_id) VALUES (?, ?, ?)'
       ).bind(tenantId, commentId, userId).run()
+
+      // 通知を作成（コメント者が自分でない場合）
+      if (comment.user_id !== userId) {
+        const actor = await DB.prepare(
+          'SELECT nickname FROM users WHERE id = ?'
+        ).bind(userId).first()
+        
+        const commentPreview = comment.content.substring(0, 30) + (comment.content.length > 30 ? '...' : '')
+        
+        await createNotification(DB, {
+          tenantId,
+          userId: comment.user_id,
+          actorId: userId,
+          type: 'comment_like',
+          targetType: 'comment',
+          targetId: commentId,
+          message: `${actor?.nickname || 'Someone'}さんがあなたのコメント「${commentPreview}」にいいねしました`
+        })
+      }
 
       // いいね数を取得
       const likeCountResult = await DB.prepare(
