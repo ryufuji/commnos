@@ -1062,7 +1062,39 @@ tenantPublic.get('/posts/new', async (c) => {
                             >
                                 <i class="fas fa-image mr-2"></i>画像を選択
                             </button>
-                            <p class="text-sm text-gray-500 mt-2">JPEG, PNG, GIF, WebP形式（最大5MB）</p>
+                            <p class="text-sm text-gray-500 mt-2">JPEG, PNG, GIF, WebP形式（最大10MB）</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 動画 -->
+                <div>
+                    <label for="video" class="block text-sm font-medium text-gray-700 mb-2">
+                        動画
+                    </label>
+                    <div class="flex items-center space-x-4">
+                        <div id="videoPreview" class="hidden">
+                            <video id="videoPlayer" controls class="w-64 h-48 rounded-lg bg-black">
+                                <source id="videoSource" src="" type="">
+                                お使いのブラウザは動画タグをサポートしていません。
+                            </video>
+                        </div>
+                        <div class="flex-1">
+                            <input 
+                                type="file" 
+                                id="video" 
+                                name="video" 
+                                accept="video/mp4,video/webm,video/ogg,video/quicktime"
+                                class="hidden"
+                            >
+                            <button 
+                                type="button" 
+                                id="selectVideoBtn"
+                                class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition"
+                            >
+                                <i class="fas fa-video mr-2"></i>動画を選択
+                            </button>
+                            <p class="text-sm text-gray-500 mt-2">MP4, WebM, OGG, MOV形式（最大100MB）</p>
                         </div>
                     </div>
                 </div>
@@ -1325,9 +1357,9 @@ tenantPublic.get('/posts/new', async (c) => {
             thumbnailInput?.addEventListener('change', (e) => {
                 const file = e.target.files[0]
                 if (file) {
-                    // ファイルサイズチェック（5MB）
-                    if (file.size > 5 * 1024 * 1024) {
-                        alert('ファイルサイズは5MB以下にしてください')
+                    // ファイルサイズチェック（10MB）
+                    if (file.size > 10 * 1024 * 1024) {
+                        alert('ファイルサイズは10MB以下にしてください')
                         thumbnailInput.value = ''
                         return
                     }
@@ -1339,6 +1371,37 @@ tenantPublic.get('/posts/new', async (c) => {
                         thumbnailPreview.classList.remove('hidden')
                     }
                     reader.readAsDataURL(file)
+                }
+            })
+            
+            // 動画選択
+            const videoInput = document.getElementById('video')
+            const selectVideoBtn = document.getElementById('selectVideoBtn')
+            const videoPreview = document.getElementById('videoPreview')
+            const videoPlayer = document.getElementById('videoPlayer')
+            const videoSource = document.getElementById('videoSource')
+            
+            selectVideoBtn?.addEventListener('click', () => {
+                console.log('Video button clicked')
+                videoInput.click()
+            })
+            
+            videoInput?.addEventListener('change', (e) => {
+                const file = e.target.files[0]
+                if (file) {
+                    // ファイルサイズチェック（100MB）
+                    if (file.size > 100 * 1024 * 1024) {
+                        alert('動画ファイルサイズは100MB以下にしてください')
+                        videoInput.value = ''
+                        return
+                    }
+                    
+                    // プレビュー表示
+                    const url = URL.createObjectURL(file)
+                    videoSource.src = url
+                    videoSource.type = file.type
+                    videoPlayer.load()
+                    videoPreview.classList.remove('hidden')
                 }
             })
         
@@ -1471,9 +1534,8 @@ tenantPublic.get('/posts/new', async (c) => {
                     try {
                         console.log('Starting image upload, file size:', thumbnail.size)
                         const uploadFormData = new FormData()
-                        uploadFormData.append('thumbnail', thumbnail)  // Changed from 'image' to 'thumbnail'
+                        uploadFormData.append('thumbnail', thumbnail)
                         
-                        // Use getToken() from app.js
                         const token = getToken()
                         console.log('Token exists:', !!token)
                         
@@ -1481,7 +1543,7 @@ tenantPublic.get('/posts/new', async (c) => {
                             console.error('No token found for image upload')
                             showToast('認証エラー：画像をアップロードできません', 'error')
                         } else {
-                            const uploadResponse = await fetch('/api/upload/post-thumbnail', {  // Changed endpoint
+                            const uploadResponse = await fetch('/api/upload/post-thumbnail', {
                                 method: 'POST',
                                 headers: {
                                     'Authorization': 'Bearer ' + token
@@ -1494,7 +1556,7 @@ tenantPublic.get('/posts/new', async (c) => {
                             console.log('Upload response data:', uploadData)
                             
                             if (uploadData.success) {
-                                thumbnailUrl = uploadData.thumbnail_url  // Changed from 'url' to 'thumbnail_url'
+                                thumbnailUrl = uploadData.thumbnail_url
                                 console.log('Image uploaded successfully:', thumbnailUrl)
                                 showToast('画像をアップロードしました', 'success')
                             } else {
@@ -1505,7 +1567,49 @@ tenantPublic.get('/posts/new', async (c) => {
                     } catch (uploadError) {
                         console.error('画像アップロードエラー:', uploadError)
                         showToast('画像のアップロード中にエラーが発生しました', 'error')
-                        // 画像アップロードに失敗しても投稿自体は継続
+                    }
+                }
+                
+                // 動画アップロード処理
+                const video = formData.get('video')
+                let videoUrl = null
+                if (video && video.size > 0) {
+                    try {
+                        console.log('Starting video upload, file size:', video.size)
+                        const uploadFormData = new FormData()
+                        uploadFormData.append('video', video)
+                        
+                        const token = getToken()
+                        
+                        if (!token) {
+                            console.error('No token found for video upload')
+                            showToast('認証エラー：動画をアップロードできません', 'error')
+                        } else {
+                            showToast('動画をアップロード中...', 'info')
+                            const uploadResponse = await fetch('/api/upload/post-video', {
+                                method: 'POST',
+                                headers: {
+                                    'Authorization': 'Bearer ' + token
+                                },
+                                body: uploadFormData
+                            })
+                            
+                            console.log('Video upload response status:', uploadResponse.status)
+                            const uploadData = await uploadResponse.json()
+                            console.log('Video upload response data:', uploadData)
+                            
+                            if (uploadData.success) {
+                                videoUrl = uploadData.video_url
+                                console.log('Video uploaded successfully:', videoUrl)
+                                showToast('動画をアップロードしました', 'success')
+                            } else {
+                                console.warn('動画アップロード失敗:', uploadData.error)
+                                showToast('動画のアップロードに失敗しました：' + (uploadData.error || '不明なエラー'), 'warning')
+                            }
+                        }
+                    } catch (uploadError) {
+                        console.error('動画アップロードエラー:', uploadError)
+                        showToast('動画のアップロード中にエラーが発生しました', 'error')
                     }
                 }
                 
@@ -1517,11 +1621,13 @@ tenantPublic.get('/posts/new', async (c) => {
                     category: category || null,
                     status: status,
                     thumbnail_url: thumbnailUrl,
+                    video_url: videoUrl,
                     visibility: visibility
                 }
                 
                 console.log('Submitting post data:', postData)
                 console.log('Thumbnail URL in post data:', thumbnailUrl)
+                console.log('Video URL in post data:', videoUrl)
                 
                 const response = await apiRequest('/api/posts', {
                     method: 'POST',
@@ -2413,6 +2519,13 @@ tenantPublic.get('/posts/:id', async (c) => {
             ${post.thumbnail_url ? `
             <div class="w-full h-96 overflow-hidden">
                 <img src="${post.thumbnail_url}" alt="${postTitle}" class="w-full h-full object-cover">
+            </div>
+            ` : post.video_url ? `
+            <div class="w-full bg-black flex items-center justify-center">
+                <video controls class="w-full max-h-96">
+                    <source src="${post.video_url}" type="video/mp4">
+                    お使いのブラウザは動画タグをサポートしていません。
+                </video>
             </div>
             ` : `
             <div class="w-full h-64 bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center">

@@ -107,12 +107,13 @@ posts.get('/:id', tenantMiddleware, async (c) => {
 posts.post('/', authMiddleware, async (c) => {
   const userId = c.get('userId')
   const tenantId = c.get('tenantId')
-  const { title, content, category, status, thumbnail_url, visibility } = await c.req.json<{
+  const { title, content, category, status, thumbnail_url, video_url, visibility } = await c.req.json<{
     title: string
     content: string
     category?: string | null
     status?: 'draft' | 'published'
     thumbnail_url?: string | null
+    video_url?: string | null
     visibility?: 'public' | 'members_only'
   }>()
   const db = c.env.DB
@@ -142,10 +143,10 @@ posts.post('/', authMiddleware, async (c) => {
     const result = await db
       .prepare(`
         INSERT INTO posts (
-          tenant_id, author_id, title, content, excerpt, thumbnail_url, 
+          tenant_id, author_id, title, content, excerpt, thumbnail_url, video_url,
           status, published_at, visibility, view_count, created_at, updated_at
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 0, datetime('now'), datetime('now'))
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, datetime('now'), datetime('now'))
       `)
       .bind(
         tenantId,
@@ -154,6 +155,7 @@ posts.post('/', authMiddleware, async (c) => {
         content,
         excerpt,
         thumbnail_url || null,
+        video_url || null,
         postStatus,
         publishedAt,
         postVisibility
