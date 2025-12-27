@@ -846,6 +846,38 @@ tenantPublic.get('/home', async (c) => {
                 mobileMenu.classList.toggle('hidden')
             })
         }
+
+        // 未読通知数を取得して表示
+        async function loadUnreadCount() {
+            const token = localStorage.getItem('authToken')
+            if (!token) return
+
+            try {
+                const response = await fetch('/api/notifications/unread-count', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                })
+                const data = await response.json()
+                
+                if (data.success && data.unreadCount > 0) {
+                    const badge = document.getElementById('notificationBadge')
+                    const badgeMobile = document.getElementById('notificationBadgeMobile')
+                    
+                    if (badge) {
+                        badge.textContent = data.unreadCount
+                        badge.classList.remove('hidden')
+                    }
+                    if (badgeMobile) {
+                        badgeMobile.textContent = data.unreadCount
+                        badgeMobile.classList.remove('hidden')
+                    }
+                }
+            } catch (error) {
+                console.error('未読数取得エラー:', error)
+            }
+        }
+
+        // ページ読み込み時に未読数を取得
+        loadUnreadCount()
     </script>
 </body>
 </html>`)
@@ -1527,8 +1559,12 @@ tenantPublic.get('/posts', async (c) => {
                     <a href="/tenant/posts/new?subdomain=${subdomain}" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition font-semibold">
                         <i class="fas fa-plus-circle mr-2"></i>投稿作成
                     </a>
-                    <a href="/tenant/tenant/members?subdomain=${subdomain}" class="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition">
+                    <a href="/tenant/members?subdomain=${subdomain}" class="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition">
                         <i class="fas fa-users mr-2"></i>メンバー
+                    </a>
+                    <a href="/tenant/notifications?subdomain=${subdomain}" id="notificationLink" class="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition relative">
+                        <i class="fas fa-bell mr-2"></i>通知
+                        <span id="notificationBadge" class="hidden absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full"></span>
                     </a>
                     <a href="/login?subdomain=${subdomain}" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition">
                         <i class="fas fa-sign-in-alt mr-2"></i>ログイン
@@ -1550,8 +1586,12 @@ tenantPublic.get('/posts', async (c) => {
                 <a href="/tenant/posts/new?subdomain=${subdomain}" class="block px-4 py-2 bg-green-600 text-white rounded-lg text-center font-semibold">
                     <i class="fas fa-plus-circle mr-2"></i>投稿作成
                 </a>
-                <a href="/tenant/members-list?subdomain=${subdomain}" class="block px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg text-center">
+                <a href="/tenant/members?subdomain=${subdomain}" class="block px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg text-center">
                     <i class="fas fa-users mr-2"></i>メンバー
+                </a>
+                <a href="/tenant/notifications?subdomain=${subdomain}" id="notificationLinkMobile" class="block px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg text-center relative">
+                    <i class="fas fa-bell mr-2"></i>通知
+                    <span id="notificationBadgeMobile" class="hidden ml-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full"></span>
                 </a>
                 <a href="/login?subdomain=${subdomain}" class="block px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-center">
                     <i class="fas fa-sign-in-alt mr-2"></i>ログイン
@@ -1611,6 +1651,38 @@ tenantPublic.get('/posts', async (c) => {
                 mobileMenu.classList.toggle('hidden')
             })
         }
+
+        // 未読通知数を取得して表示
+        async function loadUnreadCount() {
+            const token = localStorage.getItem('authToken')
+            if (!token) return
+
+            try {
+                const response = await fetch('/api/notifications/unread-count', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                })
+                const data = await response.json()
+                
+                if (data.success && data.unreadCount > 0) {
+                    const badge = document.getElementById('notificationBadge')
+                    const badgeMobile = document.getElementById('notificationBadgeMobile')
+                    
+                    if (badge) {
+                        badge.textContent = data.unreadCount
+                        badge.classList.remove('hidden')
+                    }
+                    if (badgeMobile) {
+                        badgeMobile.textContent = data.unreadCount
+                        badgeMobile.classList.remove('hidden')
+                    }
+                }
+            } catch (error) {
+                console.error('未読数取得エラー:', error)
+            }
+        }
+
+        // ページ読み込み時に未読数を取得
+        loadUnreadCount()
     </script>
 </body>
 </html>`)
