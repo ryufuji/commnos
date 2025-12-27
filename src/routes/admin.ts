@@ -340,12 +340,46 @@ admin.get('/members/:id', authMiddleware, requireRole('admin'), async (c) => {
       .bind(member.user_id)
       .first<{ count: number }>()
 
+    // 最新の投稿10件を取得
+    const recentPostsResult = await db
+      .prepare(`
+        SELECT id, title, status, view_count, created_at
+        FROM posts
+        WHERE author_id = ? AND tenant_id = ?
+        ORDER BY created_at DESC
+        LIMIT 10
+      `)
+      .bind(member.user_id, tenantId)
+      .all()
+
+    // 最新のコメント10件を取得（投稿タイトルも含む）
+    const recentCommentsResult = await db
+      .prepare(`
+        SELECT c.id, c.content, c.created_at, p.id as post_id, p.title as post_title
+        FROM comments c
+        JOIN posts p ON c.post_id = p.id
+        WHERE c.user_id = ? AND p.tenant_id = ?
+        ORDER BY c.created_at DESC
+        LIMIT 10
+      `)
+      .bind(member.user_id, tenantId)
+      .all()
+
+    // いいね数を取得
+    const likeCount = await db
+      .prepare('SELECT COUNT(*) as count FROM likes WHERE user_id = ?')
+      .bind(member.user_id)
+      .first<{ count: number }>()
+
     return c.json({
       success: true,
       member: {
         ...member,
         post_count: postCount?.count || 0,
-        comment_count: commentCount?.count || 0
+        comment_count: commentCount?.count || 0,
+        like_count: likeCount?.count || 0,
+        recent_posts: recentPostsResult?.results || [],
+        recent_comments: recentCommentsResult?.results || []
       }
     })
   } catch (error) {

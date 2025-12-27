@@ -35,15 +35,17 @@ function showMemberDetailModal(member) {
     modal.id = 'memberDetailModal'
     modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50'
     
-    // プロフィール部分
-    let html = '<div class="bg-white rounded-lg shadow-xl max-w-2xl w-full mx-4 max-h-[90vh] overflow-y-auto">'
-    html += '<div class="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between">'
+    let html = '<div class="bg-white rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[90vh] overflow-y-auto">'
+    
+    // ヘッダー
+    html += '<div class="sticky top-0 bg-white border-b px-6 py-4 flex items-center justify-between z-10">'
     html += '<h2 class="text-xl font-bold text-gray-900">会員詳細</h2>'
     html += '<button onclick="closeMemberDetailModal()" class="text-gray-400 hover:text-gray-600"><i class="fas fa-times text-xl"></i></button>'
     html += '</div>'
     
-    html += '<div class="p-6">'
-    html += '<div class="flex items-start gap-6 mb-6 pb-6 border-b">'
+    // プロフィールヘッダー
+    html += '<div class="p-6 border-b">'
+    html += '<div class="flex items-start gap-6">'
     html += '<div class="w-24 h-24 bg-gradient-to-br from-success-400 to-success-600 rounded-full flex items-center justify-center text-white font-bold text-3xl flex-shrink-0">'
     html += member.nickname.charAt(0).toUpperCase()
     html += '</div>'
@@ -60,20 +62,33 @@ function showMemberDetailModal(member) {
     html += '<p class="text-gray-600 mb-1"><i class="fas fa-id-card mr-2"></i>会員番号: ' + (member.member_number || '未割当') + '</p>'
     html += '<p class="text-gray-600"><i class="fas fa-calendar mr-2"></i>登録日: ' + new Date(member.joined_at).toLocaleDateString('ja-JP') + '</p>'
     if (member.bio) html += '<p class="text-gray-700 mt-3">' + member.bio + '</p>'
+    html += '</div></div></div>'
+    
+    // タブ
+    html += '<div class="border-b">'
+    html += '<div class="flex gap-2 px-6">'
+    html += '<button id="tabBasic" onclick="switchMemberTab(\'basic\')" class="px-4 py-3 font-semibold border-b-2 border-primary-500 text-primary-600">'
+    html += '<i class="fas fa-user mr-2"></i>基本情報</button>'
+    html += '<button id="tabActivity" onclick="switchMemberTab(\'activity\')" class="px-4 py-3 font-semibold border-b-2 border-transparent text-gray-600 hover:text-gray-900">'
+    html += '<i class="fas fa-chart-line mr-2"></i>アクティビティ</button>'
     html += '</div></div>'
     
-    // アクティビティ統計
-    html += '<div class="grid grid-cols-2 gap-4 mb-6">'
+    // タブコンテンツ
+    html += '<div class="p-6">'
+    
+    // 基本情報タブ
+    html += '<div id="basicTab">'
+    html += '<div class="grid grid-cols-3 gap-4 mb-6">'
     html += '<div class="bg-gray-50 rounded-lg p-4 text-center">'
     html += '<div class="text-3xl font-bold text-primary-600">' + member.post_count + '</div>'
-    html += '<div class="text-sm text-gray-600 mt-1">投稿数</div>'
-    html += '</div>'
+    html += '<div class="text-sm text-gray-600 mt-1">投稿数</div></div>'
     html += '<div class="bg-gray-50 rounded-lg p-4 text-center">'
     html += '<div class="text-3xl font-bold text-primary-600">' + member.comment_count + '</div>'
-    html += '<div class="text-sm text-gray-600 mt-1">コメント数</div>'
-    html += '</div></div>'
+    html += '<div class="text-sm text-gray-600 mt-1">コメント数</div></div>'
+    html += '<div class="bg-gray-50 rounded-lg p-4 text-center">'
+    html += '<div class="text-3xl font-bold text-primary-600">' + (member.like_count || 0) + '</div>'
+    html += '<div class="text-sm text-gray-600 mt-1">いいね数</div></div></div>'
     
-    // ステータス変更（オーナー以外）
     if (canChangeStatus) {
         html += '<div class="mb-6 p-4 bg-gray-50 rounded-lg">'
         html += '<h4 class="font-bold text-gray-900 mb-3"><i class="fas fa-shield-alt mr-2"></i>ステータス管理</h4>'
@@ -83,11 +98,9 @@ function showMemberDetailModal(member) {
         html += '<button onclick="changeMemberStatus(' + member.id + ', \'suspended\')" class="btn btn-sm ' + (member.status === 'suspended' ? 'btn-warning' : 'btn-outline-warning') + '">'
         html += '<i class="fas fa-pause-circle mr-1"></i>停止</button>'
         html += '<button onclick="changeMemberStatus(' + member.id + ', \'withdrawn\')" class="btn btn-sm ' + (member.status === 'withdrawn' ? 'btn-error' : 'btn-outline-error') + '">'
-        html += '<i class="fas fa-times-circle mr-1"></i>退会</button>'
-        html += '</div></div>'
+        html += '<i class="fas fa-times-circle mr-1"></i>退会</button></div></div>'
     }
     
-    // 役割変更（オーナーのみ）
     if (canChangeRole) {
         html += '<div class="mb-6 p-4 bg-gray-50 rounded-lg">'
         html += '<h4 class="font-bold text-gray-900 mb-3"><i class="fas fa-user-shield mr-2"></i>役割管理</h4>'
@@ -95,17 +108,85 @@ function showMemberDetailModal(member) {
         html += '<button onclick="changeMemberRole(' + member.id + ', \'member\')" class="btn btn-sm ' + (member.role === 'member' ? 'btn-primary' : 'btn-outline-primary') + '">'
         html += '<i class="fas fa-user mr-1"></i>一般会員</button>'
         html += '<button onclick="changeMemberRole(' + member.id + ', \'admin\')" class="btn btn-sm ' + (member.role === 'admin' ? 'btn-primary' : 'btn-outline-primary') + '">'
-        html += '<i class="fas fa-user-shield mr-1"></i>管理者</button>'
-        html += '</div></div>'
+        html += '<i class="fas fa-user-shield mr-1"></i>管理者</button></div></div>'
     }
-    
     html += '</div>'
+    
+    // アクティビティタブ
+    html += '<div id="activityTab" class="hidden">'
+    
+    // 最新の投稿
+    html += '<div class="mb-6">'
+    html += '<h4 class="font-bold text-gray-900 mb-3"><i class="fas fa-file-alt mr-2"></i>最新の投稿</h4>'
+    if (member.recent_posts && member.recent_posts.length > 0) {
+        html += '<div class="space-y-3">'
+        member.recent_posts.forEach(post => {
+            html += '<div class="p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">'
+            html += '<div class="flex items-start justify-between">'
+            html += '<div class="flex-1">'
+            html += '<h5 class="font-semibold text-gray-900 mb-1">' + post.title + '</h5>'
+            html += '<div class="flex items-center gap-3 text-sm text-gray-600">'
+            html += '<span><i class="fas fa-eye mr-1"></i>' + post.view_count + '回閲覧</span>'
+            html += '<span><i class="fas fa-calendar mr-1"></i>' + new Date(post.created_at).toLocaleDateString('ja-JP') + '</span>'
+            html += '</div></div>'
+            if (post.status === 'published') html += '<span class="badge badge-success">公開</span>'
+            else html += '<span class="badge badge-warning">下書き</span>'
+            html += '</div></div>'
+        })
+        html += '</div>'
+    } else {
+        html += '<p class="text-gray-500 text-center py-8">投稿はありません</p>'
+    }
+    html += '</div>'
+    
+    // 最新のコメント
+    html += '<div class="mb-6">'
+    html += '<h4 class="font-bold text-gray-900 mb-3"><i class="fas fa-comments mr-2"></i>最新のコメント</h4>'
+    if (member.recent_comments && member.recent_comments.length > 0) {
+        html += '<div class="space-y-3">'
+        member.recent_comments.forEach(comment => {
+            const commentText = comment.content.length > 100 ? comment.content.substring(0, 100) + '...' : comment.content
+            html += '<div class="p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition">'
+            html += '<p class="text-gray-700 mb-2">' + commentText + '</p>'
+            html += '<div class="flex items-center gap-3 text-sm text-gray-600">'
+            html += '<span><i class="fas fa-file-alt mr-1"></i>' + comment.post_title + '</span>'
+            html += '<span><i class="fas fa-calendar mr-1"></i>' + new Date(comment.created_at).toLocaleDateString('ja-JP') + '</span>'
+            html += '</div></div>'
+        })
+        html += '</div>'
+    } else {
+        html += '<p class="text-gray-500 text-center py-8">コメントはありません</p>'
+    }
+    html += '</div>'
+    
+    html += '</div></div>'
+    
+    // フッター
     html += '<div class="sticky bottom-0 bg-gray-50 border-t px-6 py-4 flex justify-end gap-3">'
     html += '<button onclick="closeMemberDetailModal()" class="btn btn-outline-secondary">閉じる</button>'
     html += '</div></div>'
     
     modal.innerHTML = html
     document.body.appendChild(modal)
+}
+
+function switchMemberTab(tab) {
+    const tabBasic = document.getElementById('tabBasic')
+    const tabActivity = document.getElementById('tabActivity')
+    const basicTab = document.getElementById('basicTab')
+    const activityTab = document.getElementById('activityTab')
+    
+    if (tab === 'basic') {
+        tabBasic.className = 'px-4 py-3 font-semibold border-b-2 border-primary-500 text-primary-600'
+        tabActivity.className = 'px-4 py-3 font-semibold border-b-2 border-transparent text-gray-600 hover:text-gray-900'
+        basicTab.classList.remove('hidden')
+        activityTab.classList.add('hidden')
+    } else {
+        tabBasic.className = 'px-4 py-3 font-semibold border-b-2 border-transparent text-gray-600 hover:text-gray-900'
+        tabActivity.className = 'px-4 py-3 font-semibold border-b-2 border-primary-500 text-primary-600'
+        basicTab.classList.add('hidden')
+        activityTab.classList.remove('hidden')
+    }
 }
 
 function closeMemberDetailModal() {
