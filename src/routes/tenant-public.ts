@@ -1467,28 +1467,42 @@ tenantPublic.get('/posts/new', async (c) => {
                 let thumbnailUrl = null
                 if (thumbnail && thumbnail.size > 0) {
                     try {
+                        console.log('Starting image upload, file size:', thumbnail.size)
                         const uploadFormData = new FormData()
-                        uploadFormData.append('image', thumbnail)
+                        uploadFormData.append('thumbnail', thumbnail)  // Changed from 'image' to 'thumbnail'
                         
-                        // FormDataの場合はContent-Typeヘッダーを設定しない
-                        const token = AppState.token || ''
-                        const uploadResponse = await fetch('/api/upload/image', {
-                            method: 'POST',
-                            headers: token ? {
-                                'Authorization': 'Bearer ' + token
-                            } : {},
-                            body: uploadFormData
-                        })
+                        // Use getToken() from app.js
+                        const token = getToken()
+                        console.log('Token exists:', !!token)
                         
-                        const uploadData = await uploadResponse.json()
-                        
-                        if (uploadData.success) {
-                            thumbnailUrl = uploadData.url
+                        if (!token) {
+                            console.error('No token found for image upload')
+                            showToast('認証エラー：画像をアップロードできません', 'error')
                         } else {
-                            console.warn('画像アップロード失敗:', uploadData.message)
+                            const uploadResponse = await fetch('/api/upload/post-thumbnail', {  // Changed endpoint
+                                method: 'POST',
+                                headers: {
+                                    'Authorization': 'Bearer ' + token
+                                },
+                                body: uploadFormData
+                            })
+                            
+                            console.log('Upload response status:', uploadResponse.status)
+                            const uploadData = await uploadResponse.json()
+                            console.log('Upload response data:', uploadData)
+                            
+                            if (uploadData.success) {
+                                thumbnailUrl = uploadData.thumbnail_url  // Changed from 'url' to 'thumbnail_url'
+                                console.log('Image uploaded successfully:', thumbnailUrl)
+                                showToast('画像をアップロードしました', 'success')
+                            } else {
+                                console.warn('画像アップロード失敗:', uploadData.error)
+                                showToast('画像のアップロードに失敗しました：' + (uploadData.error || '不明なエラー'), 'warning')
+                            }
                         }
                     } catch (uploadError) {
                         console.error('画像アップロードエラー:', uploadError)
+                        showToast('画像のアップロード中にエラーが発生しました', 'error')
                         // 画像アップロードに失敗しても投稿自体は継続
                     }
                 }
