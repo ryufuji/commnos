@@ -2802,7 +2802,7 @@ app.get('/posts-admin', (c) => {
             }
 
             async function deletePost(postId, title) {
-                if (!confirm('「' + title + '」を削除してもよろしいですか？\\n\\nこの操作は取り消せません。')) {
+                if (!confirm('「' + title + '」を削除してもよろしいですか？\n\nこの操作は取り消せません。')) {
                     return
                 }
 
