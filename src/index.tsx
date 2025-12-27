@@ -1997,11 +1997,11 @@ app.get('/dashboard', (c) => {
             }
 
             // Get tenant URL with subdomain
-            function getTenantUrl() {
+            function getTenantUrl(path = '') {
               const membershipStr = localStorage.getItem('membership');
               if (!membershipStr) {
                 console.warn('No membership found, using fallback URL');
-                return '/tenant';  // Fallback
+                return '/tenant' + path;  // Fallback
               }
               
               try {
@@ -2010,23 +2010,23 @@ app.get('/dashboard', (c) => {
                 
                 if (!subdomain) {
                   console.warn('No subdomain found in membership, using fallback URL');
-                  return '/tenant';  // Fallback
+                  return '/tenant' + path;  // Fallback
                 }
                 
-                console.log('Building tenant URL with subdomain:', subdomain);
+                console.log('Building tenant URL with subdomain:', subdomain, 'path:', path);
                 
                 // Always use query parameter for now
                 // TODO: Switch to subdomain-based routing when DNS is configured
-                return \`/tenant?subdomain=\${subdomain}\`;
+                return \`/tenant\${path}?subdomain=\${subdomain}\`;
               } catch (e) {
                 console.error('Failed to parse membership:', e);
-                return '/tenant';
+                return '/tenant' + path;
               }
             }
 
             // Navigate to tenant post creation page
             window.goToTenantPostNew = function() {
-              window.location.href = getTenantUrl() + '/posts/new';
+              window.location.href = getTenantUrl('/posts/new');
             }
 
             // Navigate to tenant post list page
