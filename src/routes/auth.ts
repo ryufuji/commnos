@@ -249,7 +249,9 @@ auth.post('/login', async (c) => {
         member_number: membership.member_number,
         status: membership.status,
         joined_at: membership.joined_at,
-        expires_at: membership.expires_at
+        expires_at: membership.expires_at,
+        subdomain: membership.subdomain,        // Add subdomain
+        tenant_name: membership.tenant_name      // Add tenant name
       }
     }
 

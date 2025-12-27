@@ -1581,7 +1581,7 @@ app.get('/dashboard', (c) => {
                             <p class="text-sm text-secondary-600">申請の承認・会員一覧</p>
                         </a>
 
-                        <a href="/tenant/posts/new" class="card-interactive p-6 text-center">
+                        <a href="#" onclick="goToTenantPostNew(event)" class="card-interactive p-6 text-center">
                             <div class="text-4xl mb-3 text-primary-500">
                                 <i class="fas fa-plus-circle"></i>
                             </div>
@@ -1589,7 +1589,7 @@ app.get('/dashboard', (c) => {
                             <p class="text-sm text-secondary-600">新しい投稿を作成</p>
                         </a>
 
-                        <a href="/tenant" class="card-interactive p-6 text-center">
+                        <a href="#" onclick="goToTenant(event)" class="card-interactive p-6 text-center">
                             <div class="text-4xl mb-3 text-success-500">
                                 <i class="fas fa-file-alt"></i>
                             </div>
@@ -1994,6 +1994,35 @@ app.get('/dashboard', (c) => {
                     showToast('設定の保存に失敗しました', 'error')
                     console.error('Privacy save error:', error)
                 }
+            }
+
+            // Get tenant URL with subdomain
+            function getTenantUrl() {
+              const membershipStr = localStorage.getItem('membership');
+              if (!membershipStr) {
+                return '/tenant';  // Fallback
+              }
+              
+              try {
+                const membership = JSON.parse(membershipStr);
+                const subdomain = membership.subdomain || membership.tenant?.subdomain;
+                
+                if (!subdomain) {
+                  return '/tenant';  // Fallback
+                }
+                
+                // In production, use subdomain-based URL
+                if (window.location.hostname.includes('commons.com') || 
+                    window.location.hostname.includes('pages.dev')) {
+                  return \`https://\${subdomain}.commons.com\`;
+                }
+                
+                // In development, use query parameter
+                return \`/tenant?subdomain=\${subdomain}\`;
+              } catch (e) {
+                console.error('Failed to parse membership:', e);
+                return '/tenant';
+              }
             }
 
             // ページロード時
