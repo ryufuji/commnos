@@ -2662,7 +2662,7 @@ app.get('/posts-admin', (c) => {
                     if (post.thumbnail_url) mediaBadges.push('<i class="fas fa-image text-blue-500" title="画像あり"></i>')
                     if (post.video_url) mediaBadges.push('<i class="fas fa-video text-blue-500" title="動画あり"></i>')
 
-                    const title = String(post.title || '').replace(/'/g, '\\\\\'').replace(/"/g, '&quot;')
+                    const title = String(post.title || '').replace(/'/g, "\\\\'").replace(/"/g, '&quot;')
                     
                     return \`
                         <div class="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition">
