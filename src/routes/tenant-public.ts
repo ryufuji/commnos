@@ -1391,7 +1391,7 @@ tenantPublic.get('/posts/new', async (c) => {
                             <i class="fas fa-tachometer-alt mr-2"></i>ダッシュボード
                         </a>
                         <a href="/tenant/home?subdomain=${subdomain}" class="text-gray-600 hover:text-primary transition">
-                            <i class="fas fa-eye mr-2"></i>テナントホーム
+                            <i class="fas fa-eye mr-2"></i>公開ページ
                         </a>
                         <div class="relative group">
                             <button class="text-gray-600 hover:text-primary transition flex items-center">
@@ -1418,7 +1418,7 @@ tenantPublic.get('/posts/new', async (c) => {
                             <i class="fas fa-tachometer-alt mr-2"></i>ダッシュボード
                         </a>
                         <a href="/tenant/home?subdomain=${subdomain}" class="block py-3 text-gray-700 hover:bg-gray-50 transition rounded">
-                            <i class="fas fa-eye mr-2"></i>テナントホーム
+                            <i class="fas fa-eye mr-2"></i>公開ページ
                         </a>
                         <a href="/profile" class="block py-3 text-gray-700 hover:bg-gray-50 transition rounded">
                             <i class="fas fa-user mr-2"></i>プロフィール
