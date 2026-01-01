@@ -165,7 +165,7 @@ async function previewPost(postId) {
     // サムネイル画像
     let thumbnailHtml = ''
     if (post.thumbnail_url) {
-        thumbnailHtml = '<img src="' + post.thumbnail_url + '" alt="' + post.title + '" class="w-full h-64 object-cover rounded-lg mb-6">'
+        thumbnailHtml = '<img src="' + post.thumbnail_url + '" alt="' + post.title + '" class="w-full h-auto object-contain rounded-lg mb-6 max-h-[600px] mx-auto cursor-pointer" onclick="window.open(\'' + post.thumbnail_url + '\', \'_blank\')" title="クリックで拡大表示">'
     }
 
     // 動画
