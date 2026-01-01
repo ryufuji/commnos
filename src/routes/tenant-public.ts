@@ -726,7 +726,7 @@ tenantPublic.get('/home', async (c) => {
                     ${tenantSubtitle ? `<p class="text-gray-600 mt-1">${tenantSubtitle}</p>` : ''}
                 </div>
                 <!-- デスクトップナビ -->
-                <nav class="hidden md:flex gap-4">
+                <nav class="hidden md:flex gap-4" id="desktopNav">
                     <a href="/tenant/home?subdomain=${subdomain}" class="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition">
                         <i class="fas fa-home mr-2"></i>ホーム
                     </a>
@@ -739,9 +739,24 @@ tenantPublic.get('/home', async (c) => {
                     <a href="/tenant/members?subdomain=${subdomain}" class="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition">
                         <i class="fas fa-users mr-2"></i>メンバー
                     </a>
-                    <a href="/login?subdomain=${subdomain}" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition">
+                    <a href="/login?subdomain=${subdomain}" id="loginBtn" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition">
                         <i class="fas fa-sign-in-alt mr-2"></i>ログイン
                     </a>
+                    <div id="userMenuDesktop" class="hidden relative">
+                        <button id="userMenuBtn" class="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition flex items-center gap-2">
+                            <i class="fas fa-user-circle"></i>
+                            <span id="userNickname"></span>
+                            <i class="fas fa-chevron-down text-xs"></i>
+                        </button>
+                        <div id="userDropdown" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2">
+                            <a href="/tenant/mypage?subdomain=${subdomain}" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">
+                                <i class="fas fa-user mr-2"></i>プロフィール
+                            </a>
+                            <button id="logoutBtnDesktop" class="w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100">
+                                <i class="fas fa-sign-out-alt mr-2"></i>ログアウト
+                            </button>
+                        </div>
+                    </div>
                 </nav>
                 <!-- モバイルメニューボタン -->
                 <button id="mobileMenuBtn" class="md:hidden p-2 text-gray-700 hover:bg-gray-100 rounded-lg">
@@ -762,9 +777,21 @@ tenantPublic.get('/home', async (c) => {
                 <a href="/tenant/members?subdomain=${subdomain}" class="block px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg text-center">
                     <i class="fas fa-users mr-2"></i>メンバー
                 </a>
-                <a href="/login?subdomain=${subdomain}" class="block px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-center">
+                <a href="/login?subdomain=${subdomain}" id="loginBtnMobile" class="block px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-center">
                     <i class="fas fa-sign-in-alt mr-2"></i>ログイン
                 </a>
+                <div id="userMenuMobile" class="hidden space-y-2">
+                    <div class="px-4 py-2 bg-gray-100 rounded-lg text-center">
+                        <i class="fas fa-user-circle mr-2"></i>
+                        <span id="userNicknameMobile"></span>
+                    </div>
+                    <a href="/tenant/mypage?subdomain=${subdomain}" class="block px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg text-center">
+                        <i class="fas fa-user mr-2"></i>プロフィール
+                    </a>
+                    <button id="logoutBtnMobile" class="w-full px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg">
+                        <i class="fas fa-sign-out-alt mr-2"></i>ログアウト
+                    </button>
+                </div>
             </div>
         </div>
     </header>
@@ -887,16 +914,66 @@ tenantPublic.get('/home', async (c) => {
         // ページ読み込み時に未読数を取得
         loadUnreadCount()
         
-        // デバッグ：ログイン状態を確認
-        const token = localStorage.getItem('token')
-        const user = localStorage.getItem('user')
-        const membership = localStorage.getItem('membership')
-        console.log('[Tenant Home] Auth check:', {
-            hasToken: !!token,
-            hasUser: !!user,
-            hasMembership: !!membership,
-            tokenPreview: token ? token.substring(0, 20) + '...' : 'none'
-        })
+        // 認証状態をチェックしてUIを更新
+        function updateAuthUI() {
+            const token = localStorage.getItem('token')
+            const userStr = localStorage.getItem('user')
+            const user = userStr ? JSON.parse(userStr) : null
+            
+            console.log('[Tenant Home] Auth check:', {
+                hasToken: !!token,
+                hasUser: !!user,
+                userNickname: user?.nickname
+            })
+            
+            if (token && user) {
+                // ログイン済み：ログインボタンを非表示、ユーザーメニューを表示
+                const loginBtn = document.getElementById('loginBtn')
+                const loginBtnMobile = document.getElementById('loginBtnMobile')
+                const userMenuDesktop = document.getElementById('userMenuDesktop')
+                const userMenuMobile = document.getElementById('userMenuMobile')
+                const userNickname = document.getElementById('userNickname')
+                const userNicknameMobile = document.getElementById('userNicknameMobile')
+                
+                if (loginBtn) loginBtn.classList.add('hidden')
+                if (loginBtnMobile) loginBtnMobile.classList.add('hidden')
+                if (userMenuDesktop) userMenuDesktop.classList.remove('hidden')
+                if (userMenuMobile) userMenuMobile.classList.remove('hidden')
+                if (userNickname) userNickname.textContent = user.nickname || 'ユーザー'
+                if (userNicknameMobile) userNicknameMobile.textContent = user.nickname || 'ユーザー'
+                
+                // ユーザーメニューのドロップダウン
+                const userMenuBtn = document.getElementById('userMenuBtn')
+                const userDropdown = document.getElementById('userDropdown')
+                if (userMenuBtn && userDropdown) {
+                    userMenuBtn.addEventListener('click', () => {
+                        userDropdown.classList.toggle('hidden')
+                    })
+                    // 外側クリックで閉じる
+                    document.addEventListener('click', (e) => {
+                        if (!userMenuBtn.contains(e.target) && !userDropdown.contains(e.target)) {
+                            userDropdown.classList.add('hidden')
+                        }
+                    })
+                }
+                
+                // ログアウト処理
+                const logoutBtnDesktop = document.getElementById('logoutBtnDesktop')
+                const logoutBtnMobile = document.getElementById('logoutBtnMobile')
+                
+                const handleLogout = () => {
+                    localStorage.removeItem('token')
+                    localStorage.removeItem('user')
+                    localStorage.removeItem('membership')
+                    window.location.reload()
+                }
+                
+                if (logoutBtnDesktop) logoutBtnDesktop.addEventListener('click', handleLogout)
+                if (logoutBtnMobile) logoutBtnMobile.addEventListener('click', handleLogout)
+            }
+        }
+        
+        updateAuthUI()
     </script>
 </body>
 </html>`)

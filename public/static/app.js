@@ -220,19 +220,17 @@ async function handleLogin(email, password) {
 
     showToast('ログインしました！', 'success')
 
-    // 役割に応じてリダイレクト
-    setTimeout(() => {
-      const membership = response.membership
-      const subdomain = membership.subdomain
-      
-      // 管理者（owner/admin）はダッシュボードへ
-      if (membership.role === 'owner' || membership.role === 'admin') {
-        window.location.href = '/dashboard'
-      } else {
-        // 一般メンバーはテナントホームへ
-        window.location.href = `/tenant/home?subdomain=${subdomain}`
-      }
-    }, 1500)
+    // 役割に応じて即座にリダイレクト（遅延なし）
+    const membership = response.membership
+    const subdomain = membership.subdomain
+    
+    // 管理者（owner/admin）はダッシュボードへ
+    if (membership.role === 'owner' || membership.role === 'admin') {
+      window.location.href = '/dashboard'
+    } else {
+      // 一般メンバーはテナントホームへ
+      window.location.href = `/tenant/home?subdomain=${subdomain}`
+    }
 
     return response
   } catch (error) {
