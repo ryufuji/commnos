@@ -2673,11 +2673,21 @@ app.get('/posts-admin', (c) => {
                 })
             }
 
+            // グローバルスコープに公開（デバッグ用）
+            window.initPostsAdmin = initPostsAdmin
+            window.loadPosts = loadPosts
+            
             // ページ読み込み後に実行
+            console.log('Document ready state:', document.readyState)
             if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', initPostsAdmin)
+                console.log('Waiting for DOMContentLoaded...')
+                document.addEventListener('DOMContentLoaded', () => {
+                    console.log('DOMContentLoaded fired!')
+                    initPostsAdmin()
+                })
             } else {
                 // DOMが既に読み込まれている場合
+                console.log('DOM already loaded, initializing immediately')
                 initPostsAdmin()
             }
 
