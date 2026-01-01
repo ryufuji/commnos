@@ -2665,21 +2665,35 @@ app.get('/posts-admin', (c) => {
             })
 
             async function loadPosts() {
+                console.log('Loading posts... page:', currentPage, 'status:', currentStatus)
                 try {
                     const token = getToken()
+                    console.log('Token exists:', !!token)
+                    
                     const response = await axios.get('/api/admin/posts', {
                         params: { page: currentPage, limit: 20, status: currentStatus },
                         headers: { 'Authorization': 'Bearer ' + token }
                     })
 
+                    console.log('API Response:', response.data)
+
                     if (response.data.success) {
                         allPosts = response.data.posts
+                        console.log('Posts loaded:', allPosts.length)
                         renderPosts(response.data.posts)
                         renderPagination(response.data.pagination)
                         document.getElementById('totalCount').textContent = '全 ' + response.data.pagination.total + ' 件'
+                    } else {
+                        console.error('API returned success=false')
+                        document.getElementById('postsList').innerHTML = '<div class="text-center py-12"><p class="text-red-600">データの取得に失敗しました</p></div>'
                     }
                 } catch (error) {
                     console.error('Error loading posts:', error)
+                    console.error('Error response:', error.response)
+                    
+                    // ローディング表示を削除
+                    document.getElementById('postsList').innerHTML = '<div class="text-center py-12"><i class="fas fa-exclamation-circle text-4xl text-red-400 mb-4"></i><p class="text-red-600">投稿の読み込みに失敗しました</p></div>'
+                    
                     showToast('投稿の読み込みに失敗しました', 'error')
                     if (error.response?.status === 401 || error.response?.status === 403) {
                         showToast('管理者権限が必要です', 'error')
