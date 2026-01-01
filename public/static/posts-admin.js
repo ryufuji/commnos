@@ -165,7 +165,7 @@ async function previewPost(postId) {
     // サムネイル画像
     let thumbnailHtml = ''
     if (post.thumbnail_url) {
-        thumbnailHtml = '<img src="' + post.thumbnail_url + '" alt="' + post.title + '" class="w-full h-auto object-contain rounded-lg mb-6 max-h-[600px] mx-auto cursor-pointer" onclick="window.open(\'' + post.thumbnail_url + '\', \'_blank\')" title="クリックで拡大表示">'
+        thumbnailHtml = '<img src="' + post.thumbnail_url + '" alt="' + post.title + '" class="w-full h-auto object-contain rounded-lg mb-6 max-h-[600px] mx-auto cursor-pointer hover:opacity-90 transition" onclick="showImageModal(\'' + post.thumbnail_url + '\')" title="クリックで拡大表示">'
     }
 
     // 動画
@@ -210,6 +210,23 @@ async function previewPost(postId) {
 // closePreviewModal 関数
 function closePreviewModal() {
     document.getElementById('previewModal').classList.add('hidden')
+}
+
+// showImageModal 関数
+function showImageModal(imageUrl) {
+    const modal = document.getElementById('imageModal')
+    if (!modal) {
+        console.error('imageModal not found')
+        return
+    }
+    
+    document.getElementById('modalImage').src = imageUrl
+    modal.classList.remove('hidden')
+}
+
+// closeImageModal 関数
+function closeImageModal() {
+    document.getElementById('imageModal').classList.add('hidden')
 }
 
 // editPost 関数
@@ -344,6 +361,8 @@ window.initPostsAdmin = initPostsAdmin
 window.loadPosts = loadPosts
 window.previewPost = previewPost
 window.closePreviewModal = closePreviewModal
+window.showImageModal = showImageModal
+window.closeImageModal = closeImageModal
 window.editPost = editPost
 window.deletePost = deletePost
 window.changePage = changePage

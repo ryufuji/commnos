@@ -2647,6 +2647,16 @@ app.get('/posts-admin', (c) => {
             </div>
         </div>
 
+        <!-- 画像拡大モーダル -->
+        <div id="imageModal" class="hidden fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center p-4" onclick="closeImageModal()">
+            <div class="relative max-w-7xl max-h-[95vh] w-full h-full flex items-center justify-center">
+                <button onclick="closeImageModal()" class="absolute top-4 right-4 text-white hover:text-gray-300 z-10">
+                    <i class="fas fa-times text-3xl"></i>
+                </button>
+                <img id="modalImage" src="" alt="拡大表示" class="max-w-full max-h-full object-contain" onclick="event.stopPropagation()">
+            </div>
+        </div>
+
         <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
         <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
         <script src="/static/app.js"></script>
