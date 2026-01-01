@@ -30,6 +30,22 @@ const app = new Hono<AppContext>()
 // グローバルミドルウェア
 // --------------------------------------------
 
+// セキュリティヘッダー設定（CSP緩和）
+app.use('*', async (c, next) => {
+  await next()
+  // Tailwind CDN と eval() を許可するCSP設定
+  c.header(
+    'Content-Security-Policy',
+    "default-src 'self'; " +
+    "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://cdn.jsdelivr.net; " +
+    "style-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://cdn.jsdelivr.net; " +
+    "font-src 'self' https://cdn.jsdelivr.net; " +
+    "img-src 'self' data: blob: https:; " +
+    "connect-src 'self' https:; " +
+    "frame-src 'self';"
+  )
+})
+
 // CORS 設定（API ルートのみ）
 app.use('/api/*', cors())
 
