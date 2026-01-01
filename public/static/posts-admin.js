@@ -262,12 +262,45 @@ async function editPost(postId) {
     document.getElementById('editStatus').value = post.status
     document.getElementById('editVisibility').value = post.visibility
 
-    let mediaInfo = '<div class="text-sm text-gray-600">添付メディア：'
-    if (post.thumbnail_url) mediaInfo += '<i class="fas fa-image text-blue-500 ml-2"></i>'
-    if (post.video_url) mediaInfo += '<i class="fas fa-video text-blue-500 ml-2"></i>'
-    if (!post.thumbnail_url && !post.video_url) mediaInfo += 'メディアなし'
+    // 現在のメディア情報を表示（削除ボタン付き）
+    let mediaInfo = '<div class="space-y-2">'
+    if (post.thumbnail_url) {
+        mediaInfo += '<div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">'
+        mediaInfo += '<div class="flex items-center gap-2">'
+        mediaInfo += '<i class="fas fa-image text-blue-500"></i>'
+        mediaInfo += '<span class="text-sm text-gray-600">現在の画像：</span>'
+        mediaInfo += '<a href="' + post.thumbnail_url + '" target="_blank" class="text-sm text-blue-600 hover:underline" onclick="event.stopPropagation(); showImageModal(\'' + post.thumbnail_url + '\')">プレビュー</a>'
+        mediaInfo += '</div>'
+        mediaInfo += '<button type="button" onclick="removeCurrentThumbnail()" class="px-3 py-1 text-xs text-red-600 hover:bg-red-50 rounded-md transition-colors">'
+        mediaInfo += '<i class="fas fa-times mr-1"></i>削除'
+        mediaInfo += '</button>'
+        mediaInfo += '</div>'
+    }
+    if (post.video_url) {
+        mediaInfo += '<div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">'
+        mediaInfo += '<div class="flex items-center gap-2">'
+        mediaInfo += '<i class="fas fa-video text-blue-500"></i>'
+        mediaInfo += '<span class="text-sm text-gray-600">現在の動画：</span>'
+        mediaInfo += '<a href="' + post.video_url + '" target="_blank" class="text-sm text-blue-600 hover:underline">表示</a>'
+        mediaInfo += '</div>'
+        mediaInfo += '<button type="button" onclick="removeCurrentVideo()" class="px-3 py-1 text-xs text-red-600 hover:bg-red-50 rounded-md transition-colors">'
+        mediaInfo += '<i class="fas fa-times mr-1"></i>削除'
+        mediaInfo += '</button>'
+        mediaInfo += '</div>'
+    }
+    if (!post.thumbnail_url && !post.video_url) {
+        mediaInfo += '<div class="text-sm text-gray-500">メディアなし</div>'
+    }
     mediaInfo += '</div>'
     document.getElementById('mediaInfo').innerHTML = mediaInfo
+
+    // 新しいメディアのプレビューをリセット
+    document.getElementById('editThumbnail').value = ''
+    document.getElementById('editVideo').value = ''
+    document.getElementById('editThumbnailPreview').classList.add('hidden')
+    document.getElementById('editVideoPreview').classList.add('hidden')
+    document.getElementById('editRemoveThumbnailBtn').classList.add('hidden')
+    document.getElementById('editRemoveVideoBtn').classList.add('hidden')
 
     document.getElementById('editModal').classList.remove('hidden')
 }
@@ -282,13 +315,56 @@ async function savePost() {
     saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>更新中...'
 
     try {
+        // 新しい画像・動画をアップロード
+        let thumbnailUrl = currentPost.thumbnail_url
+        let videoUrl = currentPost.video_url
+
+        const thumbnailFile = document.getElementById('editThumbnail').files[0]
+        const videoFile = document.getElementById('editVideo').files[0]
+
+        // 画像アップロード
+        if (thumbnailFile) {
+            const formData = new FormData()
+            formData.append('file', thumbnailFile)
+            formData.append('type', 'thumbnail')
+
+            const uploadResponse = await axios.post('/api/upload', formData, {
+                headers: {
+                    'Authorization': 'Bearer ' + token,
+                    'Content-Type': 'multipart/form-data'
+                }
+            })
+
+            if (uploadResponse.data.success) {
+                thumbnailUrl = uploadResponse.data.url
+            }
+        }
+
+        // 動画アップロード
+        if (videoFile) {
+            const formData = new FormData()
+            formData.append('file', videoFile)
+            formData.append('type', 'video')
+
+            const uploadResponse = await axios.post('/api/upload', formData, {
+                headers: {
+                    'Authorization': 'Bearer ' + token,
+                    'Content-Type': 'multipart/form-data'
+                }
+            })
+
+            if (uploadResponse.data.success) {
+                videoUrl = uploadResponse.data.url
+            }
+        }
+
         const data = {
             title: document.getElementById('editTitle').value,
             content: document.getElementById('editContent').value,
             status: document.getElementById('editStatus').value,
             visibility: document.getElementById('editVisibility').value,
-            thumbnail_url: currentPost.thumbnail_url,
-            video_url: currentPost.video_url
+            thumbnail_url: thumbnailUrl,
+            video_url: videoUrl
         }
 
         const response = await axios.put('/api/admin/posts/' + postId, data, {
@@ -313,6 +389,60 @@ async function savePost() {
 function closeEditModal() {
     document.getElementById('editModal').classList.add('hidden')
     currentPost = null
+}
+
+// removeCurrentThumbnail 関数
+function removeCurrentThumbnail() {
+    if (currentPost) {
+        currentPost.thumbnail_url = null
+        // メディア情報を再描画
+        let mediaInfo = '<div class="space-y-2">'
+        if (currentPost.video_url) {
+            mediaInfo += '<div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">'
+            mediaInfo += '<div class="flex items-center gap-2">'
+            mediaInfo += '<i class="fas fa-video text-blue-500"></i>'
+            mediaInfo += '<span class="text-sm text-gray-600">現在の動画：</span>'
+            mediaInfo += '<a href="' + currentPost.video_url + '" target="_blank" class="text-sm text-blue-600 hover:underline">表示</a>'
+            mediaInfo += '</div>'
+            mediaInfo += '<button type="button" onclick="removeCurrentVideo()" class="px-3 py-1 text-xs text-red-600 hover:bg-red-50 rounded-md transition-colors">'
+            mediaInfo += '<i class="fas fa-times mr-1"></i>削除'
+            mediaInfo += '</button>'
+            mediaInfo += '</div>'
+        }
+        if (!currentPost.thumbnail_url && !currentPost.video_url) {
+            mediaInfo += '<div class="text-sm text-gray-500">メディアなし</div>'
+        }
+        mediaInfo += '</div>'
+        document.getElementById('mediaInfo').innerHTML = mediaInfo
+        showToast('画像を削除しました（保存後に反映されます）', 'info')
+    }
+}
+
+// removeCurrentVideo 関数
+function removeCurrentVideo() {
+    if (currentPost) {
+        currentPost.video_url = null
+        // メディア情報を再描画
+        let mediaInfo = '<div class="space-y-2">'
+        if (currentPost.thumbnail_url) {
+            mediaInfo += '<div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">'
+            mediaInfo += '<div class="flex items-center gap-2">'
+            mediaInfo += '<i class="fas fa-image text-blue-500"></i>'
+            mediaInfo += '<span class="text-sm text-gray-600">現在の画像：</span>'
+            mediaInfo += '<a href="' + currentPost.thumbnail_url + '" target="_blank" class="text-sm text-blue-600 hover:underline" onclick="event.stopPropagation(); showImageModal(\'' + currentPost.thumbnail_url + '\')">プレビュー</a>'
+            mediaInfo += '</div>'
+            mediaInfo += '<button type="button" onclick="removeCurrentThumbnail()" class="px-3 py-1 text-xs text-red-600 hover:bg-red-50 rounded-md transition-colors">'
+            mediaInfo += '<i class="fas fa-times mr-1"></i>削除'
+            mediaInfo += '</button>'
+            mediaInfo += '</div>'
+        }
+        if (!currentPost.thumbnail_url && !currentPost.video_url) {
+            mediaInfo += '<div class="text-sm text-gray-500">メディアなし</div>'
+        }
+        mediaInfo += '</div>'
+        document.getElementById('mediaInfo').innerHTML = mediaInfo
+        showToast('動画を削除しました（保存後に反映されます）', 'info')
+    }
 }
 
 // deletePost 関数
@@ -384,6 +514,8 @@ window.closeImageModal = closeImageModal
 window.editPost = editPost
 window.deletePost = deletePost
 window.changePage = changePage
+window.removeCurrentThumbnail = removeCurrentThumbnail
+window.removeCurrentVideo = removeCurrentVideo
 
 // ページ読み込み後に実行
 console.log('Document ready state:', document.readyState)
@@ -392,6 +524,90 @@ if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => {
         console.log('DOMContentLoaded fired!')
         initPostsAdmin()
+        
+        // 編集モーダルの画像選択
+        const editSelectThumbnailBtn = document.getElementById('editSelectThumbnailBtn')
+        const editThumbnail = document.getElementById('editThumbnail')
+        const editThumbnailPreview = document.getElementById('editThumbnailPreview')
+        const editThumbnailImg = document.getElementById('editThumbnailImg')
+        const editRemoveThumbnailBtn = document.getElementById('editRemoveThumbnailBtn')
+        
+        if (editSelectThumbnailBtn) {
+            editSelectThumbnailBtn.addEventListener('click', () => {
+                editThumbnail.click()
+            })
+        }
+        
+        if (editThumbnail) {
+            editThumbnail.addEventListener('change', (e) => {
+                const file = e.target.files[0]
+                if (file) {
+                    if (file.size > 10 * 1024 * 1024) {
+                        alert('ファイルサイズは10MB以下にしてください')
+                        editThumbnail.value = ''
+                        return
+                    }
+                    
+                    const reader = new FileReader()
+                    reader.onload = (e) => {
+                        editThumbnailImg.src = e.target.result
+                        editThumbnailPreview.classList.remove('hidden')
+                        editRemoveThumbnailBtn.classList.remove('hidden')
+                    }
+                    reader.readAsDataURL(file)
+                }
+            })
+        }
+        
+        if (editRemoveThumbnailBtn) {
+            editRemoveThumbnailBtn.addEventListener('click', () => {
+                editThumbnail.value = ''
+                editThumbnailPreview.classList.add('hidden')
+                editRemoveThumbnailBtn.classList.add('hidden')
+            })
+        }
+        
+        // 編集モーダルの動画選択
+        const editSelectVideoBtn = document.getElementById('editSelectVideoBtn')
+        const editVideo = document.getElementById('editVideo')
+        const editVideoPreview = document.getElementById('editVideoPreview')
+        const editVideoPlayer = document.getElementById('editVideoPlayer')
+        const editRemoveVideoBtn = document.getElementById('editRemoveVideoBtn')
+        
+        if (editSelectVideoBtn) {
+            editSelectVideoBtn.addEventListener('click', () => {
+                editVideo.click()
+            })
+        }
+        
+        if (editVideo) {
+            editVideo.addEventListener('change', (e) => {
+                const file = e.target.files[0]
+                if (file) {
+                    if (file.size > 100 * 1024 * 1024) {
+                        alert('ファイルサイズは100MB以下にしてください')
+                        editVideo.value = ''
+                        return
+                    }
+                    
+                    const reader = new FileReader()
+                    reader.onload = (e) => {
+                        editVideoPlayer.src = e.target.result
+                        editVideoPreview.classList.remove('hidden')
+                        editRemoveVideoBtn.classList.remove('hidden')
+                    }
+                    reader.readAsDataURL(file)
+                }
+            })
+        }
+        
+        if (editRemoveVideoBtn) {
+            editRemoveVideoBtn.addEventListener('click', () => {
+                editVideo.value = ''
+                editVideoPreview.classList.add('hidden')
+                editRemoveVideoBtn.classList.add('hidden')
+            })
+        }
     })
 } else {
     console.log('DOM already loaded, initializing immediately')

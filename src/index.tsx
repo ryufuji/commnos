@@ -2591,7 +2591,49 @@ app.get('/posts-admin', (c) => {
                         </div>
                     </div>
 
-                    <div id="mediaInfo" class="text-sm text-gray-600"></div>
+                    <!-- 現在のメディア情報 -->
+                    <div id="mediaInfo" class="p-4 bg-gray-50 rounded-lg"></div>
+
+                    <!-- 画像アップロード -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            サムネイル画像
+                        </label>
+                        <div class="flex items-center gap-4">
+                            <button type="button" id="editSelectThumbnailBtn"
+                                class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition">
+                                <i class="fas fa-image mr-2"></i>画像を選択
+                            </button>
+                            <input type="file" id="editThumbnail" accept="image/*" class="hidden">
+                            <button type="button" id="editRemoveThumbnailBtn" class="hidden px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition">
+                                <i class="fas fa-trash mr-2"></i>画像を削除
+                            </button>
+                        </div>
+                        <div id="editThumbnailPreview" class="hidden mt-4">
+                            <img id="editThumbnailImg" src="" alt="サムネイル" class="max-w-full h-auto max-h-64 rounded-lg">
+                        </div>
+                    </div>
+
+                    <!-- 動画アップロード -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            動画
+                        </label>
+                        <div class="flex items-center gap-4">
+                            <button type="button" id="editSelectVideoBtn"
+                                class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition">
+                                <i class="fas fa-video mr-2"></i>動画を選択
+                            </button>
+                            <input type="file" id="editVideo" accept="video/*" class="hidden">
+                            <button type="button" id="editRemoveVideoBtn" class="hidden px-4 py-2 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition">
+                                <i class="fas fa-trash mr-2"></i>動画を削除
+                            </button>
+                        </div>
+                        <div id="editVideoPreview" class="hidden mt-4">
+                            <video id="editVideoPlayer" controls class="max-w-full h-auto max-h-64 rounded-lg"></video>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-2">最大100MB、MP4/WebM/OGG形式</p>
+                    </div>
 
                     <div class="flex gap-4 pt-4">
                         <button type="submit" id="saveBtn"
