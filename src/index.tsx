@@ -1807,6 +1807,13 @@ app.get('/dashboard', (c) => {
                     window.location.href = '/login'
                     return
                 }
+                
+                // 一般メンバーはテナントホームにリダイレクト
+                if (membership.role !== 'admin' && membership.role !== 'owner') {
+                    const subdomain = membership.subdomain || 'test'
+                    window.location.href = \`/tenant/home?subdomain=\${subdomain}\`
+                    return
+                }
 
                 const userInfoEl = document.getElementById('userInfo')
                 userInfoEl.innerHTML = \`

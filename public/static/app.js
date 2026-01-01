@@ -220,12 +220,18 @@ async function handleLogin(email, password) {
 
     showToast('ログインしました！', 'success')
 
-    // テナントページにリダイレクト
+    // 役割に応じてリダイレクト
     setTimeout(() => {
-      // membership から tenant を取得してリダイレクト
-      const tenantId = response.membership.tenant_id
-      // 実際の実装では tenant 情報を取得してサブドメインを特定
-      window.location.href = '/dashboard'
+      const membership = response.membership
+      const subdomain = membership.subdomain
+      
+      // 管理者（owner/admin）はダッシュボードへ
+      if (membership.role === 'owner' || membership.role === 'admin') {
+        window.location.href = '/dashboard'
+      } else {
+        // 一般メンバーはテナントホームへ
+        window.location.href = `/tenant/home?subdomain=${subdomain}`
+      }
     }, 1500)
 
     return response
