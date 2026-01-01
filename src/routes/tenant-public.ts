@@ -950,68 +950,99 @@ tenantPublic.get('/posts/new', async (c) => {
     <link href="/static/styles.css" rel="stylesheet">
 </head>
 <body class="bg-gray-50 min-h-screen">
-    <!-- ヘッダー -->
-    <header class="bg-white shadow-sm sticky top-0 z-50">
+    <!-- ヘッダー（管理者用・一般メンバー用で動的に変更） -->
+    <header id="mainHeader" class="bg-white shadow-sm sticky top-0 z-50">
         <div class="container mx-auto px-4 py-4">
             <div class="flex items-center justify-between">
                 <div class="flex items-center space-x-4">
-                    <a href="/tenant/home?subdomain=${subdomain}" class="text-2xl font-bold text-primary">
+                    <a href="/tenant/home?subdomain=${subdomain}" class="text-xl md:text-2xl font-bold text-primary">
                         ${tenant.name}
                     </a>
-                    ${tenant.subtitle ? `<span class="text-gray-500 hidden md:inline">- ${tenant.subtitle}</span>` : ''}
+                    ${tenant.subtitle ? `<span class="text-gray-500 hidden md:inline text-sm">- ${tenant.subtitle}</span>` : ''}
                 </div>
                 
-                <!-- デスクトップナビ -->
+                <!-- デスクトップナビ（動的生成） -->
                 <nav id="desktopNav" class="hidden md:flex items-center space-x-6">
-                    <a href="/tenant/home?subdomain=${subdomain}" class="text-gray-600 hover:text-primary transition">
-                        <i class="fas fa-home mr-2"></i>ホーム
-                    </a>
-                    <a href="/tenant/posts?subdomain=${subdomain}" class="text-gray-600 hover:text-primary transition">
-                        <i class="fas fa-newspaper mr-2"></i>投稿
-                    </a>
-                    <a href="/tenant/posts/new?subdomain=${subdomain}" class="text-primary font-semibold">
-                        <i class="fas fa-plus-circle mr-2"></i>投稿作成
-                    </a>
-                    <a href="/tenant/members?subdomain=${subdomain}" class="text-gray-600 hover:text-primary transition">
-                        <i class="fas fa-users mr-2"></i>メンバー
-                    </a>
-                    <!-- 認証状態で動的に変更 -->
-                    <div id="authNav">
-                        <a href="/login?subdomain=${subdomain}" class="text-gray-600 hover:text-primary transition">
-                            <i class="fas fa-sign-in-alt mr-2"></i>ログイン
-                        </a>
-                    </div>
+                    <!-- JavaScriptで動的に生成 -->
                 </nav>
                 
-                <!-- モバイルメニューボタン -->
-                <button id="mobileMenuToggle" class="md:hidden text-gray-600 hover:text-primary">
+                <!-- モバイルメニューボタン（管理者のみ表示） -->
+                <button id="mobileMenuToggle" class="hidden md:hidden text-gray-600 hover:text-primary">
                     <i class="fas fa-bars text-xl"></i>
                 </button>
             </div>
             
-            <!-- モバイルナビ -->
+            <!-- ハンバーガーメニュー（管理者用モバイル） -->
             <nav id="mobileMenu" class="md:hidden mt-4 pb-4 space-y-2 hidden">
-                <a href="/tenant/home?subdomain=${subdomain}" class="block py-2 text-gray-600 hover:text-primary transition">
-                    <i class="fas fa-home mr-2"></i>ホーム
-                </a>
-                <a href="/tenant/posts?subdomain=${subdomain}" class="block py-2 text-gray-600 hover:text-primary transition">
-                    <i class="fas fa-newspaper mr-2"></i>投稿
-                </a>
-                <a href="/tenant/posts/new?subdomain=${subdomain}" class="block py-2 text-primary font-semibold">
-                    <i class="fas fa-plus-circle mr-2"></i>投稿作成
-                </a>
-                <a href="/tenant/members?subdomain=${subdomain}" class="block py-2 text-gray-600 hover:text-primary transition">
-                    <i class="fas fa-users mr-2"></i>メンバー
-                </a>
-                <!-- 認証状態で動的に変更 -->
-                <div id="authNavMobile">
-                    <a href="/login?subdomain=${subdomain}" class="block py-2 text-gray-600 hover:text-primary transition">
-                        <i class="fas fa-sign-in-alt mr-2"></i>ログイン
-                    </a>
-                </div>
+                <!-- JavaScriptで動的に生成 -->
             </nav>
         </div>
     </header>
+    
+    <!-- ボトムナビゲーション（一般メンバー用モバイル） -->
+    <nav id="bottomNav" class="hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 safe-area-inset">
+        <div class="flex items-center justify-around h-16">
+            <a href="/tenant/home?subdomain=${subdomain}" class="bottom-nav-item flex flex-col items-center justify-center flex-1 py-2" data-page="home">
+                <i class="fas fa-home text-2xl mb-1"></i>
+                <span class="text-xs">ホーム</span>
+            </a>
+            <a href="/tenant/posts?subdomain=${subdomain}" class="bottom-nav-item flex flex-col items-center justify-center flex-1 py-2" data-page="posts">
+                <i class="fas fa-newspaper text-2xl mb-1"></i>
+                <span class="text-xs">投稿</span>
+            </a>
+            <a href="/tenant/posts/new?subdomain=${subdomain}" class="bottom-nav-item flex flex-col items-center justify-center flex-1 py-2" data-page="new">
+                <i class="fas fa-plus-circle text-3xl mb-1 text-green-600"></i>
+                <span class="text-xs font-semibold text-green-600">作成</span>
+            </a>
+            <a href="/tenant/members?subdomain=${subdomain}" class="bottom-nav-item flex flex-col items-center justify-center flex-1 py-2" data-page="members">
+                <i class="fas fa-users text-2xl mb-1"></i>
+                <span class="text-xs">メンバー</span>
+            </a>
+            <button id="bottomNavProfile" class="bottom-nav-item flex flex-col items-center justify-center flex-1 py-2 relative" data-page="profile">
+                <i class="fas fa-user-circle text-2xl mb-1"></i>
+                <span class="text-xs">自分</span>
+                <!-- ドロップアップメニュー -->
+                <div id="profileDropup" class="hidden absolute bottom-full right-0 mb-2 w-48 bg-white rounded-lg shadow-xl border border-gray-200">
+                    <a href="/profile" class="block px-4 py-3 text-gray-700 hover:bg-gray-50 transition">
+                        <i class="fas fa-user mr-2"></i>プロフィール
+                    </a>
+                    <button onclick="logout()" class="block w-full text-left px-4 py-3 text-gray-700 hover:bg-gray-50 transition border-t">
+                        <i class="fas fa-sign-out-alt mr-2"></i>ログアウト
+                    </button>
+                </div>
+            </button>
+        </div>
+    </nav>
+    
+    <style>
+        /* ボトムナビゲーションのスタイル */
+        .bottom-nav-item {
+            -webkit-tap-highlight-color: transparent;
+            transition: all 0.2s;
+        }
+        
+        .bottom-nav-item.active {
+            color: var(--primary-color, #3B82F6);
+        }
+        
+        .bottom-nav-item:not(.active) {
+            color: #9CA3AF;
+        }
+        
+        .bottom-nav-item:active {
+            transform: scale(0.95);
+        }
+        
+        /* セーフエリア対応（iPhone X以降） */
+        .safe-area-inset {
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+        
+        /* ボトムナビ表示時のコンテンツ下部余白 */
+        body.has-bottom-nav {
+            padding-bottom: calc(64px + env(safe-area-inset-bottom));
+        }
+    </style>
 
     <!-- メインコンテンツ -->
     <main class="container mx-auto px-4 py-8 max-w-4xl">
@@ -1343,29 +1374,137 @@ tenantPublic.get('/posts/new', async (c) => {
         
         // ナビゲーションを認証状態に応じて更新
         function updateNavigation(membership) {
-            const authNav = document.getElementById('authNav')
-            const authNavMobile = document.getElementById('authNavMobile')
+            const isAdmin = membership.role === 'owner' || membership.role === 'admin'
+            const desktopNav = document.getElementById('desktopNav')
+            const mobileMenu = document.getElementById('mobileMenu')
+            const mobileMenuToggle = document.getElementById('mobileMenuToggle')
+            const bottomNav = document.getElementById('bottomNav')
             
-            if (authNav) {
-                authNav.innerHTML = \`
-                    <a href="/dashboard" class="text-gray-600 hover:text-primary transition">
-                        <i class="fas fa-user mr-2"></i>ダッシュボード
-                    </a>
-                    <button onclick="logout()" class="text-gray-600 hover:text-primary transition">
-                        <i class="fas fa-sign-out-alt mr-2"></i>ログアウト
-                    </button>
-                \`
-            }
-            
-            if (authNavMobile) {
-                authNavMobile.innerHTML = \`
-                    <a href="/dashboard" class="block py-2 text-gray-600 hover:text-primary transition">
-                        <i class="fas fa-user mr-2"></i>ダッシュボード
-                    </a>
-                    <button onclick="logout()" class="block py-2 w-full text-left text-gray-600 hover:text-primary transition">
-                        <i class="fas fa-sign-out-alt mr-2"></i>ログアウト
-                    </button>
-                \`
+            if (isAdmin) {
+                // 管理者用ナビゲーション
+                console.log('Setting up admin navigation')
+                
+                // デスクトップ
+                if (desktopNav) {
+                    desktopNav.innerHTML = \`
+                        <a href="/dashboard" class="text-gray-600 hover:text-primary transition">
+                            <i class="fas fa-tachometer-alt mr-2"></i>ダッシュボード
+                        </a>
+                        <a href="/tenant/home?subdomain=${subdomain}" class="text-gray-600 hover:text-primary transition">
+                            <i class="fas fa-eye mr-2"></i>テナントホーム
+                        </a>
+                        <div class="relative group">
+                            <button class="text-gray-600 hover:text-primary transition flex items-center">
+                                <i class="fas fa-user-circle mr-2"></i>
+                                \${membership.tenant_name || 'ユーザー'}
+                                <i class="fas fa-chevron-down ml-2 text-xs"></i>
+                            </button>
+                            <div class="hidden group-hover:block absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-200 py-2">
+                                <a href="/profile" class="block px-4 py-2 text-gray-700 hover:bg-gray-50 transition">
+                                    <i class="fas fa-user mr-2"></i>プロフィール
+                                </a>
+                                <button onclick="logout()" class="block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-50 transition">
+                                    <i class="fas fa-sign-out-alt mr-2"></i>ログアウト
+                                </button>
+                            </div>
+                        </div>
+                    \`
+                }
+                
+                // モバイル（ハンバーガーメニュー）
+                if (mobileMenu) {
+                    mobileMenu.innerHTML = \`
+                        <a href="/dashboard" class="block py-3 text-gray-700 hover:bg-gray-50 transition rounded">
+                            <i class="fas fa-tachometer-alt mr-2"></i>ダッシュボード
+                        </a>
+                        <a href="/tenant/home?subdomain=${subdomain}" class="block py-3 text-gray-700 hover:bg-gray-50 transition rounded">
+                            <i class="fas fa-eye mr-2"></i>テナントホーム
+                        </a>
+                        <a href="/profile" class="block py-3 text-gray-700 hover:bg-gray-50 transition rounded">
+                            <i class="fas fa-user mr-2"></i>プロフィール
+                        </a>
+                        <button onclick="logout()" class="block w-full text-left py-3 text-gray-700 hover:bg-gray-50 transition rounded">
+                            <i class="fas fa-sign-out-alt mr-2"></i>ログアウト
+                        </button>
+                    \`
+                }
+                
+                // モバイルメニューボタンを表示
+                if (mobileMenuToggle) {
+                    mobileMenuToggle.classList.remove('hidden')
+                }
+                
+            } else {
+                // 一般メンバー用ナビゲーション
+                console.log('Setting up member navigation')
+                
+                // デスクトップ
+                if (desktopNav) {
+                    desktopNav.innerHTML = \`
+                        <a href="/tenant/home?subdomain=${subdomain}" class="text-gray-600 hover:text-primary transition">
+                            <i class="fas fa-home mr-2"></i>ホーム
+                        </a>
+                        <a href="/tenant/posts?subdomain=${subdomain}" class="text-gray-600 hover:text-primary transition">
+                            <i class="fas fa-newspaper mr-2"></i>投稿
+                        </a>
+                        <a href="/tenant/posts/new?subdomain=${subdomain}" class="text-primary font-semibold">
+                            <i class="fas fa-plus-circle mr-2"></i>投稿作成
+                        </a>
+                        <a href="/tenant/members?subdomain=${subdomain}" class="text-gray-600 hover:text-primary transition">
+                            <i class="fas fa-users mr-2"></i>メンバー
+                        </a>
+                        <div class="relative group">
+                            <button class="text-gray-600 hover:text-primary transition flex items-center">
+                                <i class="fas fa-user-circle mr-2"></i>
+                                \${membership.tenant_name || 'ユーザー'}
+                                <i class="fas fa-chevron-down ml-2 text-xs"></i>
+                            </button>
+                            <div class="hidden group-hover:block absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-200 py-2">
+                                <a href="/profile" class="block px-4 py-2 text-gray-700 hover:bg-gray-50 transition">
+                                    <i class="fas fa-user mr-2"></i>プロフィール
+                                </a>
+                                <button onclick="logout()" class="block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-50 transition">
+                                    <i class="fas fa-sign-out-alt mr-2"></i>ログアウト
+                                </button>
+                            </div>
+                        </div>
+                    \`
+                }
+                
+                // モバイル（ボトムナビゲーション）
+                if (bottomNav) {
+                    bottomNav.classList.remove('hidden')
+                    bottomNav.classList.add('md:hidden')
+                    document.body.classList.add('has-bottom-nav')
+                    
+                    // 現在のページをアクティブ化
+                    const currentPath = window.location.pathname
+                    const bottomNavItems = bottomNav.querySelectorAll('.bottom-nav-item')
+                    bottomNavItems.forEach(item => {
+                        const href = item.getAttribute('href')
+                        if (href && currentPath.includes(href.split('?')[0])) {
+                            item.classList.add('active')
+                        }
+                    })
+                    
+                    // プロフィールドロップアップ
+                    const bottomNavProfile = document.getElementById('bottomNavProfile')
+                    const profileDropup = document.getElementById('profileDropup')
+                    
+                    if (bottomNavProfile && profileDropup) {
+                        bottomNavProfile.addEventListener('click', (e) => {
+                            e.preventDefault()
+                            profileDropup.classList.toggle('hidden')
+                        })
+                        
+                        // 外側クリックで閉じる
+                        document.addEventListener('click', (e) => {
+                            if (!bottomNavProfile.contains(e.target)) {
+                                profileDropup.classList.add('hidden')
+                            }
+                        })
+                    }
+                }
             }
         }
         
