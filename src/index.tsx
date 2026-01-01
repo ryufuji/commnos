@@ -1833,15 +1833,20 @@ app.get('/dashboard', (c) => {
                 \`
 
                 // 統計データを取得（管理者のみ）
+                console.log('User membership role:', membership.role)
                 if (membership.role === 'admin' || membership.role === 'owner') {
+                    console.log('User is admin/owner, fetching stats...')
                     try {
                         const token = localStorage.getItem('token')
                         const response = await fetch('/api/admin/dashboard/stats', {
                             headers: { 'Authorization': 'Bearer ' + token }
                         })
                         
+                        console.log('Stats API response status:', response.status)
+                        
                         if (response.ok) {
                             const data = await response.json()
+                            console.log('Stats data:', data)
                             if (data.success) {
                                 document.getElementById('memberCount').textContent = data.stats.memberCount
                                 document.getElementById('postCount').textContent = data.stats.postCount
@@ -1852,10 +1857,14 @@ app.get('/dashboard', (c) => {
                                     document.getElementById('pendingBadge').classList.remove('hidden')
                                 }
                             }
+                        } else {
+                            console.error('Stats API error:', response.status, await response.text())
                         }
                     } catch (error) {
                         console.error('Failed to load stats:', error)
                     }
+                } else {
+                    console.log('User is not admin/owner, skipping stats fetch')
                 }
             }
 
