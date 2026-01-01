@@ -713,6 +713,13 @@ tenantPublic.get('/home', async (c) => {
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
     <link href="/static/styles.css" rel="stylesheet">
+    <style>
+        /* 認証状態によって表示/非表示を制御 */
+        .auth-hide { display: flex !important; }
+        .auth-show { display: none !important; }
+        body.authenticated .auth-hide { display: none !important; }
+        body.authenticated .auth-show { display: flex !important; }
+    </style>
 </head>
 <body class="bg-gradient-to-br from-gray-50 to-gray-100">
     <!-- ヘッダー -->
@@ -739,10 +746,10 @@ tenantPublic.get('/home', async (c) => {
                     <a href="/tenant/members?subdomain=${subdomain}" class="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition">
                         <i class="fas fa-users mr-2"></i>メンバー
                     </a>
-                    <a href="/login?subdomain=${subdomain}" id="loginBtn" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition">
+                    <a href="/login?subdomain=${subdomain}" id="loginBtn" class="auth-hide px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition">
                         <i class="fas fa-sign-in-alt mr-2"></i>ログイン
                     </a>
-                    <div id="userMenuDesktop" class="hidden relative">
+                    <div id="userMenuDesktop" class="auth-show hidden relative">
                         <button id="userMenuBtn" class="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition flex items-center gap-2">
                             <i class="fas fa-user-circle"></i>
                             <span id="userNickname"></span>
@@ -777,10 +784,10 @@ tenantPublic.get('/home', async (c) => {
                 <a href="/tenant/members?subdomain=${subdomain}" class="block px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg text-center">
                     <i class="fas fa-users mr-2"></i>メンバー
                 </a>
-                <a href="/login?subdomain=${subdomain}" id="loginBtnMobile" class="block px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-center">
+                <a href="/login?subdomain=${subdomain}" id="loginBtnMobile" class="auth-hide block px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-center">
                     <i class="fas fa-sign-in-alt mr-2"></i>ログイン
                 </a>
-                <div id="userMenuMobile" class="hidden space-y-2">
+                <div id="userMenuMobile" class="auth-show hidden space-y-2">
                     <div class="px-4 py-2 bg-gray-100 rounded-lg text-center">
                         <i class="fas fa-user-circle mr-2"></i>
                         <span id="userNicknameMobile"></span>
@@ -804,7 +811,7 @@ tenantPublic.get('/home', async (c) => {
                 ${tenantName}へようこそ
             </h2>
             ${tenantSubtitle ? `<p class="text-xl text-gray-600 mb-6">${tenantSubtitle}</p>` : ''}
-            <div class="flex gap-4 justify-center flex-wrap">
+            <div id="heroCTAs" class="auth-hide flex gap-4 justify-center flex-wrap">
                 <a href="/tenant/register?subdomain=${subdomain}" class="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg text-lg transition-colors">
                     <i class="fas fa-user-plus mr-2"></i>メンバー申請
                 </a>
@@ -927,18 +934,13 @@ tenantPublic.get('/home', async (c) => {
             })
             
             if (token && user) {
-                // ログイン済み：ログインボタンを非表示、ユーザーメニューを表示
-                const loginBtn = document.getElementById('loginBtn')
-                const loginBtnMobile = document.getElementById('loginBtnMobile')
-                const userMenuDesktop = document.getElementById('userMenuDesktop')
-                const userMenuMobile = document.getElementById('userMenuMobile')
+                // ログイン済み：bodyに authenticated クラスを追加
+                document.body.classList.add('authenticated')
+                
+                // ユーザーメニューの表示とニックネーム設定
                 const userNickname = document.getElementById('userNickname')
                 const userNicknameMobile = document.getElementById('userNicknameMobile')
                 
-                if (loginBtn) loginBtn.classList.add('hidden')
-                if (loginBtnMobile) loginBtnMobile.classList.add('hidden')
-                if (userMenuDesktop) userMenuDesktop.classList.remove('hidden')
-                if (userMenuMobile) userMenuMobile.classList.remove('hidden')
                 if (userNickname) userNickname.textContent = user.nickname || 'ユーザー'
                 if (userNicknameMobile) userNicknameMobile.textContent = user.nickname || 'ユーザー'
                 
@@ -4017,51 +4019,6 @@ tenantPublic.get('/mypage', async (c) => {
     return c.text('Subdomain is required', 400)
   }
   
-  // 認証チェック（簡易版 - クッキーまたはクエリパラメータからトークン取得）
-  const authHeader = c.req.header('Authorization')
-  const token = authHeader?.replace('Bearer ', '')
-  
-  if (!token) {
-    return c.html(`<!DOCTYPE html>
-<html lang="ja">
-<head>
-    <meta charset="UTF-8">
-    <title>ログインが必要です - Commons</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-gray-50 min-h-screen flex items-center justify-center">
-    <div class="text-center">
-        <h1 class="text-3xl font-bold text-gray-900 mb-4">ログインが必要です</h1>
-        <p class="text-gray-600 mb-6">マイページにアクセスするにはログインしてください</p>
-        <a href="/login?subdomain=${subdomain}" class="inline-block px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-            ログインページへ
-        </a>
-    </div>
-    <script>
-        // JavaScriptでトークンチェック
-        const token = localStorage.getItem('token')
-        if (token) {
-            // トークンがある場合はページを再読み込み（Authorization ヘッダー付き）
-            fetch('/tenant/mypage?subdomain=${subdomain}', {
-                headers: { 'Authorization': 'Bearer ' + token }
-            }).then(response => response.text())
-              .then(html => {
-                  document.open()
-                  document.write(html)
-                  document.close()
-              })
-        }
-    </script>
-</body>
-</html>`)
-  }
-  
-  // TODO: JWTトークン検証（簡易版では省略）
-  // 実際にはトークンからユーザーIDとテナントIDを取得
-  
-  // 仮のユーザーID取得（後でJWT検証に置き換え）
-  const userId = 3 // テスト用
-  
   const tenant = await DB.prepare(
     'SELECT * FROM tenants WHERE subdomain = ? AND status = ?'
   ).bind(subdomain, 'active').first() as any
@@ -4070,66 +4027,8 @@ tenantPublic.get('/mypage', async (c) => {
     return c.text('Tenant not found', 404)
   }
   
-  // 自分の投稿一覧を取得
-  const postsResult = await DB.prepare(`
-    SELECT p.id, p.title, p.content, p.excerpt, p.status, p.view_count, p.created_at,
-           COUNT(DISTINCT c.id) as comment_count
-    FROM posts p
-    LEFT JOIN comments c ON c.post_id = p.id
-    WHERE p.tenant_id = ? AND p.author_id = ?
-    GROUP BY p.id
-    ORDER BY p.created_at DESC
-    LIMIT 50
-  `).bind(tenant.id, userId).all()
-  
-  const posts = postsResult.results || []
-  
-  // 統計情報
-  const totalPosts = posts.length
-  const publishedPosts = posts.filter((p: any) => p.status === 'published').length
-  const draftPosts = posts.filter((p: any) => p.status === 'draft').length
-  const totalViews = posts.reduce((sum: number, p: any) => sum + (p.view_count || 0), 0)
-  
-  // 投稿HTML生成
-  let postsHTML = ''
-  if (posts.length === 0) {
-    postsHTML = '<div class="text-center py-12 text-gray-600">まだ投稿がありません</div>'
-  } else {
-    postsHTML = posts.map((post: any) => {
-      const title = String(post.title || '')
-      const excerpt = String(post.excerpt || post.content || '').substring(0, 100)
-      const status = String(post.status || 'draft')
-      const viewCount = Number(post.view_count || 0)
-      const commentCount = Number(post.comment_count || 0)
-      const createdDate = new Date(String(post.created_at)).toLocaleDateString('ja-JP')
-      
-      const statusBadge = status === 'published' 
-        ? '<span class="px-2 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded">公開中</span>'
-        : '<span class="px-2 py-1 bg-yellow-100 text-yellow-700 text-xs font-semibold rounded">下書き</span>'
-      
-      return `
-        <div class="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow">
-            <div class="flex items-start justify-between mb-3">
-                <h3 class="text-xl font-bold text-gray-900 flex-1">${title}</h3>
-                ${statusBadge}
-            </div>
-            <p class="text-gray-600 mb-4">${excerpt}...</p>
-            <div class="flex items-center justify-between text-sm text-gray-500">
-                <div class="flex items-center gap-4">
-                    <span><i class="fas fa-eye mr-1"></i>${viewCount} 閲覧</span>
-                    <span><i class="fas fa-comments mr-1"></i>${commentCount} コメント</span>
-                    <span><i class="fas fa-calendar mr-1"></i>${createdDate}</span>
-                </div>
-                <a href="/tenant/posts/${post.id}?subdomain=${subdomain}" 
-                   class="text-blue-600 hover:text-blue-700 font-semibold">
-                    詳細を見る <i class="fas fa-arrow-right ml-1"></i>
-                </a>
-            </div>
-        </div>
-      `
-    }).join('')
-  }
-  
+  // クライアント側で認証チェックと投稿取得を行うため、
+  // サーバー側では空のテンプレートを返す
   return c.html(`<!DOCTYPE html>
 <html lang="ja">
 <head>
@@ -4140,8 +4039,27 @@ tenantPublic.get('/mypage', async (c) => {
     <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
 </head>
 <body class="bg-gray-50 min-h-screen">
+    <!-- ローディング画面 -->
+    <div id="loading" class="fixed inset-0 bg-gray-50 flex items-center justify-center z-50">
+        <div class="text-center">
+            <div class="animate-spin rounded-full h-16 w-16 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p class="text-gray-600">読み込み中...</p>
+        </div>
+    </div>
+    
+    <!-- ログインが必要 -->
+    <div id="needLogin" class="hidden fixed inset-0 bg-gray-50 flex items-center justify-center z-50">
+        <div class="text-center">
+            <h1 class="text-3xl font-bold text-gray-900 mb-4">ログインが必要です</h1>
+            <p class="text-gray-600 mb-6">マイページにアクセスするにはログインしてください</p>
+            <a href="/login?subdomain=${subdomain}" class="inline-block px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+                ログインページへ
+            </a>
+        </div>
+    </div>
+    
     <!-- ヘッダー -->
-    <header class="bg-white shadow-sm sticky top-0 z-50">
+    <header class="bg-white shadow-sm sticky top-0 z-40">
         <div class="container mx-auto px-4 py-4">
             <div class="flex items-center justify-between">
                 <a href="/tenant/home?subdomain=${subdomain}" class="text-2xl font-bold text-blue-600">
@@ -4190,7 +4108,7 @@ tenantPublic.get('/mypage', async (c) => {
                     </div>
                     
                     <div class="space-y-4">
-                        <!-- ユーザー情報（JavaScriptで動的に更新） -->
+                        <!-- ユーザー情報 -->
                         <div class="bg-white/10 backdrop-blur-sm rounded-lg p-4">
                             <div class="flex items-center gap-4">
                                 <div class="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center text-4xl">
@@ -4204,13 +4122,10 @@ tenantPublic.get('/mypage', async (c) => {
                         </div>
                         
                         <div class="grid grid-cols-2 gap-4">
-                            <!-- 会員番号 -->
                             <div class="bg-white/10 backdrop-blur-sm rounded-lg p-4">
                                 <p class="text-sm text-blue-100 mb-1">会員番号</p>
                                 <p id="cardMemberNumber" class="text-xl font-bold font-mono">----</p>
                             </div>
-                            
-                            <!-- 役割 -->
                             <div class="bg-white/10 backdrop-blur-sm rounded-lg p-4">
                                 <p class="text-sm text-blue-100 mb-1">役割</p>
                                 <p id="cardRole" class="text-xl font-bold">----</p>
@@ -4218,13 +4133,10 @@ tenantPublic.get('/mypage', async (c) => {
                         </div>
                         
                         <div class="grid grid-cols-2 gap-4">
-                            <!-- 入会日 -->
                             <div class="bg-white/10 backdrop-blur-sm rounded-lg p-4">
                                 <p class="text-sm text-blue-100 mb-1">入会日</p>
                                 <p id="cardJoinedAt" class="text-lg font-semibold">----</p>
                             </div>
-                            
-                            <!-- 有効期限 -->
                             <div class="bg-white/10 backdrop-blur-sm rounded-lg p-4">
                                 <p class="text-sm text-blue-100 mb-1">有効期限</p>
                                 <p id="cardExpiresAt" class="text-lg font-semibold">----</p>
@@ -4232,7 +4144,6 @@ tenantPublic.get('/mypage', async (c) => {
                         </div>
                     </div>
                     
-                    <!-- QRコード風の装飾 -->
                     <div class="mt-6 flex items-center justify-between">
                         <div class="text-xs text-blue-100 font-mono">
                             ID: <span id="cardUserId">----</span>
@@ -4243,7 +4154,6 @@ tenantPublic.get('/mypage', async (c) => {
                     </div>
                 </div>
                 
-                <!-- カードの下部バー -->
                 <div class="bg-white/10 backdrop-blur-sm px-8 py-3 flex items-center justify-between text-sm">
                     <span class="text-blue-100">
                         <i class="fas fa-shield-alt mr-2"></i>会員認証済み
@@ -4258,19 +4168,19 @@ tenantPublic.get('/mypage', async (c) => {
         <!-- 統計カード -->
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
             <div class="bg-white rounded-lg shadow-sm p-6 border-l-4 border-blue-500">
-                <div class="text-3xl font-bold text-blue-600 mb-1">${totalPosts}</div>
+                <div id="totalPosts" class="text-3xl font-bold text-blue-600 mb-1">0</div>
                 <div class="text-sm text-gray-600">総投稿数</div>
             </div>
             <div class="bg-white rounded-lg shadow-sm p-6 border-l-4 border-green-500">
-                <div class="text-3xl font-bold text-green-600 mb-1">${publishedPosts}</div>
+                <div id="publishedPosts" class="text-3xl font-bold text-green-600 mb-1">0</div>
                 <div class="text-sm text-gray-600">公開中</div>
             </div>
             <div class="bg-white rounded-lg shadow-sm p-6 border-l-4 border-yellow-500">
-                <div class="text-3xl font-bold text-yellow-600 mb-1">${draftPosts}</div>
+                <div id="draftPosts" class="text-3xl font-bold text-yellow-600 mb-1">0</div>
                 <div class="text-sm text-gray-600">下書き</div>
             </div>
             <div class="bg-white rounded-lg shadow-sm p-6 border-l-4 border-purple-500">
-                <div class="text-3xl font-bold text-purple-600 mb-1">${totalViews}</div>
+                <div id="totalViews" class="text-3xl font-bold text-purple-600 mb-1">0</div>
                 <div class="text-sm text-gray-600">総閲覧数</div>
             </div>
         </div>
@@ -4282,16 +4192,13 @@ tenantPublic.get('/mypage', async (c) => {
                     <button class="px-6 py-4 text-blue-600 border-b-2 border-blue-600 font-semibold">
                         <i class="fas fa-newspaper mr-2"></i>投稿
                     </button>
-                    <button class="px-6 py-4 text-gray-600 hover:text-gray-900">
-                        <i class="fas fa-comments mr-2"></i>コメント
-                    </button>
                 </nav>
             </div>
         </div>
         
         <!-- 投稿一覧 -->
-        <div class="space-y-4">
-            ${postsHTML}
+        <div id="postsList" class="space-y-4">
+            <div class="text-center py-12 text-gray-600">読み込み中...</div>
         </div>
     </main>
 
@@ -4302,74 +4209,141 @@ tenantPublic.get('/mypage', async (c) => {
         </div>
     </footer>
     
+    <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
     <script src="/static/app.js"></script>
     <script>
+        const subdomain = '${subdomain}'
+        
+        // 認証チェック
+        async function checkAuth() {
+            const token = localStorage.getItem('token')
+            const user = JSON.parse(localStorage.getItem('user') || 'null')
+            
+            if (!token || !user) {
+                document.getElementById('loading').classList.add('hidden')
+                document.getElementById('needLogin').classList.remove('hidden')
+                return false
+            }
+            
+            return true
+        }
+        
         // 会員証情報を更新
         function updateMemberCard() {
             const user = JSON.parse(localStorage.getItem('user') || '{}')
             const membership = JSON.parse(localStorage.getItem('membership') || '{}')
             
-            console.log('[Mypage] Updating member card:', { user, membership })
+            document.getElementById('cardNickname').textContent = user.nickname || '未設定'
             
-            // ユーザー名
-            const cardNickname = document.getElementById('cardNickname')
-            if (cardNickname) {
-                cardNickname.textContent = user.nickname || '未設定'
+            const memberNumber = membership.member_number || '0000'
+            document.getElementById('cardMemberNumber').textContent = String(memberNumber).padStart(4, '0')
+            
+            const roleMap = {
+                'owner': 'オーナー',
+                'admin': '管理者',
+                'member': '一般会員'
             }
+            document.getElementById('cardRole').textContent = roleMap[membership.role] || '会員'
             
-            // 会員番号
-            const cardMemberNumber = document.getElementById('cardMemberNumber')
-            if (cardMemberNumber) {
-                const memberNumber = membership.member_number || '0000'
-                cardMemberNumber.textContent = String(memberNumber).padStart(4, '0')
-            }
-            
-            // 役割
-            const cardRole = document.getElementById('cardRole')
-            if (cardRole) {
-                const roleMap = {
-                    'owner': 'オーナー',
-                    'admin': '管理者',
-                    'member': '一般会員'
-                }
-                cardRole.textContent = roleMap[membership.role] || '会員'
-            }
-            
-            // 入会日
-            const cardJoinedAt = document.getElementById('cardJoinedAt')
-            if (cardJoinedAt && membership.joined_at) {
+            if (membership.joined_at) {
                 const joinedDate = new Date(membership.joined_at)
-                cardJoinedAt.textContent = joinedDate.toLocaleDateString('ja-JP', {
+                document.getElementById('cardJoinedAt').textContent = joinedDate.toLocaleDateString('ja-JP', {
                     year: 'numeric',
                     month: '2-digit',
                     day: '2-digit'
                 })
             }
             
-            // 有効期限
             const cardExpiresAt = document.getElementById('cardExpiresAt')
-            if (cardExpiresAt) {
-                if (membership.expires_at) {
-                    const expiresDate = new Date(membership.expires_at)
-                    cardExpiresAt.textContent = expiresDate.toLocaleDateString('ja-JP', {
-                        year: 'numeric',
-                        month: '2-digit',
-                        day: '2-digit'
-                    })
-                } else {
-                    cardExpiresAt.textContent = '無期限'
-                }
+            if (membership.expires_at) {
+                const expiresDate = new Date(membership.expires_at)
+                cardExpiresAt.textContent = expiresDate.toLocaleDateString('ja-JP', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit'
+                })
+            } else {
+                cardExpiresAt.textContent = '無期限'
             }
             
-            // ユーザーID
-            const cardUserId = document.getElementById('cardUserId')
-            if (cardUserId) {
-                cardUserId.textContent = user.id || '----'
+            document.getElementById('cardUserId').textContent = user.id || '----'
+        }
+        
+        // 投稿を読み込み
+        async function loadPosts() {
+            try {
+                const token = localStorage.getItem('token')
+                const user = JSON.parse(localStorage.getItem('user') || '{}')
+                
+                const response = await axios.get('/api/posts/my-posts', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                })
+                
+                if (response.data.success) {
+                    const posts = response.data.posts || []
+                    
+                    // 統計を更新
+                    const totalPosts = posts.length
+                    const publishedPosts = posts.filter(p => p.status === 'published').length
+                    const draftPosts = posts.filter(p => p.status === 'draft').length
+                    const totalViews = posts.reduce((sum, p) => sum + (p.view_count || 0), 0)
+                    
+                    document.getElementById('totalPosts').textContent = totalPosts
+                    document.getElementById('publishedPosts').textContent = publishedPosts
+                    document.getElementById('draftPosts').textContent = draftPosts
+                    document.getElementById('totalViews').textContent = totalViews
+                    
+                    // 投稿一覧を表示
+                    const postsList = document.getElementById('postsList')
+                    if (posts.length === 0) {
+                        postsList.innerHTML = '<div class="text-center py-12 text-gray-600">まだ投稿がありません</div>'
+                    } else {
+                        postsList.innerHTML = posts.map(post => {
+                            const statusBadge = post.status === 'published' 
+                                ? '<span class="px-2 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded">公開中</span>'
+                                : '<span class="px-2 py-1 bg-yellow-100 text-yellow-700 text-xs font-semibold rounded">下書き</span>'
+                            
+                            const createdDate = new Date(post.created_at).toLocaleDateString('ja-JP')
+                            
+                            return \`
+                                <div class="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow">
+                                    <div class="flex items-start justify-between mb-3">
+                                        <h3 class="text-xl font-bold text-gray-900 flex-1">\${post.title}</h3>
+                                        \${statusBadge}
+                                    </div>
+                                    <p class="text-gray-600 mb-4">\${(post.excerpt || post.content || '').substring(0, 100)}...</p>
+                                    <div class="flex items-center justify-between text-sm text-gray-500">
+                                        <div class="flex items-center gap-4">
+                                            <span><i class="fas fa-eye mr-1"></i>\${post.view_count || 0} 閲覧</span>
+                                            <span><i class="fas fa-calendar mr-1"></i>\${createdDate}</span>
+                                        </div>
+                                        <a href="/tenant/posts/\${post.id}?subdomain=\${subdomain}" 
+                                           class="text-blue-600 hover:text-blue-700 font-semibold">
+                                            詳細を見る <i class="fas fa-arrow-right ml-1"></i>
+                                        </a>
+                                    </div>
+                                </div>
+                            \`
+                        }).join('')
+                    }
+                }
+            } catch (error) {
+                console.error('投稿読み込みエラー:', error)
+                document.getElementById('postsList').innerHTML = '<div class="text-center py-12 text-red-600">投稿の読み込みに失敗しました</div>'
             }
         }
         
-        // ページ読み込み時に会員証を更新
-        updateMemberCard()
+        // 初期化
+        async function init() {
+            const isAuth = await checkAuth()
+            if (isAuth) {
+                updateMemberCard()
+                await loadPosts()
+                document.getElementById('loading').classList.add('hidden')
+            }
+        }
+        
+        init()
     </script>
 </body>
 </html>`)
