@@ -4175,6 +4175,86 @@ tenantPublic.get('/mypage', async (c) => {
             <p class="text-gray-600">あなたの活動状況</p>
         </div>
         
+        <!-- 会員証 -->
+        <div class="mb-8">
+            <div id="memberCard" class="max-w-2xl mx-auto bg-gradient-to-br from-blue-600 to-purple-700 rounded-2xl shadow-2xl overflow-hidden">
+                <div class="p-8 text-white">
+                    <div class="flex items-center justify-between mb-6">
+                        <div>
+                            <h2 class="text-2xl font-bold mb-1">${tenant.name}</h2>
+                            <p class="text-blue-100 text-sm">会員証 / Member Card</p>
+                        </div>
+                        <div class="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
+                            <i class="fas fa-id-card text-4xl"></i>
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-4">
+                        <!-- ユーザー情報（JavaScriptで動的に更新） -->
+                        <div class="bg-white/10 backdrop-blur-sm rounded-lg p-4">
+                            <div class="flex items-center gap-4">
+                                <div class="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center text-4xl">
+                                    <i class="fas fa-user"></i>
+                                </div>
+                                <div class="flex-1">
+                                    <p class="text-sm text-blue-100 mb-1">会員名</p>
+                                    <p id="cardNickname" class="text-2xl font-bold">読み込み中...</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-4">
+                            <!-- 会員番号 -->
+                            <div class="bg-white/10 backdrop-blur-sm rounded-lg p-4">
+                                <p class="text-sm text-blue-100 mb-1">会員番号</p>
+                                <p id="cardMemberNumber" class="text-xl font-bold font-mono">----</p>
+                            </div>
+                            
+                            <!-- 役割 -->
+                            <div class="bg-white/10 backdrop-blur-sm rounded-lg p-4">
+                                <p class="text-sm text-blue-100 mb-1">役割</p>
+                                <p id="cardRole" class="text-xl font-bold">----</p>
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-4">
+                            <!-- 入会日 -->
+                            <div class="bg-white/10 backdrop-blur-sm rounded-lg p-4">
+                                <p class="text-sm text-blue-100 mb-1">入会日</p>
+                                <p id="cardJoinedAt" class="text-lg font-semibold">----</p>
+                            </div>
+                            
+                            <!-- 有効期限 -->
+                            <div class="bg-white/10 backdrop-blur-sm rounded-lg p-4">
+                                <p class="text-sm text-blue-100 mb-1">有効期限</p>
+                                <p id="cardExpiresAt" class="text-lg font-semibold">----</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- QRコード風の装飾 -->
+                    <div class="mt-6 flex items-center justify-between">
+                        <div class="text-xs text-blue-100 font-mono">
+                            ID: <span id="cardUserId">----</span>
+                        </div>
+                        <div class="w-16 h-16 bg-white/90 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-qrcode text-3xl text-blue-600"></i>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- カードの下部バー -->
+                <div class="bg-white/10 backdrop-blur-sm px-8 py-3 flex items-center justify-between text-sm">
+                    <span class="text-blue-100">
+                        <i class="fas fa-shield-alt mr-2"></i>会員認証済み
+                    </span>
+                    <span class="text-blue-100 font-mono">
+                        Commons Platform
+                    </span>
+                </div>
+            </div>
+        </div>
+        
         <!-- 統計カード -->
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
             <div class="bg-white rounded-lg shadow-sm p-6 border-l-4 border-blue-500">
@@ -4221,6 +4301,76 @@ tenantPublic.get('/mypage', async (c) => {
             <p>© 2025 ${tenant.name}. All rights reserved.</p>
         </div>
     </footer>
+    
+    <script src="/static/app.js"></script>
+    <script>
+        // 会員証情報を更新
+        function updateMemberCard() {
+            const user = JSON.parse(localStorage.getItem('user') || '{}')
+            const membership = JSON.parse(localStorage.getItem('membership') || '{}')
+            
+            console.log('[Mypage] Updating member card:', { user, membership })
+            
+            // ユーザー名
+            const cardNickname = document.getElementById('cardNickname')
+            if (cardNickname) {
+                cardNickname.textContent = user.nickname || '未設定'
+            }
+            
+            // 会員番号
+            const cardMemberNumber = document.getElementById('cardMemberNumber')
+            if (cardMemberNumber) {
+                const memberNumber = membership.member_number || '0000'
+                cardMemberNumber.textContent = String(memberNumber).padStart(4, '0')
+            }
+            
+            // 役割
+            const cardRole = document.getElementById('cardRole')
+            if (cardRole) {
+                const roleMap = {
+                    'owner': 'オーナー',
+                    'admin': '管理者',
+                    'member': '一般会員'
+                }
+                cardRole.textContent = roleMap[membership.role] || '会員'
+            }
+            
+            // 入会日
+            const cardJoinedAt = document.getElementById('cardJoinedAt')
+            if (cardJoinedAt && membership.joined_at) {
+                const joinedDate = new Date(membership.joined_at)
+                cardJoinedAt.textContent = joinedDate.toLocaleDateString('ja-JP', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit'
+                })
+            }
+            
+            // 有効期限
+            const cardExpiresAt = document.getElementById('cardExpiresAt')
+            if (cardExpiresAt) {
+                if (membership.expires_at) {
+                    const expiresDate = new Date(membership.expires_at)
+                    cardExpiresAt.textContent = expiresDate.toLocaleDateString('ja-JP', {
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit'
+                    })
+                } else {
+                    cardExpiresAt.textContent = '無期限'
+                }
+            }
+            
+            // ユーザーID
+            const cardUserId = document.getElementById('cardUserId')
+            if (cardUserId) {
+                cardUserId.textContent = user.id || '----'
+            }
+        }
+        
+        // ページ読み込み時に会員証を更新
+        updateMemberCard()
+    </script>
 </body>
 </html>`)
 })
