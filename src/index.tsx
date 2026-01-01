@@ -38,8 +38,9 @@ app.use('*', async (c, next) => {
     'Content-Security-Policy',
     "default-src 'self'; " +
     "script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://cdn.jsdelivr.net; " +
-    "style-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://cdn.jsdelivr.net; " +
-    "font-src 'self' https://cdn.jsdelivr.net; " +
+    "style-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://cdn.jsdelivr.net https://fonts.googleapis.com; " +
+    "style-src-elem 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://cdn.jsdelivr.net https://fonts.googleapis.com; " +
+    "font-src 'self' https://cdn.jsdelivr.net https://fonts.gstatic.com; " +
     "img-src 'self' data: blob: https:; " +
     "connect-src 'self' https:; " +
     "frame-src 'self';"
