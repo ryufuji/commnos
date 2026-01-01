@@ -2628,28 +2628,37 @@ app.get('/posts-admin', (c) => {
         <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
         <script src="/static/app.js"></script>
         <script>
+            console.log('Posts admin script loaded')
+            
             let currentPage = 1
             let currentStatus = 'all'
             let currentPost = null
             let allPosts = []
 
-            document.addEventListener('DOMContentLoaded', () => {
+            function initPostsAdmin() {
+                console.log('Initializing posts admin...')
+                
                 // 認証チェック
                 const token = getToken()
+                console.log('Token check:', !!token)
                 if (!token) {
+                    console.log('No token, redirecting to login')
                     window.location.href = '/login'
                     return
                 }
 
                 // 管理者権限チェック
                 const memberData = JSON.parse(localStorage.getItem('membership') || '{}')
+                console.log('Member data:', memberData)
                 const isAdmin = memberData.role === 'admin' || memberData.role === 'owner'
+                console.log('Is admin:', isAdmin)
                 if (!isAdmin) {
                     showToast('管理者権限が必要です', 'error')
                     setTimeout(() => window.location.href = '/dashboard', 2000)
                     return
                 }
 
+                console.log('Starting to load posts...')
                 loadPosts()
                 
                 document.getElementById('statusFilter').addEventListener('change', (e) => {
@@ -2662,7 +2671,15 @@ app.get('/posts-admin', (c) => {
                     e.preventDefault()
                     await savePost()
                 })
-            })
+            }
+
+            // ページ読み込み後に実行
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', initPostsAdmin)
+            } else {
+                // DOMが既に読み込まれている場合
+                initPostsAdmin()
+            }
 
             async function loadPosts() {
                 console.log('Loading posts... page:', currentPage, 'status:', currentStatus)
