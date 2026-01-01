@@ -2296,8 +2296,17 @@ tenantPublic.get('/create-post', async (c) => {
                 
                 if (response.data.success) {
                     showToast('投稿を作成しました', 'success')
+                    
+                    // 管理者の場合は投稿管理ページへ、それ以外は投稿一覧へ
+                    const memberData = JSON.parse(localStorage.getItem('membership') || '{}')
+                    const isAdmin = memberData.role === 'admin' || memberData.role === 'owner'
+                    
                     setTimeout(() => {
-                        window.location.href = '/tenant/posts?subdomain=${subdomain}'
+                        if (isAdmin) {
+                            window.location.href = '/posts-admin'
+                        } else {
+                            window.location.href = '/tenant/posts?subdomain=${subdomain}'
+                        }
                     }, 1500)
                 } else {
                     throw new Error(response.data.error || '投稿の作成に失敗しました')

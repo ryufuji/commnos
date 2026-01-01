@@ -2516,6 +2516,9 @@ app.get('/posts-admin', (c) => {
                         投稿管理
                     </h1>
                     <div class="flex gap-2">
+                        <button onclick="window.goToTenantPostNew(event)" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition">
+                            <i class="fas fa-plus mr-2"></i>投稿作成
+                        </button>
                         <a href="/dashboard" class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition">
                             <i class="fas fa-arrow-left mr-2"></i>ダッシュボード
                         </a>
@@ -2635,6 +2638,15 @@ app.get('/posts-admin', (c) => {
                 const token = getToken()
                 if (!token) {
                     window.location.href = '/login'
+                    return
+                }
+
+                // 管理者権限チェック
+                const memberData = JSON.parse(localStorage.getItem('membership') || '{}')
+                const isAdmin = memberData.role === 'admin' || memberData.role === 'owner'
+                if (!isAdmin) {
+                    showToast('管理者権限が必要です', 'error')
+                    setTimeout(() => window.location.href = '/dashboard', 2000)
                     return
                 }
 
