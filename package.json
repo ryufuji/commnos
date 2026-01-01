@@ -5,7 +5,7 @@
     "dev": "vite",
     "dev:sandbox": "wrangler pages dev dist --ip 0.0.0.0 --port 3000",
     "dev:d1": "wrangler pages dev dist --d1=webapp-production --local --ip 0.0.0.0 --port 3000",
-    "build": "vite build && cp -rf public/static dist/",
+    "build": "vite build && cp -rf public/static dist/ && cp -f public/_headers dist/",
     "preview": "wrangler pages dev dist",
     "deploy": "npm run build && wrangler pages deploy dist --branch main --project-name commons-webapp",
     "deploy:staging": "npm run build && wrangler pages deploy dist --branch staging --project-name commons-webapp",
