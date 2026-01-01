@@ -840,6 +840,12 @@ tenantPublic.get('/home', async (c) => {
 
     <script src="/static/app.js"></script>
     <script>
+        // ページ情報を設定（tenant-navigation.jsが使用）
+        window.TENANT_PAGE_INFO = {
+            subdomain: '${subdomain}',
+            tenantName: '${tenantName}'
+        }
+        
         // モバイルメニュー切り替え
         const mobileMenuBtn = document.getElementById('mobileMenuBtn')
         const mobileMenu = document.getElementById('mobileMenu')
@@ -851,7 +857,7 @@ tenantPublic.get('/home', async (c) => {
 
         // 未読通知数を取得して表示
         async function loadUnreadCount() {
-            const token = localStorage.getItem('authToken')
+            const token = localStorage.getItem('token')
             if (!token) return
 
             try {
@@ -880,6 +886,17 @@ tenantPublic.get('/home', async (c) => {
 
         // ページ読み込み時に未読数を取得
         loadUnreadCount()
+        
+        // デバッグ：ログイン状態を確認
+        const token = localStorage.getItem('token')
+        const user = localStorage.getItem('user')
+        const membership = localStorage.getItem('membership')
+        console.log('[Tenant Home] Auth check:', {
+            hasToken: !!token,
+            hasUser: !!user,
+            hasMembership: !!membership,
+            tokenPreview: token ? token.substring(0, 20) + '...' : 'none'
+        })
     </script>
 </body>
 </html>`)
@@ -2196,7 +2213,7 @@ tenantPublic.get('/posts', async (c) => {
 
         // 未読通知数を取得して表示
         async function loadUnreadCount() {
-            const token = localStorage.getItem('authToken')
+            const token = localStorage.getItem('token')
             if (!token) return
 
             try {
@@ -2899,7 +2916,7 @@ tenantPublic.get('/posts/:id', async (c) => {
             
             // いいねボタンのクリックイベント
             likeButton.addEventListener('click', async () => {
-                const token = localStorage.getItem('authToken')
+                const token = localStorage.getItem('token')
                 if (!token) {
                     alert('いいねするにはログインが必要です')
                     window.location.href = '/login?subdomain=' + subdomain
@@ -2951,7 +2968,7 @@ tenantPublic.get('/posts/:id', async (c) => {
         const commentLikeButtons = document.querySelectorAll('.comment-like-btn')
         commentLikeButtons.forEach(button => {
             button.addEventListener('click', async (e) => {
-                const token = localStorage.getItem('authToken')
+                const token = localStorage.getItem('token')
                 if (!token) {
                     alert('いいねするにはログインが必要です')
                     window.location.href = '/login?subdomain=' + subdomain
@@ -3671,7 +3688,7 @@ tenantPublic.get('/notifications', async (c) => {
                       if (!notificationId) return
                       
                       try {
-                          const token = localStorage.getItem('authToken')
+                          const token = localStorage.getItem('token')
                           await axios.put('/api/notifications/' + notificationId + '/read', {}, {
                               headers: { 'Authorization': 'Bearer ' + token }
                           })
@@ -3689,7 +3706,7 @@ tenantPublic.get('/notifications', async (c) => {
                           markAllReadBtn.disabled = true
                           markAllReadBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>処理中...'
                           
-                          const token = localStorage.getItem('authToken')
+                          const token = localStorage.getItem('token')
                           await axios.put('/api/notifications/read-all', {}, {
                               headers: { 'Authorization': 'Bearer ' + token }
                           })
