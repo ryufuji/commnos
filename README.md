@@ -49,30 +49,32 @@
 ## URLs
 
 ### 本番環境（Cloudflare Pages）
-- **最新デプロイ**: https://464ef7d2.commons-webapp.pages.dev
-- **新規登録**: https://464ef7d2.commons-webapp.pages.dev/register
-- **ログイン**: https://464ef7d2.commons-webapp.pages.dev/login
-- **ダッシュボード**: https://464ef7d2.commons-webapp.pages.dev/dashboard
-- **会員管理**: https://464ef7d2.commons-webapp.pages.dev/members
-- **プロフィール**: https://464ef7d2.commons-webapp.pages.dev/profile
+- **プロダクション（固定URL）**: https://commons-webapp.pages.dev
+- **ステージング（固定URL）**: https://staging.commons-webapp.pages.dev
+- **新規登録**: https://commons-webapp.pages.dev/register
+- **ログイン**: https://commons-webapp.pages.dev/login
+- **ダッシュボード**: https://commons-webapp.pages.dev/dashboard
+- **会員管理**: https://commons-webapp.pages.dev/members
+- **投稿管理**: https://commons-webapp.pages.dev/posts-admin
+- **プロフィール**: https://commons-webapp.pages.dev/profile
 
 ### テナント公開ページ（本番環境）
-- **テナントホーム**: https://464ef7d2.commons-webapp.pages.dev/tenant/home?subdomain=test-phase2
-- **テナント会員登録**: https://464ef7d2.commons-webapp.pages.dev/register?subdomain=test-phase2
-- **テナント会員ログイン**: https://464ef7d2.commons-webapp.pages.dev/login?subdomain=test-phase2
-- **投稿一覧**: https://464ef7d2.commons-webapp.pages.dev/tenant/posts?subdomain=test-phase2
-- **投稿作成**: https://464ef7d2.commons-webapp.pages.dev/tenant/posts/new?subdomain=test-phase2
-- **投稿詳細**: https://464ef7d2.commons-webapp.pages.dev/tenant/posts/1?subdomain=test-phase2
-- **会員一覧**: https://464ef7d2.commons-webapp.pages.dev/tenant/members?subdomain=test-phase2
-- **会員プロフィール**: https://464ef7d2.commons-webapp.pages.dev/tenant/members/3?subdomain=test-phase2
-- **会員検索**: https://464ef7d2.commons-webapp.pages.dev/tenant/members?subdomain=test-phase2&search=Phase2
+- **テナントホーム**: https://commons-webapp.pages.dev/tenant/home?subdomain=test-phase2
+- **テナント会員登録**: https://commons-webapp.pages.dev/register?subdomain=test-phase2
+- **テナント会員ログイン**: https://commons-webapp.pages.dev/login?subdomain=test-phase2
+- **投稿一覧**: https://commons-webapp.pages.dev/tenant/posts?subdomain=test-phase2
+- **投稿作成**: https://commons-webapp.pages.dev/tenant/posts/new?subdomain=test-phase2
+- **投稿詳細**: https://commons-webapp.pages.dev/tenant/posts/1?subdomain=test-phase2
+- **会員一覧**: https://commons-webapp.pages.dev/tenant/members?subdomain=test-phase2
+- **会員プロフィール**: https://commons-webapp.pages.dev/tenant/members/3?subdomain=test-phase2
+- **会員検索**: https://commons-webapp.pages.dev/tenant/members?subdomain=test-phase2&search=Phase2
 
 ### サンドボックス環境
 - **ホーム**: https://3000-imu7i4bdyc519gbijlo4z-5185f4aa.sandbox.novita.ai
 
 ### GitHub
 - **リポジトリ**: https://github.com/ryufuji/commnos
-- **最新コミット**: 0eafb4d
+- **最新コミット**: a3faa6f
 
 ## データアーキテクチャ
 
@@ -384,15 +386,24 @@ thumbnail: File (JPEG/PNG/GIF/WebP, 最大10MB)
 
 ## デプロイ
 
+### 環境構成
+
+| 環境 | ブランチ | URL | 用途 |
+|-----|---------|-----|------|
+| **プロダクション** | `main` | https://commons-webapp.pages.dev | 本番環境（固定URL） |
+| **ステージング** | `staging` | https://staging.commons-webapp.pages.dev | テスト環境（固定URL） |
+| **プレビュー** | 任意 | https://[hash].commons-webapp.pages.dev | 一時的なテスト（ランダムURL） |
+
 ### 本番環境（Cloudflare Pages）
 - **プラットフォーム**: Cloudflare Pages
 - **プロジェクト名**: commons-webapp
 - **ステータス**: ✅ デプロイ完了
-- **URL**: https://2835f2a0.commons-webapp.pages.dev
+- **プロダクションURL**: https://commons-webapp.pages.dev
+- **ステージングURL**: https://staging.commons-webapp.pages.dev
 - **データベース**: Cloudflare D1（commons-webapp-production）
 - **R2バケット**: commons-images ✨ Phase 2
 - **環境変数**: JWT_SECRET, PLATFORM_DOMAIN, STRIPE_SECRET_KEY, RESEND_API_KEY 設定済み
-- **最終デプロイ**: 2025-12-26
+- **最終デプロイ**: 2025-12-27
 
 ### ローカル開発
 
@@ -412,21 +423,43 @@ curl http://localhost:3000/health
 
 ### Cloudflare Pages デプロイ
 
+#### プロダクション環境（mainブランチ）
+```bash
+# ビルド & デプロイ（固定URL）
+npm run deploy
+
+# または直接
+npm run build
+npx wrangler pages deploy dist --branch main --project-name commons-webapp
+```
+
+#### ステージング環境（stagingブランチ）
+```bash
+# ビルド & デプロイ（固定URL）
+npm run deploy:staging
+
+# または直接
+npm run build
+npx wrangler pages deploy dist --branch staging --project-name commons-webapp
+```
+
+#### プレビュー環境（テスト用・ランダムURL）
+```bash
+# ビルド & デプロイ（ランダムURL）
+npm run deploy:preview
+
+# または直接
+npm run build
+npx wrangler pages deploy dist --project-name commons-webapp
+```
+
+#### 初回セットアップ
 ```bash
 # R2バケット作成（初回のみ）✨ Phase 2
 npx wrangler r2 bucket create commons-images
 
 # マイグレーション適用（本番）
 npx wrangler d1 migrations apply commons-webapp-production --remote
-
-# ビルド
-npm run build
-
-# デプロイ
-npm run deploy:prod
-
-# または直接
-npx wrangler pages deploy dist --project-name commons-webapp
 ```
 
 ### 環境変数
