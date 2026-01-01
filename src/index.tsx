@@ -1585,20 +1585,12 @@ app.get('/dashboard', (c) => {
                             <p class="text-sm text-secondary-600">申請の承認・会員一覧</p>
                         </a>
 
-                        <a href="#" onclick="goToTenantPostNew(event)" class="card-interactive p-6 text-center">
-                            <div class="text-4xl mb-3 text-primary-500">
-                                <i class="fas fa-plus-circle"></i>
-                            </div>
-                            <h3 class="font-bold text-gray-900 mb-2">投稿作成</h3>
-                            <p class="text-sm text-secondary-600">新しい投稿を作成</p>
-                        </a>
-
                         <a href="/posts-admin" class="card-interactive p-6 text-center">
                             <div class="text-4xl mb-3 text-success-500">
                                 <i class="fas fa-tasks"></i>
                             </div>
                             <h3 class="font-bold text-gray-900 mb-2">投稿管理</h3>
-                            <p class="text-sm text-secondary-600">投稿の編集・削除</p>
+                            <p class="text-sm text-secondary-600">投稿の作成・編集・削除</p>
                         </a>
 
                         <a href="/profile" class="card-interactive p-6 text-center">
@@ -2064,17 +2056,6 @@ app.get('/dashboard', (c) => {
             }
 
             // Navigate to tenant post creation page
-            window.goToTenantPostNew = function(event) {
-              if (event) event.preventDefault();
-              window.location.href = getTenantUrl('/posts/new');
-            }
-
-            // Navigate to tenant post list page
-            window.goToTenantPostList = function(event) {
-              if (event) event.preventDefault();
-              window.location.href = getTenantUrl('/posts');
-            }
-
             // ページロード時
             loadDashboard()
         </script>

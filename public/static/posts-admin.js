@@ -6,6 +6,23 @@ let currentStatus = 'all'
 let currentPost = null
 let allPosts = []
 
+// getTenantUrl helper function
+function getTenantUrl(path) {
+    const membership = JSON.parse(localStorage.getItem('membership') || '{}')
+    const subdomain = membership.subdomain || ''
+    if (!subdomain) {
+        console.error('No subdomain found in membership')
+        return path
+    }
+    return `/${subdomain}${path}`
+}
+
+// goToTenantPostNew - 投稿作成ページへ遷移
+window.goToTenantPostNew = function(event) {
+    if (event) event.preventDefault()
+    window.location.href = getTenantUrl('/posts/new')
+}
+
 // loadPosts 関数
 async function loadPosts() {
     console.log('Loading posts... page:', currentPage, 'status:', currentStatus)
