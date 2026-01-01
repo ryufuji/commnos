@@ -962,7 +962,7 @@ tenantPublic.get('/posts/new', async (c) => {
                 </div>
                 
                 <!-- デスクトップナビ -->
-                <nav class="hidden md:flex items-center space-x-6">
+                <nav id="desktopNav" class="hidden md:flex items-center space-x-6">
                     <a href="/tenant/home?subdomain=${subdomain}" class="text-gray-600 hover:text-primary transition">
                         <i class="fas fa-home mr-2"></i>ホーム
                     </a>
@@ -975,9 +975,12 @@ tenantPublic.get('/posts/new', async (c) => {
                     <a href="/tenant/members?subdomain=${subdomain}" class="text-gray-600 hover:text-primary transition">
                         <i class="fas fa-users mr-2"></i>メンバー
                     </a>
-                    <a href="/login?subdomain=${subdomain}" class="text-gray-600 hover:text-primary transition">
-                        <i class="fas fa-sign-in-alt mr-2"></i>ログイン
-                    </a>
+                    <!-- 認証状態で動的に変更 -->
+                    <div id="authNav">
+                        <a href="/login?subdomain=${subdomain}" class="text-gray-600 hover:text-primary transition">
+                            <i class="fas fa-sign-in-alt mr-2"></i>ログイン
+                        </a>
+                    </div>
                 </nav>
                 
                 <!-- モバイルメニューボタン -->
@@ -1000,9 +1003,12 @@ tenantPublic.get('/posts/new', async (c) => {
                 <a href="/tenant/members?subdomain=${subdomain}" class="block py-2 text-gray-600 hover:text-primary transition">
                     <i class="fas fa-users mr-2"></i>メンバー
                 </a>
-                <a href="/login?subdomain=${subdomain}" class="block py-2 text-gray-600 hover:text-primary transition">
-                    <i class="fas fa-sign-in-alt mr-2"></i>ログイン
-                </a>
+                <!-- 認証状態で動的に変更 -->
+                <div id="authNavMobile">
+                    <a href="/login?subdomain=${subdomain}" class="block py-2 text-gray-600 hover:text-primary transition">
+                        <i class="fas fa-sign-in-alt mr-2"></i>ログイン
+                    </a>
+                </div>
             </nav>
         </div>
     </header>
@@ -1325,11 +1331,50 @@ tenantPublic.get('/posts/new', async (c) => {
                     document.getElementById('visibilityField').style.display = 'block'
                 }
                 
+                // ナビゲーションを更新（ログイン済みユーザー向け）
+                updateNavigation(membership)
+                
                 console.log('Authentication check passed')
             } catch (error) {
                 console.error('認証エラー:', error)
                 window.location.href = '/login?subdomain=${subdomain}'
             }
+        }
+        
+        // ナビゲーションを認証状態に応じて更新
+        function updateNavigation(membership) {
+            const authNav = document.getElementById('authNav')
+            const authNavMobile = document.getElementById('authNavMobile')
+            
+            if (authNav) {
+                authNav.innerHTML = \`
+                    <a href="/dashboard" class="text-gray-600 hover:text-primary transition">
+                        <i class="fas fa-user mr-2"></i>ダッシュボード
+                    </a>
+                    <button onclick="logout()" class="text-gray-600 hover:text-primary transition">
+                        <i class="fas fa-sign-out-alt mr-2"></i>ログアウト
+                    </button>
+                \`
+            }
+            
+            if (authNavMobile) {
+                authNavMobile.innerHTML = \`
+                    <a href="/dashboard" class="block py-2 text-gray-600 hover:text-primary transition">
+                        <i class="fas fa-user mr-2"></i>ダッシュボード
+                    </a>
+                    <button onclick="logout()" class="block py-2 w-full text-left text-gray-600 hover:text-primary transition">
+                        <i class="fas fa-sign-out-alt mr-2"></i>ログアウト
+                    </button>
+                \`
+            }
+        }
+        
+        // ログアウト処理
+        function logout() {
+            localStorage.removeItem('token')
+            localStorage.removeItem('user')
+            localStorage.removeItem('membership')
+            window.location.href = '/tenant/home?subdomain=${subdomain}'
         }
         
         // ページ読み込み時に認証チェック
