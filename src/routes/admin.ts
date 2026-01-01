@@ -685,4 +685,59 @@ admin.delete('/members/:id/notes/:noteId', authMiddleware, requireRole('admin'),
   }
 })
 
+/**
+ * GET /api/admin/dashboard/stats
+ * ダッシュボード統計情報取得
+ */
+admin.get('/dashboard/stats', authMiddleware, requireRole('admin'), async (c) => {
+  const tenantId = c.get('tenantId')
+  const db = c.env.DB
+
+  try {
+    // メンバー数（承認済み）
+    const memberCountResult = await db
+      .prepare('SELECT COUNT(*) as count FROM tenant_memberships WHERE tenant_id = ? AND status = ?')
+      .bind(tenantId, 'active')
+      .first<{ count: number }>()
+    const memberCount = memberCountResult?.count || 0
+
+    // 投稿数（公開済み）
+    const postCountResult = await db
+      .prepare('SELECT COUNT(*) as count FROM posts WHERE tenant_id = ? AND status = ?')
+      .bind(tenantId, 'published')
+      .first<{ count: number }>()
+    const postCount = postCountResult?.count || 0
+
+    // コメント数
+    const commentCountResult = await db
+      .prepare('SELECT COUNT(*) as count FROM comments WHERE tenant_id = ?')
+      .bind(tenantId)
+      .first<{ count: number }>()
+    const commentCount = commentCountResult?.count || 0
+
+    // 承認待ちメンバー数
+    const pendingCountResult = await db
+      .prepare('SELECT COUNT(*) as count FROM tenant_memberships WHERE tenant_id = ? AND status = ?')
+      .bind(tenantId, 'pending')
+      .first<{ count: number }>()
+    const pendingCount = pendingCountResult?.count || 0
+
+    return c.json({
+      success: true,
+      stats: {
+        memberCount,
+        postCount,
+        commentCount,
+        pendingCount
+      }
+    })
+  } catch (error) {
+    console.error('[Get Dashboard Stats Error]', error)
+    return c.json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to get dashboard stats'
+    }, 500)
+  }
+})
+
 export default admin

@@ -1542,9 +1542,9 @@ app.get('/dashboard', (c) => {
                             <div class="text-3xl text-primary-500">
                                 <i class="fas fa-users"></i>
                             </div>
-                            <span class="badge badge-primary">New</span>
+                            <span id="pendingBadge" class="badge badge-primary hidden">New</span>
                         </div>
-                        <h3 class="text-2xl font-bold text-gray-900 mb-1">--</h3>
+                        <h3 id="memberCount" class="text-2xl font-bold text-gray-900 mb-1">--</h3>
                         <p class="text-secondary-600">メンバー数</p>
                     </div>
 
@@ -1554,7 +1554,7 @@ app.get('/dashboard', (c) => {
                                 <i class="fas fa-file-alt"></i>
                             </div>
                         </div>
-                        <h3 class="text-2xl font-bold text-gray-900 mb-1">--</h3>
+                        <h3 id="postCount" class="text-2xl font-bold text-gray-900 mb-1">--</h3>
                         <p class="text-secondary-600">投稿数</p>
                     </div>
 
@@ -1564,7 +1564,7 @@ app.get('/dashboard', (c) => {
                                 <i class="fas fa-comments"></i>
                             </div>
                         </div>
-                        <h3 class="text-2xl font-bold text-gray-900 mb-1">--</h3>
+                        <h3 id="commentCount" class="text-2xl font-bold text-gray-900 mb-1">--</h3>
                         <p class="text-secondary-600">コメント数</p>
                     </div>
                 </div>
@@ -1831,6 +1831,32 @@ app.get('/dashboard', (c) => {
                         </div>
                     </div>
                 \`
+
+                // 統計データを取得（管理者のみ）
+                if (membership.role === 'admin' || membership.role === 'owner') {
+                    try {
+                        const token = localStorage.getItem('token')
+                        const response = await fetch('/api/admin/dashboard/stats', {
+                            headers: { 'Authorization': 'Bearer ' + token }
+                        })
+                        
+                        if (response.ok) {
+                            const data = await response.json()
+                            if (data.success) {
+                                document.getElementById('memberCount').textContent = data.stats.memberCount
+                                document.getElementById('postCount').textContent = data.stats.postCount
+                                document.getElementById('commentCount').textContent = data.stats.commentCount
+                                
+                                // 承認待ちメンバーがいる場合はバッジを表示
+                                if (data.stats.pendingCount > 0) {
+                                    document.getElementById('pendingBadge').classList.remove('hidden')
+                                }
+                            }
+                        }
+                    } catch (error) {
+                        console.error('Failed to load stats:', error)
+                    }
+                }
             }
 
             // モバイルメニュートグル
