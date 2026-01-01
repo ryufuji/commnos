@@ -2636,62 +2636,7 @@ app.get('/posts-admin', (c) => {
             let currentPost = null
             let allPosts = []
 
-            function initPostsAdmin() {
-                console.log('Initializing posts admin...')
-                
-                // 認証チェック
-                const token = getToken()
-                console.log('Token check:', !!token)
-                if (!token) {
-                    console.log('No token, redirecting to login')
-                    window.location.href = '/login'
-                    return
-                }
-
-                // 管理者権限チェック
-                const memberData = JSON.parse(localStorage.getItem('membership') || '{}')
-                console.log('Member data:', memberData)
-                const isAdmin = memberData.role === 'admin' || memberData.role === 'owner'
-                console.log('Is admin:', isAdmin)
-                if (!isAdmin) {
-                    showToast('管理者権限が必要です', 'error')
-                    setTimeout(() => window.location.href = '/dashboard', 2000)
-                    return
-                }
-
-                console.log('Starting to load posts...')
-                loadPosts()
-                
-                document.getElementById('statusFilter').addEventListener('change', (e) => {
-                    currentStatus = e.target.value
-                    currentPage = 1
-                    loadPosts()
-                })
-
-                document.getElementById('editForm').addEventListener('submit', async (e) => {
-                    e.preventDefault()
-                    await savePost()
-                })
-            }
-
-            // グローバルスコープに公開（デバッグ用）
-            window.initPostsAdmin = initPostsAdmin
-            window.loadPosts = loadPosts
-            
-            // ページ読み込み後に実行
-            console.log('Document ready state:', document.readyState)
-            if (document.readyState === 'loading') {
-                console.log('Waiting for DOMContentLoaded...')
-                document.addEventListener('DOMContentLoaded', () => {
-                    console.log('DOMContentLoaded fired!')
-                    initPostsAdmin()
-                })
-            } else {
-                // DOMが既に読み込まれている場合
-                console.log('DOM already loaded, initializing immediately')
-                initPostsAdmin()
-            }
-
+            // loadPosts 関数を先に定義
             async function loadPosts() {
                 console.log('Loading posts... page:', currentPage, 'status:', currentStatus)
                 try {
@@ -2906,6 +2851,63 @@ app.get('/posts-admin', (c) => {
                     console.error('Error deleting post:', error)
                     showToast('投稿の削除に失敗しました', 'error')
                 }
+            }
+
+            // initPostsAdmin 関数を定義
+            function initPostsAdmin() {
+                console.log('Initializing posts admin...')
+                
+                // 認証チェック
+                const token = getToken()
+                console.log('Token check:', !!token)
+                if (!token) {
+                    console.log('No token, redirecting to login')
+                    window.location.href = '/login'
+                    return
+                }
+
+                // 管理者権限チェック
+                const memberData = JSON.parse(localStorage.getItem('membership') || '{}')
+                console.log('Member data:', memberData)
+                const isAdmin = memberData.role === 'admin' || memberData.role === 'owner'
+                console.log('Is admin:', isAdmin)
+                if (!isAdmin) {
+                    showToast('管理者権限が必要です', 'error')
+                    setTimeout(() => window.location.href = '/dashboard', 2000)
+                    return
+                }
+
+                console.log('Starting to load posts...')
+                loadPosts()
+                
+                document.getElementById('statusFilter').addEventListener('change', (e) => {
+                    currentStatus = e.target.value
+                    currentPage = 1
+                    loadPosts()
+                })
+
+                document.getElementById('editForm').addEventListener('submit', async (e) => {
+                    e.preventDefault()
+                    await savePost()
+                })
+            }
+
+            // グローバルスコープに公開（デバッグ用）
+            window.initPostsAdmin = initPostsAdmin
+            window.loadPosts = loadPosts
+            
+            // ページ読み込み後に実行
+            console.log('Document ready state:', document.readyState)
+            if (document.readyState === 'loading') {
+                console.log('Waiting for DOMContentLoaded...')
+                document.addEventListener('DOMContentLoaded', () => {
+                    console.log('DOMContentLoaded fired!')
+                    initPostsAdmin()
+                })
+            } else {
+                // DOMが既に読み込まれている場合
+                console.log('DOM already loaded, initializing immediately')
+                initPostsAdmin()
             }
         </script>
     </body>
