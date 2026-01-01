@@ -86,6 +86,9 @@ function renderPosts(posts) {
                     '</div>' +
                 '</div>' +
                 '<div class="flex flex-col gap-2">' +
+                    '<button onclick="previewPost(' + post.id + ')" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition text-sm whitespace-nowrap">' +
+                        '<i class="fas fa-eye mr-1"></i>プレビュー' +
+                    '</button>' +
                     '<button onclick="editPost(' + post.id + ')" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm whitespace-nowrap">' +
                         '<i class="fas fa-edit mr-1"></i>編集' +
                     '</button>' +
@@ -133,6 +136,80 @@ function changePage(page) {
     currentPage = page
     loadPosts()
     window.scrollTo({ top: 0, behavior: 'smooth' })
+}
+
+// previewPost 関数
+async function previewPost(postId) {
+    const post = allPosts.find(p => p.id === postId)
+    if (!post) {
+        showToast('投稿が見つかりません', 'error')
+        return
+    }
+
+    // プレビューモーダルを表示
+    const modal = document.getElementById('previewModal')
+    if (!modal) {
+        console.error('previewModal not found')
+        return
+    }
+
+    // Markdown を HTML に変換（marked.js を使用）
+    let contentHtml = post.content
+    if (typeof marked !== 'undefined') {
+        contentHtml = marked.parse(post.content)
+    } else {
+        // marked.js がない場合は改行を<br>に変換
+        contentHtml = post.content.replace(/\n/g, '<br>')
+    }
+
+    // サムネイル画像
+    let thumbnailHtml = ''
+    if (post.thumbnail_url) {
+        thumbnailHtml = '<img src="' + post.thumbnail_url + '" alt="' + post.title + '" class="w-full h-64 object-cover rounded-lg mb-6">'
+    }
+
+    // 動画
+    let videoHtml = ''
+    if (post.video_url) {
+        videoHtml = '<video controls class="w-full rounded-lg mb-6"><source src="' + post.video_url + '" type="video/mp4">お使いのブラウザは動画タグをサポートしていません。</video>'
+    }
+
+    // ステータスバッジ
+    let statusBadge = post.status === 'published'
+        ? '<span class="px-3 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded-full">公開</span>'
+        : '<span class="px-3 py-1 bg-gray-100 text-gray-700 text-xs font-semibold rounded-full">下書き</span>'
+
+    // 公開範囲バッジ
+    let visibilityBadge = post.visibility === 'public'
+        ? '<span class="px-3 py-1 bg-blue-100 text-blue-700 text-xs font-semibold rounded-full">パブリック</span>'
+        : '<span class="px-3 py-1 bg-purple-100 text-purple-700 text-xs font-semibold rounded-full">会員限定</span>'
+
+    // プレビュー内容を設定
+    document.getElementById('previewContent').innerHTML = 
+        '<article class="prose prose-lg max-w-none">' +
+            '<div class="flex items-center gap-2 mb-4">' +
+                statusBadge +
+                visibilityBadge +
+            '</div>' +
+            '<h1 class="text-3xl font-bold text-gray-900 mb-4">' + post.title + '</h1>' +
+            '<div class="flex items-center gap-4 text-sm text-gray-500 mb-6">' +
+                '<span><i class="fas fa-user mr-1"></i>' + (post.author_name || '不明') + '</span>' +
+                '<span><i class="fas fa-calendar mr-1"></i>' + new Date(post.created_at).toLocaleDateString('ja-JP') + '</span>' +
+                '<span><i class="fas fa-eye mr-1"></i>' + (post.view_count || 0) + ' 閲覧</span>' +
+                '<span><i class="fas fa-heart mr-1"></i>' + (post.like_count || 0) + ' いいね</span>' +
+                '<span><i class="fas fa-comment mr-1"></i>' + (post.comment_count || 0) + ' コメント</span>' +
+            '</div>' +
+            thumbnailHtml +
+            videoHtml +
+            '<div class="text-gray-800 leading-relaxed">' + contentHtml + '</div>' +
+        '</article>'
+
+    modal.classList.remove('hidden')
+}
+
+// closePreviewModal 関数
+function closePreviewModal() {
+    document.getElementById('previewModal').classList.add('hidden')
 }
 
 // editPost 関数
@@ -265,6 +342,8 @@ function initPostsAdmin() {
 // グローバルスコープに公開
 window.initPostsAdmin = initPostsAdmin
 window.loadPosts = loadPosts
+window.previewPost = previewPost
+window.closePreviewModal = closePreviewModal
 window.editPost = editPost
 window.deletePost = deletePost
 window.changePage = changePage

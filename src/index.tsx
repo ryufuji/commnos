@@ -2626,7 +2626,29 @@ app.get('/posts-admin', (c) => {
             </div>
         </div>
 
+        <!-- プレビューモーダル -->
+        <div id="previewModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4 overflow-y-auto">
+            <div class="bg-white rounded-xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+                <div class="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 z-10">
+                    <div class="flex items-center justify-between">
+                        <h2 class="text-2xl font-bold text-gray-900">
+                            <i class="fas fa-eye mr-2 text-green-600"></i>
+                            投稿プレビュー
+                        </h2>
+                        <button onclick="closePreviewModal()" class="text-gray-500 hover:text-gray-700">
+                            <i class="fas fa-times text-xl"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <div id="previewContent" class="p-8">
+                    <!-- プレビュー内容がここに表示されます -->
+                </div>
+            </div>
+        </div>
+
         <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
         <script src="/static/app.js"></script>
         <script src="/static/posts-admin.js"></script>
     </body>
