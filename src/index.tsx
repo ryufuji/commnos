@@ -2685,52 +2685,49 @@ app.get('/posts-admin', (c) => {
                 }
 
                 container.innerHTML = posts.map(post => {
-                    const statusBadge = post.status === 'published' 
+                    let statusBadge = post.status === 'published' 
                         ? '<span class="px-3 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded-full">公開</span>'
                         : '<span class="px-3 py-1 bg-gray-100 text-gray-700 text-xs font-semibold rounded-full">下書き</span>'
                     
-                    const visibilityBadge = post.visibility === 'public'
+                    let visibilityBadge = post.visibility === 'public'
                         ? '<span class="px-3 py-1 bg-blue-100 text-blue-700 text-xs font-semibold rounded-full">パブリック</span>'
                         : '<span class="px-3 py-1 bg-purple-100 text-purple-700 text-xs font-semibold rounded-full">会員限定</span>'
 
-                    const mediaBadges = []
+                    let mediaBadges = []
                     if (post.thumbnail_url) mediaBadges.push('<i class="fas fa-image text-blue-500" title="画像あり"></i>')
                     if (post.video_url) mediaBadges.push('<i class="fas fa-video text-blue-500" title="動画あり"></i>')
+                    let mediaBadgesHtml = mediaBadges.join(' ')
 
-                    const title = String(post.title || '').replace(/'/g, "\\\\'").replace(/"/g, '&quot;')
+                    let title = String(post.title || '').replace(/'/g, "\\\\'").replace(/"/g, '&quot;')
                     
-                    return \`
-                        <div class="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition">
-                            <div class="flex items-start justify-between gap-4">
-                                <div class="flex-1 min-w-0">
-                                    <div class="flex items-center gap-2 mb-2 flex-wrap">
-                                        ${statusBadge}
-                                        ${visibilityBadge}
-                                        ${mediaBadges.join(' ')}
-                                    </div>
-                                    <h3 class="text-xl font-bold text-gray-900 mb-2 truncate">${post.title}</h3>
-                                    <p class="text-gray-600 mb-4 line-clamp-2">${post.excerpt || ''}</p>
-                                    <div class="flex items-center gap-4 text-sm text-gray-500 flex-wrap">
-                                        <span><i class="fas fa-user mr-1"></i>${post.author_name || '不明'}</span>
-                                        <span><i class="fas fa-eye mr-1"></i>${post.view_count || 0}</span>
-                                        <span><i class="fas fa-heart mr-1"></i>${post.like_count || 0}</span>
-                                        <span><i class="fas fa-comment mr-1"></i>${post.comment_count || 0}</span>
-                                        <span><i class="fas fa-calendar mr-1"></i>${new Date(post.created_at).toLocaleDateString('ja-JP')}</span>
-                                    </div>
-                                </div>
-                                <div class="flex flex-col gap-2">
-                                    <button onclick="editPost(${post.id})"
-                                        class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm whitespace-nowrap">
-                                        <i class="fas fa-edit mr-1"></i>編集
-                                    </button>
-                                    <button onclick="deletePost(${post.id}, '${title}')"
-                                        class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition text-sm whitespace-nowrap">
-                                        <i class="fas fa-trash mr-1"></i>削除
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    \`
+                    return '<div class="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition">' +
+                        '<div class="flex items-start justify-between gap-4">' +
+                            '<div class="flex-1 min-w-0">' +
+                                '<div class="flex items-center gap-2 mb-2 flex-wrap">' +
+                                    statusBadge +
+                                    visibilityBadge +
+                                    mediaBadgesHtml +
+                                '</div>' +
+                                '<h3 class="text-xl font-bold text-gray-900 mb-2 truncate">' + post.title + '</h3>' +
+                                '<p class="text-gray-600 mb-4 line-clamp-2">' + (post.excerpt || '') + '</p>' +
+                                '<div class="flex items-center gap-4 text-sm text-gray-500 flex-wrap">' +
+                                    '<span><i class="fas fa-user mr-1"></i>' + (post.author_name || '不明') + '</span>' +
+                                    '<span><i class="fas fa-eye mr-1"></i>' + (post.view_count || 0) + '</span>' +
+                                    '<span><i class="fas fa-heart mr-1"></i>' + (post.like_count || 0) + '</span>' +
+                                    '<span><i class="fas fa-comment mr-1"></i>' + (post.comment_count || 0) + '</span>' +
+                                    '<span><i class="fas fa-calendar mr-1"></i>' + new Date(post.created_at).toLocaleDateString('ja-JP') + '</span>' +
+                                '</div>' +
+                            '</div>' +
+                            '<div class="flex flex-col gap-2">' +
+                                '<button onclick="editPost(' + post.id + ')" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition text-sm whitespace-nowrap">' +
+                                    '<i class="fas fa-edit mr-1"></i>編集' +
+                                '</button>' +
+                                '<button onclick="deletePost(' + post.id + ', \'' + title + '\')" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition text-sm whitespace-nowrap">' +
+                                    '<i class="fas fa-trash mr-1"></i>削除' +
+                                '</button>' +
+                            '</div>' +
+                        '</div>' +
+                    '</div>'
                 }).join('')
             }
 
@@ -2743,17 +2740,17 @@ app.get('/posts-admin', (c) => {
 
                 let html = ''
                 if (pagination.page > 1) {
-                    html += \`<button onclick="changePage(${pagination.page - 1})" class="px-4 py-2 bg-white border rounded-lg hover:bg-gray-50">前へ</button>\`
+                    html += '<button onclick="changePage(' + (pagination.page - 1) + ')" class="px-4 py-2 bg-white border rounded-lg hover:bg-gray-50">前へ</button>'
                 }
                 for (let i = 1; i <= pagination.totalPages; i++) {
                     if (i === pagination.page) {
-                        html += \`<button class="px-4 py-2 bg-blue-600 text-white rounded-lg">${i}</button>\`
+                        html += '<button class="px-4 py-2 bg-blue-600 text-white rounded-lg">' + i + '</button>'
                     } else {
-                        html += \`<button onclick="changePage(${i})" class="px-4 py-2 bg-white border rounded-lg hover:bg-gray-50">${i}</button>\`
+                        html += '<button onclick="changePage(' + i + ')" class="px-4 py-2 bg-white border rounded-lg hover:bg-gray-50">' + i + '</button>'
                     }
                 }
                 if (pagination.page < pagination.totalPages) {
-                    html += \`<button onclick="changePage(${pagination.page + 1})" class="px-4 py-2 bg-white border rounded-lg hover:bg-gray-50">次へ</button>\`
+                    html += '<button onclick="changePage(' + (pagination.page + 1) + ')" class="px-4 py-2 bg-white border rounded-lg hover:bg-gray-50">次へ</button>'
                 }
                 container.innerHTML = html
             }
