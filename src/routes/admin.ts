@@ -70,13 +70,21 @@ admin.post('/members/:id/approve', authMiddleware, requireRole('admin'), async (
       return c.json({ success: false, error: 'Membership is not pending' }, 400)
     }
 
-    // 会員番号を生成（M-001, M-002, ...）
-    const countResult = await db
-      .prepare('SELECT COUNT(*) as count FROM tenant_memberships WHERE tenant_id = ? AND status = ?')
-      .bind(tenantId, 'active')
-      .first<{ count: number }>()
+    // 会員番号を生成
+    // オーナー(role='owner')は会員番号0、一般メンバーは001から連番
+    // 数千〜数万人のメンバーに対応するため、最大の会員番号+1を使用
+    const maxNumberResult = await db
+      .prepare(`
+        SELECT MAX(CAST(member_number AS INTEGER)) as max_number 
+        FROM tenant_memberships 
+        WHERE tenant_id = ? AND status = 'active' AND member_number IS NOT NULL
+      `)
+      .bind(tenantId)
+      .first<{ max_number: number | null }>()
 
-    const memberNumber = `M-${String((countResult?.count || 0) + 1).padStart(3, '0')}`
+    // 最大番号+1を新しい会員番号とする（最小は001から）
+    const nextNumber = Math.max((maxNumberResult?.max_number || 0) + 1, 1)
+    const memberNumber = String(nextNumber).padStart(3, '0')
 
     // ステータスを active に更新
     await db

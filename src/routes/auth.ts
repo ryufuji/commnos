@@ -112,12 +112,13 @@ auth.post('/register', async (c) => {
     const tenantId = (tenant as any).id
 
     // 3. テナントメンバーシップ作成（owner 権限）
+    // オーナーは会員番号 0、一般メンバーは 001 から開始
     await db
       .prepare(`
         INSERT INTO tenant_memberships (tenant_id, user_id, role, member_number, status, joined_at)
         VALUES (?, ?, ?, ?, ?, datetime('now'))
       `)
-      .bind(tenantId, user.id, 'owner', 'M-001', 'active')
+      .bind(tenantId, user.id, 'owner', '0', 'active')
       .run()
 
     // 4. テナントカスタマイズ設定

@@ -4236,7 +4236,22 @@ tenantPublic.get('/mypage', async (c) => {
             document.getElementById('cardNickname').textContent = user.nickname || '未設定'
             
             const memberNumber = membership.member_number || '0000'
-            document.getElementById('cardMemberNumber').textContent = String(memberNumber).padStart(4, '0')
+            // オーナーは「0」、一般メンバーは桁数に応じて表示
+            // 001-999: 3桁、1000-9999: 4桁、10000-: 5桁以上
+            let displayNumber = '0000'
+            if (memberNumber === '0') {
+                displayNumber = '0'
+            } else {
+                const numValue = parseInt(memberNumber) || 0
+                if (numValue < 1000) {
+                    displayNumber = String(numValue).padStart(3, '0')
+                } else if (numValue < 10000) {
+                    displayNumber = String(numValue).padStart(4, '0')
+                } else {
+                    displayNumber = String(numValue)
+                }
+            }
+            document.getElementById('cardMemberNumber').textContent = displayNumber
             
             const roleMap = {
                 'owner': 'オーナー',
