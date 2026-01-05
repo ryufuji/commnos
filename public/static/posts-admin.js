@@ -325,10 +325,9 @@ async function savePost() {
         // 画像アップロード
         if (thumbnailFile) {
             const formData = new FormData()
-            formData.append('file', thumbnailFile)
-            formData.append('type', 'thumbnail')
+            formData.append('media', thumbnailFile)
 
-            const uploadResponse = await axios.post('/api/upload', formData, {
+            const uploadResponse = await axios.post('/api/upload/post-media', formData, {
                 headers: {
                     'Authorization': 'Bearer ' + token,
                     'Content-Type': 'multipart/form-data'
@@ -336,17 +335,16 @@ async function savePost() {
             })
 
             if (uploadResponse.data.success) {
-                thumbnailUrl = uploadResponse.data.url
+                thumbnailUrl = uploadResponse.data.media_url
             }
         }
 
         // 動画アップロード
         if (videoFile) {
             const formData = new FormData()
-            formData.append('file', videoFile)
-            formData.append('type', 'video')
+            formData.append('media', videoFile)
 
-            const uploadResponse = await axios.post('/api/upload', formData, {
+            const uploadResponse = await axios.post('/api/upload/post-media', formData, {
                 headers: {
                     'Authorization': 'Bearer ' + token,
                     'Content-Type': 'multipart/form-data'
@@ -354,7 +352,7 @@ async function savePost() {
             })
 
             if (uploadResponse.data.success) {
-                videoUrl = uploadResponse.data.url
+                videoUrl = uploadResponse.data.media_url
             }
         }
 
