@@ -11,7 +11,7 @@ import { checkUserPermission } from '../lib/db'
  * JWT 認証ミドルウェア
  * 
  * Authorization ヘッダーから JWT を取得して検証
- * 検証成功時、c.set() で userId, tenantId, role を設定
+ * 検証成功時、c.set() で userId, tenantId, role, isPlatformAdmin を設定
  */
 export async function authMiddleware(c: Context<AppContext>, next: Next) {
   try {
@@ -37,8 +37,9 @@ export async function authMiddleware(c: Context<AppContext>, next: Next) {
 
     // Context に認証情報を設定
     c.set('userId', result.payload.userId)
-    c.set('tenantId', result.payload.tenantId)
-    c.set('role', result.payload.role)
+    c.set('tenantId', result.payload.tenantId || null)
+    c.set('role', result.payload.role || 'member')
+    c.set('isPlatformAdmin', result.payload.isPlatformAdmin || false)
 
     await next()
   } catch (error) {
@@ -156,40 +157,19 @@ export async function activeMemberMiddleware(c: Context<AppContext>, next: Next)
 /**
  * プラットフォーム管理者チェックミドルウェア
  * 
- * 環境変数 PLATFORM_ADMIN_EMAILS に登録されたメールアドレスのみアクセス可能
+ * JWTトークンに isPlatformAdmin: true が含まれているかチェック
  * 
  * 使用例:
  * app.get('/api/platform/dashboard', authMiddleware, platformAdminMiddleware, getDashboard)
  */
 export async function platformAdminMiddleware(c: Context<AppContext>, next: Next) {
-  const userId = c.get('userId')
-  const db = c.env.DB
+  const isPlatformAdmin = c.get('isPlatformAdmin')
 
-  // ユーザー情報を取得
-  const user = await db
-    .prepare('SELECT email FROM users WHERE id = ?')
-    .bind(userId)
-    .first<{ email: string }>()
-
-  if (!user) {
-    return c.json({ success: false, error: 'User not found' }, 404)
-  }
-
-  // 環境変数からプラットフォーム管理者メールアドレスリストを取得
-  const adminEmailsStr = c.env.PLATFORM_ADMIN_EMAILS || ''
-  const adminEmails = adminEmailsStr.split(',').map(email => email.trim()).filter(email => email)
-
-  if (adminEmails.length === 0) {
-    console.error('[Platform Admin] PLATFORM_ADMIN_EMAILS is not configured')
-    return c.json({ success: false, error: 'Platform admin not configured' }, 500)
-  }
-
-  // ユーザーのメールアドレスが管理者リストに含まれているかチェック
-  if (!adminEmails.includes(user.email)) {
-    console.warn(`[Platform Admin] Access denied for user: ${user.email}`)
+  if (!isPlatformAdmin) {
+    console.warn('[Platform Admin] Access denied - not a platform admin')
     return c.json({ success: false, error: 'Platform admin access only' }, 403)
   }
 
-  console.log(`[Platform Admin] Access granted for user: ${user.email}`)
+  console.log('[Platform Admin] Access granted')
   await next()
 }

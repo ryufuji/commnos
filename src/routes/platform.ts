@@ -5,8 +5,146 @@
 import { Hono } from 'hono'
 import type { AppContext } from '../types'
 import { authMiddleware, platformAdminMiddleware } from '../middleware/auth'
+import { hashPassword, verifyPassword } from '../lib/password'
+import { generateToken } from '../lib/jwt'
 
 const platform = new Hono<AppContext>()
+
+/**
+ * POST /api/platform/auth/login
+ * プラットフォーム管理者専用ログイン
+ */
+platform.post('/auth/login', async (c) => {
+  const db = c.env.DB
+
+  try {
+    const { email, password } = await c.req.json()
+
+    if (!email || !password) {
+      return c.json({
+        success: false,
+        error: 'Email and password are required'
+      }, 400)
+    }
+
+    // プラットフォーム管理者を取得
+    const admin = await db
+      .prepare('SELECT * FROM platform_admins WHERE email = ? AND is_active = 1')
+      .bind(email)
+      .first<any>()
+
+    if (!admin) {
+      return c.json({
+        success: false,
+        error: 'Invalid credentials'
+      }, 401)
+    }
+
+    // パスワード検証
+    const isValid = await verifyPassword(password, admin.password_hash)
+
+    if (!isValid) {
+      return c.json({
+        success: false,
+        error: 'Invalid credentials'
+      }, 401)
+    }
+
+    // 最終ログイン日時更新
+    await db
+      .prepare('UPDATE platform_admins SET last_login_at = CURRENT_TIMESTAMP WHERE id = ?')
+      .bind(admin.id)
+      .run()
+
+    // JWTトークン生成（tenantId不要、isPlatformAdmin: true）
+    const secret = c.env.JWT_SECRET
+    const token = await generateToken(
+      {
+        userId: admin.id,
+        email: admin.email,
+        isPlatformAdmin: true,
+        tenantId: null,
+        role: 'platform_admin'
+      },
+      secret
+    )
+
+    return c.json({
+      success: true,
+      token,
+      admin: {
+        id: admin.id,
+        email: admin.email,
+        name: admin.name
+      }
+    })
+  } catch (error) {
+    console.error('[Platform Admin Login Error]', error)
+    return c.json({
+      success: false,
+      error: 'Login failed'
+    }, 500)
+  }
+})
+
+/**
+ * POST /api/platform/auth/register
+ * プラットフォーム管理者登録（初回セットアップ用）
+ * 本番環境では無効化推奨
+ */
+platform.post('/auth/register', async (c) => {
+  const db = c.env.DB
+
+  try {
+    // 既存の管理者が存在する場合は登録不可
+    const existingAdmin = await db
+      .prepare('SELECT COUNT(*) as count FROM platform_admins')
+      .first<any>()
+
+    if (existingAdmin.count > 0) {
+      return c.json({
+        success: false,
+        error: 'Admin registration is disabled'
+      }, 403)
+    }
+
+    const { email, password, name } = await c.req.json()
+
+    if (!email || !password || !name) {
+      return c.json({
+        success: false,
+        error: 'Email, password, and name are required'
+      }, 400)
+    }
+
+    // パスワードハッシュ化
+    const passwordHash = await hashPassword(password)
+
+    // 管理者作成
+    const result = await db
+      .prepare(`
+        INSERT INTO platform_admins (email, password_hash, name)
+        VALUES (?, ?, ?)
+      `)
+      .bind(email, passwordHash, name)
+      .run()
+
+    if (!result.success) {
+      throw new Error('Failed to create admin')
+    }
+
+    return c.json({
+      success: true,
+      message: 'Platform admin created successfully'
+    })
+  } catch (error) {
+    console.error('[Platform Admin Register Error]', error)
+    return c.json({
+      success: false,
+      error: 'Registration failed'
+    }, 500)
+  }
+})
 
 /**
  * GET /api/platform/dashboard

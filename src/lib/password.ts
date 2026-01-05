@@ -1,26 +1,112 @@
 // ============================================
-// パスワードハッシュヘルパー
+// パスワードハッシュヘルパー（Cloudflare Workers対応）
 // ============================================
 
-import bcrypt from 'bcryptjs'
+const PBKDF2_ITERATIONS = 100000
 
 /**
- * bcrypt 設定
- */
-const SALT_ROUNDS = 10
-
-/**
- * パスワードをハッシュ化
+ * Web Crypto APIを使用してパスワードをハッシュ化
+ * Cloudflare Workers環境ではbcryptjsではなくPBKDF2を使用
+ * フォーマット: iterations:saltHex:hashHex
  */
 export async function hashPassword(password: string): Promise<string> {
-  return bcrypt.hash(password, SALT_ROUNDS)
+  const encoder = new TextEncoder()
+  const data = encoder.encode(password)
+  const salt = crypto.getRandomValues(new Uint8Array(16))
+  
+  const keyMaterial = await crypto.subtle.importKey(
+    'raw',
+    data,
+    'PBKDF2',
+    false,
+    ['deriveBits']
+  )
+  
+  const derivedBits = await crypto.subtle.deriveBits(
+    {
+      name: 'PBKDF2',
+      salt: salt,
+      iterations: PBKDF2_ITERATIONS,
+      hash: 'SHA-256'
+    },
+    keyMaterial,
+    256
+  )
+  
+  const hashArray = Array.from(new Uint8Array(derivedBits))
+  const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
+  const saltHex = Array.from(salt).map(b => b.toString(16).padStart(2, '0')).join('')
+  
+  // フォーマット: iterations:saltHex:hashHex
+  return `${PBKDF2_ITERATIONS}:${saltHex}:${hashHex}`
 }
 
 /**
  * パスワードを検証
+ * 新形式: iterations:saltHex:hashHex
+ * 旧形式: saltHex:hashHex（互換性のため対応）
  */
-export async function verifyPassword(password: string, hash: string): Promise<boolean> {
-  return bcrypt.compare(password, hash)
+export async function verifyPassword(password: string, storedHash: string): Promise<boolean> {
+  try {
+    const parts = storedHash.split(':')
+    
+    let iterations: number
+    let saltHex: string
+    let hashHex: string
+    
+    if (parts.length === 3) {
+      // 新形式: iterations:saltHex:hashHex
+      iterations = parseInt(parts[0])
+      saltHex = parts[1]
+      hashHex = parts[2]
+    } else if (parts.length === 2) {
+      // 旧形式: saltHex:hashHex（デフォルトiterations）
+      iterations = PBKDF2_ITERATIONS
+      saltHex = parts[0]
+      hashHex = parts[1]
+    } else {
+      console.error('[Password Verify] Invalid hash format')
+      return false
+    }
+    
+    if (!saltHex || !hashHex) {
+      console.error('[Password Verify] Missing hash components')
+      return false
+    }
+    
+    const encoder = new TextEncoder()
+    const data = encoder.encode(password)
+    const salt = new Uint8Array(saltHex.match(/.{1,2}/g)!.map(byte => parseInt(byte, 16)))
+    
+    const keyMaterial = await crypto.subtle.importKey(
+      'raw',
+      data,
+      'PBKDF2',
+      false,
+      ['deriveBits']
+    )
+    
+    const derivedBits = await crypto.subtle.deriveBits(
+      {
+        name: 'PBKDF2',
+        salt: salt,
+        iterations: iterations,
+        hash: 'SHA-256'
+      },
+      keyMaterial,
+      256
+    )
+    
+    const hashArray = Array.from(new Uint8Array(derivedBits))
+    const computedHashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
+    
+    const isValid = computedHashHex === hashHex
+    console.log('[Password Verify] Format:', parts.length === 3 ? 'new' : 'legacy', 'Result:', isValid)
+    return isValid
+  } catch (error) {
+    console.error('[Password Verify Error]', error)
+    return false
+  }
 }
 
 /**
