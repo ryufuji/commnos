@@ -18,6 +18,7 @@ import profile from './routes/profile' // Week 5-6
 import posts from './routes/posts' // Week 7-8
 import stripe from './routes/stripe' // Week 9-10
 import subscription from './routes/subscription' // サブスクリプション管理
+import tenantPlans from './routes/tenant-plans' // テナント独自プラン管理
 import upload from './routes/upload' // Phase 2 - 画像アップロード
 import images from './routes/images' // Phase 2 - 画像取得
 import tenantPublic from './routes/tenant-public' // Phase 3 - テナント公開ページ
@@ -56,6 +57,9 @@ app.route('/api/stripe', stripe)
 
 // サブスクリプション管理ルート
 app.route('/api/subscription', subscription)
+
+// テナントプラン管理ルート（マーケットプレイス）
+app.route('/api/tenant-plans', tenantPlans)
 
 // 会員管理ルート
 app.route('/api/members', members)

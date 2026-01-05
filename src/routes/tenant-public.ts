@@ -5129,9 +5129,15 @@ tenantPublic.get('/subscription', async (c) => {
                 <h1 class="text-2xl font-bold text-gray-900">
                     <i class="fas fa-credit-card mr-2"></i>サブスクリプション管理
                 </h1>
-                <a href="/tenant/home?subdomain=${subdomain}" class="text-blue-600 hover:text-blue-800">
-                    <i class="fas fa-arrow-left mr-2"></i>ホームに戻る
-                </a>
+                <div class="flex gap-3">
+                    <a href="/tenant/plans?subdomain=${subdomain}" class="btn-ghost">
+                        <i class="fas fa-tags mr-2"></i>
+                        <span class="hidden sm:inline">プラン管理</span>
+                    </a>
+                    <a href="/tenant/home?subdomain=${subdomain}" class="text-blue-600 hover:text-blue-800">
+                        <i class="fas fa-arrow-left mr-2"></i>ホームに戻る
+                    </a>
+                </div>
             </div>
         </div>
     </header>
@@ -5465,6 +5471,405 @@ tenantPublic.get('/subscription', async (c) => {
   `)
 })
 
+
+// ============================================
+// プラン管理ページ（オーナー専用）
+// ============================================
+tenantPublic.get('/plans', async (c) => {
+  const subdomain = c.req.query('subdomain')
+
+  if (!subdomain) {
+    return c.html(`
+      <!DOCTYPE html>
+      <html lang="ja">
+      <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>プラン管理 - Commons</title>
+          <script src="https://cdn.tailwindcss.com"></script>
+      </head>
+      <body class="bg-gray-50 p-8">
+          <div class="max-w-4xl mx-auto text-center">
+              <h1 class="text-2xl font-bold text-gray-800 mb-4">プラン管理</h1>
+              <p class="text-gray-600">サブドメインを指定してください: ?subdomain=your-subdomain</p>
+          </div>
+      </body>
+      </html>
+    `)
+  }
+
+  return c.html(`
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>プラン管理 - Commons</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="/static/styles.css" rel="stylesheet">
+</head>
+<body class="bg-gradient-to-br from-gray-50 to-gray-100">
+    <div class="min-h-screen">
+        <!-- ヘッダー -->
+        <header class="bg-white/80 backdrop-blur-sm shadow-sm border-b border-gray-200">
+            <div class="container-custom py-4">
+                <div class="flex justify-between items-center">
+                    <h1 class="text-xl md:text-2xl font-bold text-gradient">
+                        <i class="fas fa-tags mr-2"></i>
+                        プラン管理
+                    </h1>
+                    <a href="/tenant/subscription?subdomain=${subdomain}" class="btn-ghost">
+                        <i class="fas fa-arrow-left mr-2"></i>
+                        戻る
+                    </a>
+                </div>
+            </div>
+        </header>
+
+        <!-- メインコンテンツ -->
+        <main class="container-custom section-spacing">
+            <!-- 説明 -->
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                <div class="flex items-start gap-3">
+                    <i class="fas fa-info-circle text-blue-600 text-xl mt-1"></i>
+                    <div class="flex-1">
+                        <h3 class="font-bold text-blue-900 mb-2">プラン設定について</h3>
+                        <ul class="text-sm text-blue-800 space-y-1">
+                            <li>• コミュニティのメンバー向けに独自のプランを作成できます</li>
+                            <li>• 決済はプラットフォームが代行し、<strong>手数料20%を差し引いた金額</strong>がテナント収益となります</li>
+                            <li>• 最低入金額（デフォルト¥10,000）に達すると入金処理が可能になります</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- プラン一覧 -->
+            <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-xl font-bold">
+                        <i class="fas fa-list mr-2"></i>現在のプラン
+                    </h2>
+                    <button onclick="openCreateModal()" class="btn-primary">
+                        <i class="fas fa-plus mr-2"></i>新規プラン作成
+                    </button>
+                </div>
+
+                <div id="plansList" class="space-y-4">
+                    <p class="text-gray-600 text-center py-8">読み込み中...</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- プラン作成/編集モーダル -->
+    <div id="planModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-lg shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div class="p-6 border-b border-gray-200">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-2xl font-bold text-gray-900">
+                        <i class="fas fa-tag mr-2 text-primary-500"></i>
+                        <span id="modalTitle">新規プラン作成</span>
+                    </h2>
+                    <button onclick="closePlanModal()" class="text-gray-500 hover:text-gray-700">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <form id="planForm" class="p-6 space-y-4">
+                <input type="hidden" id="planId" />
+                
+                <!-- プラン名 -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        プラン名 <span class="text-red-500">*</span>
+                    </label>
+                    <input type="text" id="planName" required
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                        placeholder="例: ベーシック、プレミアム">
+                </div>
+
+                <!-- 説明 -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        説明
+                    </label>
+                    <textarea id="planDescription" rows="3"
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                        placeholder="プランの説明を入力してください"></textarea>
+                </div>
+
+                <!-- 月額料金 -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        月額料金（円） <span class="text-red-500">*</span>
+                    </label>
+                    <input type="number" id="planPrice" required min="0"
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                        placeholder="例: 980">
+                    <p class="text-xs text-gray-500 mt-1">
+                        <i class="fas fa-info-circle mr-1"></i>
+                        テナント収益: <span id="tenantRevenue">¥0</span>（手数料20%差し引き後）
+                    </p>
+                </div>
+
+                <!-- メンバー数上限 -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        メンバー数上限
+                    </label>
+                    <input type="number" id="planMemberLimit" min="1"
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                        placeholder="例: 100（空欄の場合は無制限）">
+                </div>
+
+                <!-- ストレージ上限 -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        ストレージ上限（GB）
+                    </label>
+                    <input type="number" id="planStorageLimit" min="1"
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
+                        placeholder="例: 10">
+                </div>
+
+                <!-- ボタン -->
+                <div class="flex gap-3 pt-4">
+                    <button type="button" onclick="closePlanModal()" class="flex-1 btn-ghost">
+                        キャンセル
+                    </button>
+                    <button type="submit" class="flex-1 btn-primary">
+                        <i class="fas fa-save mr-2"></i>
+                        <span id="submitText">作成</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+    <script src="/static/app.js"></script>
+    <script>
+        const subdomain = '${subdomain}'
+        let plans = []
+        let currentEditingPlan = null
+
+        // プラン一覧読み込み
+        async function loadPlans() {
+            try {
+                const token = localStorage.getItem('token')
+                const response = await axios.get('/api/tenant-plans', {
+                    headers: { 'Authorization': \`Bearer \${token}\` }
+                })
+
+                if (response.data.success) {
+                    plans = response.data.plans
+                    renderPlans()
+                }
+            } catch (error) {
+                console.error('Failed to load plans:', error)
+                showToast('プラン一覧の読み込みに失敗しました', 'error')
+            }
+        }
+
+        // プラン一覧表示
+        function renderPlans() {
+            const plansList = document.getElementById('plansList')
+            
+            if (plans.length === 0) {
+                plansList.innerHTML = \`
+                    <div class="text-center py-8">
+                        <i class="fas fa-inbox text-gray-300 text-5xl mb-4"></i>
+                        <p class="text-gray-600">まだプランがありません</p>
+                        <p class="text-sm text-gray-500 mt-2">「新規プラン作成」ボタンから最初のプランを作成しましょう</p>
+                    </div>
+                \`
+                return
+            }
+
+            plansList.innerHTML = plans.map(plan => {
+                const price = plan.price || 0
+                const tenantRevenue = Math.floor(price * 0.8)
+                const platformFee = price - tenantRevenue
+                
+                return \`
+                    <div class="border rounded-lg p-4 \${plan.is_active ? 'bg-white' : 'bg-gray-50'}">
+                        <div class="flex justify-between items-start">
+                            <div class="flex-1">
+                                <div class="flex items-center gap-2 mb-2">
+                                    <h3 class="text-lg font-bold">\${plan.name}</h3>
+                                    <span class="badge \${plan.is_active ? 'badge-success' : 'badge-secondary'}">
+                                        \${plan.is_active ? '有効' : '無効'}
+                                    </span>
+                                </div>
+                                
+                                \${plan.description ? \`<p class="text-sm text-gray-600 mb-3">\${plan.description}</p>\` : ''}
+                                
+                                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-3">
+                                    <div>
+                                        <p class="text-xs text-gray-500">月額料金</p>
+                                        <p class="font-bold text-primary-600">¥\${price.toLocaleString()}</p>
+                                    </div>
+                                    <div>
+                                        <p class="text-xs text-gray-500">テナント収益</p>
+                                        <p class="font-bold text-green-600">¥\${tenantRevenue.toLocaleString()}</p>
+                                    </div>
+                                    <div>
+                                        <p class="text-xs text-gray-500">メンバー上限</p>
+                                        <p class="font-bold">\${plan.member_limit || '無制限'}</p>
+                                    </div>
+                                    <div>
+                                        <p class="text-xs text-gray-500">ストレージ</p>
+                                        <p class="font-bold">\${plan.storage_limit ? Math.round(plan.storage_limit / 1024 / 1024 / 1024) + 'GB' : '-'}</p>
+                                    </div>
+                                </div>
+                                
+                                <p class="text-xs text-gray-500">
+                                    <i class="fas fa-info-circle mr-1"></i>
+                                    プラットフォーム手数料: ¥\${platformFee.toLocaleString()} (20%)
+                                </p>
+                            </div>
+                            
+                            <div class="flex gap-2 ml-4">
+                                <button onclick="editPlan(\${plan.id})" class="btn-ghost p-2" title="編集">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button onclick="togglePlan(\${plan.id}, \${!plan.is_active})" 
+                                    class="btn-ghost p-2" 
+                                    title="\${plan.is_active ? '無効化' : '有効化'}">
+                                    <i class="fas fa-\${plan.is_active ? 'eye-slash' : 'eye'}"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                \`
+            }).join('')
+        }
+
+        // プラン作成モーダルを開く
+        function openCreateModal() {
+            currentEditingPlan = null
+            document.getElementById('modalTitle').textContent = '新規プラン作成'
+            document.getElementById('submitText').textContent = '作成'
+            document.getElementById('planForm').reset()
+            document.getElementById('planId').value = ''
+            document.getElementById('tenantRevenue').textContent = '¥0'
+            document.getElementById('planModal').classList.remove('hidden')
+        }
+
+        // プラン編集モーダルを開く
+        function editPlan(planId) {
+            const plan = plans.find(p => p.id === planId)
+            if (!plan) return
+
+            currentEditingPlan = plan
+            document.getElementById('modalTitle').textContent = 'プラン編集'
+            document.getElementById('submitText').textContent = '更新'
+            document.getElementById('planId').value = plan.id
+            document.getElementById('planName').value = plan.name
+            document.getElementById('planDescription').value = plan.description || ''
+            document.getElementById('planPrice').value = plan.price
+            document.getElementById('planMemberLimit').value = plan.member_limit || ''
+            document.getElementById('planStorageLimit').value = plan.storage_limit ? Math.round(plan.storage_limit / 1024 / 1024 / 1024) : ''
+            
+            updateTenantRevenue(plan.price)
+            document.getElementById('planModal').classList.remove('hidden')
+        }
+
+        // モーダルを閉じる
+        function closePlanModal() {
+            document.getElementById('planModal').classList.add('hidden')
+            currentEditingPlan = null
+        }
+
+        // テナント収益を計算して表示
+        document.getElementById('planPrice').addEventListener('input', (e) => {
+            updateTenantRevenue(parseInt(e.target.value) || 0)
+        })
+
+        function updateTenantRevenue(price) {
+            const revenue = Math.floor(price * 0.8)
+            document.getElementById('tenantRevenue').textContent = \`¥\${revenue.toLocaleString()}\`
+        }
+
+        // プラン作成/更新
+        document.getElementById('planForm').addEventListener('submit', async (e) => {
+            e.preventDefault()
+
+            const planId = document.getElementById('planId').value
+            const name = document.getElementById('planName').value
+            const description = document.getElementById('planDescription').value
+            const price = parseInt(document.getElementById('planPrice').value)
+            const memberLimit = document.getElementById('planMemberLimit').value
+            const storageLimit = document.getElementById('planStorageLimit').value
+
+            const data = {
+                name,
+                description: description || null,
+                price,
+                member_limit: memberLimit ? parseInt(memberLimit) : null,
+                storage_limit: storageLimit ? parseInt(storageLimit) * 1024 * 1024 * 1024 : null
+            }
+
+            try {
+                const token = localStorage.getItem('token')
+                let response
+
+                if (planId) {
+                    // 更新
+                    response = await axios.patch(\`/api/tenant-plans/\${planId}\`, data, {
+                        headers: { 'Authorization': \`Bearer \${token}\` }
+                    })
+                    showToast('プランを更新しました', 'success')
+                } else {
+                    // 作成
+                    response = await axios.post('/api/tenant-plans', data, {
+                        headers: { 'Authorization': \`Bearer \${token}\` }
+                    })
+                    showToast('プランを作成しました', 'success')
+                }
+
+                if (response.data.success) {
+                    closePlanModal()
+                    loadPlans()
+                }
+            } catch (error) {
+                console.error('Plan save error:', error)
+                showToast(error.response?.data?.error || 'プランの保存に失敗しました', 'error')
+            }
+        })
+
+        // プラン有効/無効切り替え
+        async function togglePlan(planId, isActive) {
+            const action = isActive ? '有効化' : '無効化'
+            if (!confirm(\`このプランを\${action}しますか？\`)) return
+
+            try {
+                const token = localStorage.getItem('token')
+                const response = await axios.patch(\`/api/tenant-plans/\${planId}\`, {
+                    is_active: isActive ? 1 : 0
+                }, {
+                    headers: { 'Authorization': \`Bearer \${token}\` }
+                })
+
+                if (response.data.success) {
+                    showToast(\`プランを\${action}しました\`, 'success')
+                    loadPlans()
+                }
+            } catch (error) {
+                console.error('Toggle plan error:', error)
+                showToast(\`プランの\${action}に失敗しました\`, 'error')
+            }
+        }
+
+        // 初期化
+        loadPlans()
+    </script>
+</body>
+</html>
+  `)
+})
 
 export default tenantPublic
 
