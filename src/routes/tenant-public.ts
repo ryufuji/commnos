@@ -926,6 +926,13 @@ tenantPublic.get('/home', async (c) => {
                 const response = await fetch('/api/notifications/unread-count', {
                     headers: { 'Authorization': 'Bearer ' + token }
                 })
+                
+                // レスポンスが正常でない場合は処理しない
+                if (!response.ok) {
+                    console.warn('通知取得失敗:', response.status)
+                    return
+                }
+                
                 const data = await response.json()
                 
                 if (data.success && data.unreadCount > 0) {
@@ -942,7 +949,8 @@ tenantPublic.get('/home', async (c) => {
                     }
                 }
             } catch (error) {
-                console.error('未読数取得エラー:', error)
+                // エラーは静かに無視（通知は必須機能ではないため）
+                console.warn('未読数取得エラー:', error.message)
             }
         }
 
@@ -2349,6 +2357,13 @@ tenantPublic.get('/posts', async (c) => {
                 const response = await fetch('/api/notifications/unread-count', {
                     headers: { 'Authorization': 'Bearer ' + token }
                 })
+                
+                // レスポンスが正常でない場合は処理しない
+                if (!response.ok) {
+                    console.warn('通知取得失敗:', response.status)
+                    return
+                }
+                
                 const data = await response.json()
                 
                 if (data.success && data.unreadCount > 0) {
@@ -2365,7 +2380,8 @@ tenantPublic.get('/posts', async (c) => {
                     }
                 }
             } catch (error) {
-                console.error('未読数取得エラー:', error)
+                // エラーは静かに無視（通知は必須機能ではないため）
+                console.warn('未読数取得エラー:', error.message)
             }
         }
 
