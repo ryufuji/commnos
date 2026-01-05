@@ -152,3 +152,44 @@ export async function activeMemberMiddleware(c: Context<AppContext>, next: Next)
 
   await next()
 }
+
+/**
+ * プラットフォーム管理者チェックミドルウェア
+ * 
+ * 環境変数 PLATFORM_ADMIN_EMAILS に登録されたメールアドレスのみアクセス可能
+ * 
+ * 使用例:
+ * app.get('/api/platform/dashboard', authMiddleware, platformAdminMiddleware, getDashboard)
+ */
+export async function platformAdminMiddleware(c: Context<AppContext>, next: Next) {
+  const userId = c.get('userId')
+  const db = c.env.DB
+
+  // ユーザー情報を取得
+  const user = await db
+    .prepare('SELECT email FROM users WHERE id = ?')
+    .bind(userId)
+    .first<{ email: string }>()
+
+  if (!user) {
+    return c.json({ success: false, error: 'User not found' }, 404)
+  }
+
+  // 環境変数からプラットフォーム管理者メールアドレスリストを取得
+  const adminEmailsStr = c.env.PLATFORM_ADMIN_EMAILS || ''
+  const adminEmails = adminEmailsStr.split(',').map(email => email.trim()).filter(email => email)
+
+  if (adminEmails.length === 0) {
+    console.error('[Platform Admin] PLATFORM_ADMIN_EMAILS is not configured')
+    return c.json({ success: false, error: 'Platform admin not configured' }, 500)
+  }
+
+  // ユーザーのメールアドレスが管理者リストに含まれているかチェック
+  if (!adminEmails.includes(user.email)) {
+    console.warn(`[Platform Admin] Access denied for user: ${user.email}`)
+    return c.json({ success: false, error: 'Platform admin access only' }, 403)
+  }
+
+  console.log(`[Platform Admin] Access granted for user: ${user.email}`)
+  await next()
+}

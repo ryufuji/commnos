@@ -918,6 +918,24 @@ a:hover {
 }
 
 /* ============================================
+   Platform Admin Styles
+   ============================================ */
+.tab-active {
+  border-color: #6366F1;
+  color: #6366F1;
+}
+
+.tab-inactive {
+  border-color: transparent;
+  color: #6B7280;
+}
+
+.tab-inactive:hover {
+  color: #111827;
+  border-color: #E5E7EB;
+}
+
+/* ============================================
    Print Styles
    ============================================ */
 @media print {

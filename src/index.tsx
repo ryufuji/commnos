@@ -19,6 +19,7 @@ import posts from './routes/posts' // Week 7-8
 import stripe from './routes/stripe' // Week 9-10
 import subscription from './routes/subscription' // サブスクリプション管理
 import tenantPlans from './routes/tenant-plans' // テナント独自プラン管理
+import platform from './routes/platform' // プラットフォーム管理（VALUE ARCHITECTS専用）
 import upload from './routes/upload' // Phase 2 - 画像アップロード
 import images from './routes/images' // Phase 2 - 画像取得
 import tenantPublic from './routes/tenant-public' // Phase 3 - テナント公開ページ
@@ -60,6 +61,9 @@ app.route('/api/subscription', subscription)
 
 // テナントプラン管理ルート（マーケットプレイス）
 app.route('/api/tenant-plans', tenantPlans)
+
+// プラットフォーム管理ルート（VALUE ARCHITECTS専用）
+app.route('/api/platform', platform)
 
 // 会員管理ルート
 app.route('/api/members', members)
@@ -2758,6 +2762,390 @@ app.get('/favicon.ico', (c) => {
       'Cache-Control': 'public, max-age=86400'
     }
   })
+})
+
+// ============================================
+// プラットフォーム管理画面（VALUE ARCHITECTS専用）
+// ============================================
+app.get('/platform/admin', (c) => {
+  return c.html(`
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Platform Admin - VALUE ARCHITECTS</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="/static/styles.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50">
+    <div class="min-h-screen">
+        <!-- ヘッダー -->
+        <header class="bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg">
+            <div class="max-w-7xl mx-auto px-4 py-6">
+                <div class="flex justify-between items-center">
+                    <h1 class="text-2xl font-bold">
+                        <i class="fas fa-shield-alt mr-2"></i>
+                        Platform Admin - VALUE ARCHITECTS
+                    </h1>
+                    <button id="logoutBtn" class="bg-white/20 hover:bg-white/30 px-4 py-2 rounded">
+                        <i class="fas fa-sign-out-alt mr-2"></i>Logout
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- タブナビゲーション -->
+        <div class="bg-white shadow">
+            <div class="max-w-7xl mx-auto px-4">
+                <nav class="flex space-x-8">
+                    <button onclick="switchTab('dashboard')" id="tab-dashboard" class="tab-active py-4 px-1 border-b-2 font-medium text-sm">
+                        <i class="fas fa-chart-line mr-2"></i>ダッシュボード
+                    </button>
+                    <button onclick="switchTab('tenants')" id="tab-tenants" class="tab-inactive py-4 px-1 border-b-2 font-medium text-sm">
+                        <i class="fas fa-building mr-2"></i>テナント管理
+                    </button>
+                    <button onclick="switchTab('media')" id="tab-media" class="tab-inactive py-4 px-1 border-b-2 font-medium text-sm">
+                        <i class="fas fa-photo-video mr-2"></i>メディア管理
+                    </button>
+                </nav>
+            </div>
+        </div>
+
+        <!-- コンテンツ -->
+        <main class="max-w-7xl mx-auto px-4 py-8">
+            <!-- ダッシュボード -->
+            <div id="content-dashboard" class="tab-content">
+                <div id="kpi-cards" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                    <!-- KPIカード（動的生成） -->
+                </div>
+                <div id="top-tenants" class="bg-white rounded-lg shadow p-6">
+                    <h2 class="text-xl font-bold mb-4">トップテナント（収益順）</h2>
+                    <div id="top-tenants-list"></div>
+                </div>
+            </div>
+
+            <!-- テナント管理 -->
+            <div id="content-tenants" class="tab-content hidden">
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-xl font-bold">テナント一覧</h2>
+                        <div class="flex gap-3">
+                            <input type="text" id="tenant-search" placeholder="検索..." 
+                                class="px-4 py-2 border rounded">
+                            <select id="tenant-status-filter" class="px-4 py-2 border rounded">
+                                <option value="all">すべて</option>
+                                <option value="active">有効</option>
+                                <option value="suspended">停止中</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div id="tenants-list"></div>
+                    <div id="tenants-pagination" class="mt-6"></div>
+                </div>
+            </div>
+
+            <!-- メディア管理 -->
+            <div id="content-media" class="tab-content hidden">
+                <div class="bg-white rounded-lg shadow p-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <h2 class="text-xl font-bold">メディアコンテンツ</h2>
+                        <div class="flex gap-3">
+                            <input type="text" id="media-search" placeholder="検索..." 
+                                class="px-4 py-2 border rounded">
+                            <select id="media-type-filter" class="px-4 py-2 border rounded">
+                                <option value="">すべて</option>
+                                <option value="image">画像のみ</option>
+                                <option value="video">動画のみ</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div id="media-grid" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4"></div>
+                    <div id="media-pagination" class="mt-6"></div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+    <script src="/static/app.js"></script>
+    <script>
+        let currentTab = 'dashboard'
+        let kpiData = null
+        let tenantsData = []
+        let mediaData = []
+
+        // タブ切り替え
+        function switchTab(tab) {
+            currentTab = tab
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'))
+            document.querySelectorAll('[id^="tab-"]').forEach(el => {
+                el.classList.remove('tab-active')
+                el.classList.add('tab-inactive')
+            })
+            document.getElementById(\`content-\${tab}\`).classList.remove('hidden')
+            document.getElementById(\`tab-\${tab}\`).classList.remove('tab-inactive')
+            document.getElementById(\`tab-\${tab}\`).classList.add('tab-active')
+
+            if (tab === 'dashboard') loadDashboard()
+            else if (tab === 'tenants') loadTenants()
+            else if (tab === 'media') loadMedia()
+        }
+
+        // ダッシュボード読み込み
+        async function loadDashboard() {
+            try {
+                const token = localStorage.getItem('token')
+                const response = await axios.get('/api/platform/dashboard', {
+                    headers: { 'Authorization': \`Bearer \${token}\` }
+                })
+
+                if (response.data.success) {
+                    kpiData = response.data.kpi
+                    renderKPI()
+                    renderTopTenants(response.data.top_tenants)
+                }
+            } catch (error) {
+                handleError(error)
+            }
+        }
+
+        // KPI表示
+        function renderKPI() {
+            if (!kpiData) return
+            document.getElementById('kpi-cards').innerHTML = \`
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm text-gray-600">総テナント数</p>
+                            <p class="text-3xl font-bold text-indigo-600">\${kpiData.tenants.total}</p>
+                            <p class="text-xs text-gray-500">有効: \${kpiData.tenants.active}</p>
+                        </div>
+                        <i class="fas fa-building text-4xl text-indigo-200"></i>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm text-gray-600">総ユーザー数</p>
+                            <p class="text-3xl font-bold text-green-600">\${kpiData.users.total}</p>
+                            <p class="text-xs text-gray-500">今月: +\${kpiData.users.new_this_month}</p>
+                        </div>
+                        <i class="fas fa-users text-4xl text-green-200"></i>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm text-gray-600">総投稿数</p>
+                            <p class="text-3xl font-bold text-blue-600">\${kpiData.content.total_posts}</p>
+                            <p class="text-xs text-gray-500">コメント: \${kpiData.content.total_comments}</p>
+                        </div>
+                        <i class="fas fa-file-alt text-4xl text-blue-200"></i>
+                    </div>
+                </div>
+                <div class="bg-white p-6 rounded-lg shadow">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm text-gray-600">手数料収益</p>
+                            <p class="text-3xl font-bold text-purple-600">¥\${(kpiData.revenue.platform_revenue || 0).toLocaleString()}</p>
+                            <p class="text-xs text-gray-500">総収益: ¥\${(kpiData.revenue.total_earned || 0).toLocaleString()}</p>
+                        </div>
+                        <i class="fas fa-yen-sign text-4xl text-purple-200"></i>
+                    </div>
+                </div>
+            \`
+        }
+
+        // トップテナント表示
+        function renderTopTenants(tenants) {
+            document.getElementById('top-tenants-list').innerHTML = tenants.map((t, i) => \`
+                <div class="flex items-center justify-between py-3 border-b">
+                    <div class="flex items-center gap-3">
+                        <span class="text-2xl font-bold text-gray-300">\${i + 1}</span>
+                        <div>
+                            <p class="font-bold">\${t.name}</p>
+                            <p class="text-sm text-gray-500">\${t.subdomain}</p>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <p class="font-bold text-green-600">¥\${(t.total_earned || 0).toLocaleString()}</p>
+                        <p class="text-sm text-gray-500">\${t.member_count}人</p>
+                    </div>
+                </div>
+            \`).join('')
+        }
+
+        // テナント読み込み
+        async function loadTenants(page = 1) {
+            try {
+                const token = localStorage.getItem('token')
+                const status = document.getElementById('tenant-status-filter')?.value || 'all'
+                const search = document.getElementById('tenant-search')?.value || ''
+                
+                const response = await axios.get('/api/platform/tenants', {
+                    headers: { 'Authorization': \`Bearer \${token}\` },
+                    params: { page, status, search }
+                })
+
+                if (response.data.success) {
+                    tenantsData = response.data.tenants
+                    renderTenants()
+                    renderTenantsPagination(response.data.pagination)
+                }
+            } catch (error) {
+                handleError(error)
+            }
+        }
+
+        // テナント一覧表示
+        function renderTenants() {
+            document.getElementById('tenants-list').innerHTML = \`
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">テナント</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">オーナー</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">メンバー</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">収益</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">ステータス</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        \${tenantsData.map(t => \`
+                            <tr>
+                                <td class="px-6 py-4">
+                                    <div class="font-bold">\${t.name}</div>
+                                    <div class="text-sm text-gray-500">\${t.subdomain}</div>
+                                </td>
+                                <td class="px-6 py-4 text-sm">\${t.owner_nickname || '-'}</td>
+                                <td class="px-6 py-4 text-sm">\${t.member_count || 0}</td>
+                                <td class="px-6 py-4 text-sm">¥\${(t.total_earned || 0).toLocaleString()}</td>
+                                <td class="px-6 py-4">
+                                    <span class="px-2 py-1 text-xs rounded \${t.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                                        \${t.status}
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <button onclick="toggleTenantStatus(\${t.id}, '\${t.status}')" class="text-blue-600 hover:text-blue-800 text-sm">
+                                        \${t.status === 'active' ? '停止' : '再開'}
+                                    </button>
+                                </td>
+                            </tr>
+                        \`).join('')}
+                    </tbody>
+                </table>
+            \`
+        }
+
+        // テナントステータス切り替え
+        async function toggleTenantStatus(tenantId, currentStatus) {
+            const newStatus = currentStatus === 'active' ? 'suspended' : 'active'
+            if (!confirm(\`このテナントを\${newStatus === 'active' ? '再開' : '停止'}しますか？\`)) return
+
+            try {
+                const token = localStorage.getItem('token')
+                await axios.patch(\`/api/platform/tenants/\${tenantId}/status\`, 
+                    { status: newStatus },
+                    { headers: { 'Authorization': \`Bearer \${token}\` } }
+                )
+                showToast(\`ステータスを\${newStatus}に変更しました\`, 'success')
+                loadTenants()
+            } catch (error) {
+                handleError(error)
+            }
+        }
+
+        // メディア読み込み
+        async function loadMedia(page = 1) {
+            try {
+                const token = localStorage.getItem('token')
+                const type = document.getElementById('media-type-filter')?.value || ''
+                const search = document.getElementById('media-search')?.value || ''
+                
+                const response = await axios.get('/api/platform/media', {
+                    headers: { 'Authorization': \`Bearer \${token}\` },
+                    params: { page, type, search, per_page: 24 }
+                })
+
+                if (response.data.success) {
+                    mediaData = response.data.media
+                    renderMedia()
+                    renderMediaPagination(response.data.pagination)
+                }
+            } catch (error) {
+                handleError(error)
+            }
+        }
+
+        // メディア一覧表示
+        function renderMedia() {
+            document.getElementById('media-grid').innerHTML = mediaData.map(m => \`
+                <div class="relative group">
+                    <img src="\${m.thumbnail_url || '/static/placeholder.png'}" 
+                        class="w-full h-32 object-cover rounded cursor-pointer"
+                        onclick="viewMedia(\${m.id})">
+                    <div class="absolute top-2 right-2">
+                        <button onclick="deleteMedia(\${m.id}, event)" 
+                            class="bg-red-600 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition">
+                            <i class="fas fa-trash text-xs"></i>
+                        </button>
+                    </div>
+                    <p class="text-xs text-gray-600 mt-1 truncate">\${m.title}</p>
+                    <p class="text-xs text-gray-400">\${m.tenant_name}</p>
+                </div>
+            \`).join('')
+        }
+
+        // メディア削除
+        async function deleteMedia(mediaId, event) {
+            event.stopPropagation()
+            if (!confirm('このメディアを削除しますか？')) return
+
+            try {
+                const token = localStorage.getItem('token')
+                await axios.delete(\`/api/platform/media/\${mediaId}\`, {
+                    headers: { 'Authorization': \`Bearer \${token}\` }
+                })
+                showToast('メディアを削除しました', 'success')
+                loadMedia()
+            } catch (error) {
+                handleError(error)
+            }
+        }
+
+        // ページネーション（省略版）
+        function renderTenantsPagination(pagination) {
+            // 実装省略
+        }
+        function renderMediaPagination(pagination) {
+            // 実装省略
+        }
+
+        // エラーハンドリング
+        function handleError(error) {
+            console.error(error)
+            if (error.response?.status === 403) {
+                showToast('プラットフォーム管理者のみアクセス可能です', 'error')
+                setTimeout(() => window.location.href = '/login', 1500)
+            } else {
+                showToast(error.response?.data?.error || 'エラーが発生しました', 'error')
+            }
+        }
+
+        // ログアウト
+        document.getElementById('logoutBtn').addEventListener('click', async () => {
+            await handleLogout()
+        })
+
+        // 初期化
+        loadDashboard()
+    </script>
+</body>
+</html>
+  `)
 })
 
 app.get('/health', (c) => {
