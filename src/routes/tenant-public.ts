@@ -2072,14 +2072,36 @@ tenantPublic.get('/posts', async (c) => {
       const authorName = String(post.author_name || '不明')
       const createdDate = new Date(String(post.created_at)).toLocaleDateString('ja-JP')
       const likeCount = Number(post.like_count || 0)
-      const thumbnailUrl = post.thumbnail_url
+      const thumbnailUrl = String(post.thumbnail_url || '')
+      const videoUrl = String(post.video_url || '')
       
-      // サムネイル画像部分
-      const thumbnailHTML = thumbnailUrl 
-        ? `<img src="${thumbnailUrl}" alt="${postTitle}" class="w-full h-48 object-cover rounded-t-lg">`
-        : `<div class="w-full h-48 bg-gradient-to-br from-blue-400 to-blue-600 rounded-t-lg flex items-center justify-center">
-             <i class="fas fa-file-alt text-6xl text-white opacity-50"></i>
-           </div>`
+      // サムネイル画像の表示
+      let thumbnailHTML = ''
+      if (thumbnailUrl) {
+        // 動画がある場合は再生アイコンを重ねて表示
+        const videoOverlay = videoUrl ? `
+          <div class="absolute inset-0 flex items-center justify-center bg-black/30">
+            <div class="w-16 h-16 bg-white/90 rounded-full flex items-center justify-center shadow-lg">
+              <i class="fas fa-play text-blue-600 text-2xl ml-1"></i>
+            </div>
+          </div>
+        ` : ''
+        
+        thumbnailHTML = `
+          <div class="w-full h-48 rounded-t-lg overflow-hidden relative">
+            <img src="${thumbnailUrl}" alt="${postTitle}" class="w-full h-full object-cover">
+            ${videoOverlay}
+          </div>
+        `
+      } else {
+        // サムネイルなし：動画があれば動画アイコン、なければ通常アイコン
+        const icon = videoUrl ? 'fa-video' : 'fa-file-alt'
+        thumbnailHTML = `
+          <div class="w-full h-48 bg-gradient-to-br from-blue-400 to-blue-600 rounded-t-lg flex items-center justify-center">
+            <i class="fas ${icon} text-6xl text-white opacity-50"></i>
+          </div>
+        `
+      }
       
       return `
         <div class="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300">
