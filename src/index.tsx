@@ -2766,8 +2766,9 @@ app.get('/favicon.ico', (c) => {
 
 // ============================================
 // プラットフォーム管理画面（VALUE ARCHITECTS専用）
+// セキュリティ: 予測困難なURLパス
 // ============================================
-app.get('/platform/admin', (c) => {
+app.get('/va-admin-portal', (c) => {
   return c.html(`
 <!DOCTYPE html>
 <html lang="ja">
