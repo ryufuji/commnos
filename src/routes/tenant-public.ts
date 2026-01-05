@@ -927,7 +927,16 @@ tenantPublic.get('/home', async (c) => {
                     headers: { 'Authorization': 'Bearer ' + token }
                 })
                 
-                // レスポンスが正常でない場合は処理しない
+                // 認証エラーの場合はトークンをクリア
+                if (response.status === 401) {
+                    console.warn('認証トークンが無効です。ログアウトします。')
+                    localStorage.removeItem('token')
+                    localStorage.removeItem('user')
+                    localStorage.removeItem('membership')
+                    return
+                }
+                
+                // その他のエラーは静かに無視
                 if (!response.ok) {
                     console.warn('通知取得失敗:', response.status)
                     return
@@ -2358,7 +2367,16 @@ tenantPublic.get('/posts', async (c) => {
                     headers: { 'Authorization': 'Bearer ' + token }
                 })
                 
-                // レスポンスが正常でない場合は処理しない
+                // 認証エラーの場合はトークンをクリア
+                if (response.status === 401) {
+                    console.warn('認証トークンが無効です。ログアウトします。')
+                    localStorage.removeItem('token')
+                    localStorage.removeItem('user')
+                    localStorage.removeItem('membership')
+                    return
+                }
+                
+                // その他のエラーは静かに無視
                 if (!response.ok) {
                     console.warn('通知取得失敗:', response.status)
                     return

@@ -14,26 +14,41 @@ import { checkUserPermission } from '../lib/db'
  * 検証成功時、c.set() で userId, tenantId, role を設定
  */
 export async function authMiddleware(c: Context<AppContext>, next: Next) {
-  const authHeader = c.req.header('Authorization')
-  const token = extractToken(authHeader)
+  try {
+    const authHeader = c.req.header('Authorization')
+    const token = extractToken(authHeader)
 
-  if (!token) {
-    return c.json({ success: false, error: 'Unauthorized' }, 401)
+    if (!token) {
+      return c.json({ success: false, error: 'Unauthorized' }, 401)
+    }
+
+    const secret = c.env.JWT_SECRET
+    
+    if (!secret) {
+      console.error('[Auth Error] JWT_SECRET is not configured')
+      return c.json({ success: false, error: 'Server configuration error' }, 500)
+    }
+    
+    const result = await verifyToken(token, secret)
+
+    if (!result.valid || !result.payload) {
+      return c.json({ success: false, error: result.error || 'Invalid token' }, 401)
+    }
+
+    // Context に認証情報を設定
+    c.set('userId', result.payload.userId)
+    c.set('tenantId', result.payload.tenantId)
+    c.set('role', result.payload.role)
+
+    await next()
+  } catch (error) {
+    console.error('[Auth Middleware Error]', error)
+    return c.json({ 
+      success: false, 
+      error: 'Authentication failed',
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, 500)
   }
-
-  const secret = c.env.JWT_SECRET
-  const result = await verifyToken(token, secret)
-
-  if (!result.valid || !result.payload) {
-    return c.json({ success: false, error: result.error || 'Invalid token' }, 401)
-  }
-
-  // Context に認証情報を設定
-  c.set('userId', result.payload.userId)
-  c.set('tenantId', result.payload.tenantId)
-  c.set('role', result.payload.role)
-
-  await next()
 }
 
 /**
