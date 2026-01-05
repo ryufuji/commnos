@@ -24,6 +24,7 @@ import platform from './routes/platform' // プラットフォーム管理（VAL
 import upload from './routes/upload' // Phase 2 - 画像アップロード
 import images from './routes/images' // Phase 2 - 画像取得
 import tenantPublic from './routes/tenant-public' // Phase 3 - テナント公開ページ
+import passwordResetPages from './routes/password-reset-pages' // パスワードリセットページ
 import tenantAuth from './routes/tenant-auth' // Phase 2 - テナント会員認証
 import likes from './routes/likes' // Phase 4 - いいね機能
 import notifications from './routes/notifications' // Phase 5 - 通知機能
@@ -2730,6 +2731,11 @@ app.get('/posts-admin', (c) => {
 // テナント公開ページ（Phase 3）
 // --------------------------------------------
 app.route('/tenant', tenantPublic)
+
+// --------------------------------------------
+// パスワードリセットページ
+// --------------------------------------------
+app.route('/', passwordResetPages)
 
 // --------------------------------------------
 // ヘルスチェック
