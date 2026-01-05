@@ -679,12 +679,27 @@ tenantPublic.get('/home', async (c) => {
       const postExcerpt = String(post.excerpt || postContent.substring(0, 100))
       const authorName = String(post.author_name || '不明')
       const createdDate = new Date(String(post.created_at)).toLocaleDateString('ja-JP')
+      const thumbnailUrl = String(post.thumbnail_url || '')
+      
+      // サムネイル画像の表示
+      let thumbnailHTML = ''
+      if (thumbnailUrl) {
+        thumbnailHTML = `
+          <div class="w-full h-48 rounded-t-lg overflow-hidden">
+            <img src="${thumbnailUrl}" alt="${postTitle}" class="w-full h-full object-cover">
+          </div>
+        `
+      } else {
+        thumbnailHTML = `
+          <div class="w-full h-48 bg-gradient-to-br from-blue-400 to-blue-600 rounded-t-lg flex items-center justify-center">
+            <i class="fas fa-file-alt text-6xl text-white opacity-50"></i>
+          </div>
+        `
+      }
       
       return `
         <div class="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300">
-            <div class="w-full h-48 bg-gradient-to-br from-blue-400 to-blue-600 rounded-t-lg flex items-center justify-center">
-                <i class="fas fa-file-alt text-6xl text-white opacity-50"></i>
-            </div>
+            ${thumbnailHTML}
             <div class="p-6">
                 <h4 class="text-xl font-bold text-gray-900 mb-2 line-clamp-2">${postTitle}</h4>
                 <p class="text-gray-600 mb-4 line-clamp-3">${postExcerpt}...</p>
