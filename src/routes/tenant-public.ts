@@ -1457,6 +1457,66 @@ tenantPublic.get('/posts/new', async (c) => {
     <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
     <script src="/static/app.js"></script>
     <script>
+        // 動画からサムネイルを生成する関数
+        async function generateVideoThumbnail(videoFile, seekToSecond = 1) {
+            return new Promise((resolve, reject) => {
+                try {
+                    // video要素を作成
+                    const video = document.createElement('video')
+                    video.preload = 'metadata'
+                    video.muted = true
+                    video.playsInline = true
+                    
+                    // video読み込み完了時
+                    video.addEventListener('loadeddata', () => {
+                        // 指定秒数にシーク（動画が短い場合は先頭）
+                        const seekTime = Math.min(seekToSecond, video.duration || 0)
+                        video.currentTime = seekTime
+                    })
+                    
+                    // シーク完了時にキャプチャ
+                    video.addEventListener('seeked', () => {
+                        try {
+                            // Canvasを作成
+                            const canvas = document.createElement('canvas')
+                            canvas.width = video.videoWidth
+                            canvas.height = video.videoHeight
+                            
+                            // 動画のフレームをCanvasに描画
+                            const ctx = canvas.getContext('2d')
+                            ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
+                            
+                            // CanvasをBlobに変換
+                            canvas.toBlob((blob) => {
+                                if (blob) {
+                                    // BlobをFileオブジェクトに変換
+                                    const file = new File([blob], 'thumbnail.jpg', { type: 'image/jpeg' })
+                                    resolve(file)
+                                } else {
+                                    reject(new Error('Failed to generate thumbnail blob'))
+                                }
+                                
+                                // クリーンアップ
+                                URL.revokeObjectURL(video.src)
+                            }, 'image/jpeg', 0.8)
+                        } catch (error) {
+                            reject(error)
+                        }
+                    })
+                    
+                    // エラーハンドリング
+                    video.addEventListener('error', (e) => {
+                        reject(new Error('Failed to load video: ' + (video.error?.message || 'Unknown error')))
+                    })
+                    
+                    // 動画ファイルを読み込み
+                    video.src = URL.createObjectURL(videoFile)
+                } catch (error) {
+                    reject(error)
+                }
+            })
+        }
+        
         // 認証チェックと管理者判定
         async function checkAuthAndRole() {
             const token = getToken()  // Use getToken() from app.js
@@ -1927,6 +1987,39 @@ tenantPublic.get('/posts/new', async (c) => {
                                 videoUrl = uploadData.video_url
                                 console.log('Video uploaded successfully:', videoUrl)
                                 showToast('動画をアップロードしました', 'success')
+                                
+                                // サムネイルが未設定の場合、動画から自動生成
+                                if (!thumbnailUrl) {
+                                    try {
+                                        console.log('Generating thumbnail from video...')
+                                        showToast('動画からサムネイルを生成中...', 'info')
+                                        
+                                        const generatedThumbnail = await generateVideoThumbnail(video)
+                                        if (generatedThumbnail) {
+                                            // サムネイルをアップロード
+                                            const thumbFormData = new FormData()
+                                            thumbFormData.append('media', generatedThumbnail, 'video-thumbnail.jpg')
+                                            
+                                            const thumbResponse = await fetch('/api/upload/post-media', {
+                                                method: 'POST',
+                                                headers: {
+                                                    'Authorization': 'Bearer ' + token
+                                                },
+                                                body: thumbFormData
+                                            })
+                                            
+                                            const thumbData = await thumbResponse.json()
+                                            if (thumbData.success) {
+                                                thumbnailUrl = thumbData.media_url
+                                                console.log('Auto-generated thumbnail uploaded:', thumbnailUrl)
+                                                showToast('サムネイルを自動生成しました', 'success')
+                                            }
+                                        }
+                                    } catch (thumbError) {
+                                        console.error('サムネイル自動生成エラー:', thumbError)
+                                        // サムネイル生成失敗は警告のみ（投稿は続行）
+                                    }
+                                }
                             } else {
                                 console.warn('動画アップロード失敗:', uploadData.error)
                                 showToast('動画のアップロードに失敗しました：' + (uploadData.error || '不明なエラー'), 'warning')
