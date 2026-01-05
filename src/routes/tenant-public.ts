@@ -1216,31 +1216,38 @@ tenantPublic.get('/posts/new', async (c) => {
                     <p class="text-sm text-gray-500 mt-1">最大200文字</p>
                 </div>
 
-                <!-- サムネイル画像 -->
+                <!-- 画像ギャラリー -->
                 <div>
-                    <label for="thumbnail" class="block text-sm font-medium text-gray-700 mb-2">
-                        サムネイル画像
+                    <label for="images" class="block text-sm font-medium text-gray-700 mb-2">
+                        画像 <span class="text-xs text-gray-500">(複数選択可能)</span>
                     </label>
+                    
+                    <!-- プレビューグリッド -->
+                    <div id="imagesPreviewGrid" class="hidden grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                        <!-- 画像プレビューがここに追加される -->
+                    </div>
+                    
                     <div class="flex items-center space-x-4">
-                        <div id="thumbnailPreview" class="hidden">
-                            <img id="thumbnailImg" src="" alt="サムネイルプレビュー" class="w-32 h-32 object-cover rounded-lg">
-                        </div>
                         <div class="flex-1">
                             <input 
                                 type="file" 
-                                id="thumbnail" 
-                                name="thumbnail" 
+                                id="images" 
+                                name="images" 
                                 accept="image/jpeg,image/png,image/gif,image/webp"
+                                multiple
                                 class="hidden"
                             >
                             <button 
                                 type="button" 
-                                id="selectThumbnailBtn"
+                                id="selectImagesBtn"
                                 class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition"
                             >
-                                <i class="fas fa-image mr-2"></i>画像を選択
+                                <i class="fas fa-images mr-2"></i>画像を選択（複数可）
                             </button>
-                            <p class="text-sm text-gray-500 mt-2">JPEG, PNG, GIF, WebP形式（最大10MB）</p>
+                            <p class="text-sm text-gray-500 mt-2">
+                                <i class="fas fa-info-circle mr-1"></i>
+                                JPEG, PNG, GIF, WebP形式（1枚最大10MB、最大10枚まで）
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -1730,34 +1737,78 @@ tenantPublic.get('/posts/new', async (c) => {
             
             // サムネイル画像選択
             const thumbnailInput = document.getElementById('thumbnail')
-            const selectThumbnailBtn = document.getElementById('selectThumbnailBtn')
-            const thumbnailPreview = document.getElementById('thumbnailPreview')
-            const thumbnailImg = document.getElementById('thumbnailImg')
+            // 画像選択（複数）
+            const imagesInput = document.getElementById('images')
+            const selectImagesBtn = document.getElementById('selectImagesBtn')
+            const imagesPreviewGrid = document.getElementById('imagesPreviewGrid')
+            let selectedImages = []
             
-            selectThumbnailBtn?.addEventListener('click', () => {
-                console.log('Thumbnail button clicked')
-                thumbnailInput.click()
+            selectImagesBtn?.addEventListener('click', () => {
+                console.log('Images button clicked')
+                imagesInput.click()
             })
             
-            thumbnailInput?.addEventListener('change', (e) => {
-                const file = e.target.files[0]
-                if (file) {
-                    // ファイルサイズチェック（10MB）
-                    if (file.size > 10 * 1024 * 1024) {
-                        alert('ファイルサイズは10MB以下にしてください')
-                        thumbnailInput.value = ''
-                        return
-                    }
-                    
-                    // プレビュー表示
+            imagesInput?.addEventListener('change', (e) => {
+                const files = Array.from(e.target.files || [])
+                
+                if (files.length === 0) return
+                
+                // 最大10枚まで
+                if (files.length > 10) {
+                    alert('画像は最大10枚まで選択できます')
+                    imagesInput.value = ''
+                    return
+                }
+                
+                // ファイルサイズチェック
+                const oversizedFiles = files.filter(f => f.size > 10 * 1024 * 1024)
+                if (oversizedFiles.length > 0) {
+                    alert('各画像のファイルサイズは10MB以下にしてください')
+                    imagesInput.value = ''
+                    return
+                }
+                
+                // 選択された画像を保存
+                selectedImages = files
+                
+                // プレビュー表示
+                imagesPreviewGrid.innerHTML = ''
+                imagesPreviewGrid.classList.remove('hidden')
+                
+                files.forEach((file, index) => {
                     const reader = new FileReader()
                     reader.onload = (e) => {
-                        thumbnailImg.src = e.target.result
-                        thumbnailPreview.classList.remove('hidden')
+                        const previewItem = document.createElement('div')
+                        previewItem.className = 'relative group'
+                        previewItem.innerHTML = \`
+                            <img src="\${e.target.result}" alt="画像 \${index + 1}" class="w-full h-32 object-cover rounded-lg">
+                            <div class="absolute top-2 left-2 bg-black/70 text-white text-xs px-2 py-1 rounded">\${index + 1}</div>
+                            <button type="button" onclick="removeImage(\${index})" class="absolute top-2 right-2 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center opacity-0 group-hover:opacity-100 transition">
+                                <i class="fas fa-times text-xs"></i>
+                            </button>
+                        \`
+                        imagesPreviewGrid.appendChild(previewItem)
                     }
                     reader.readAsDataURL(file)
-                }
+                })
             })
+            
+            // 画像削除関数
+            window.removeImage = function(index) {
+                const filesArray = Array.from(imagesInput.files)
+                filesArray.splice(index, 1)
+                
+                // FileListを再作成（擬似的に）
+                const dataTransfer = new DataTransfer()
+                filesArray.forEach(file => dataTransfer.items.add(file))
+                imagesInput.files = dataTransfer.files
+                
+                selectedImages = filesArray
+                
+                // プレビュー再描画
+                imagesInput.dispatchEvent(new Event('change'))
+            }
+            
             
             // 動画選択
             const videoInput = document.getElementById('video')
@@ -1896,7 +1947,7 @@ tenantPublic.get('/posts/new', async (c) => {
             const content = formData.get('content')
             const category = formData.get('category')
             const status = formData.get('status')
-            const thumbnail = formData.get('thumbnail')
+            const images = imagesInput.files // 複数画像
             
             // バリデーション
             if (!title || title.trim() === '') {
@@ -1913,22 +1964,28 @@ tenantPublic.get('/posts/new', async (c) => {
                 submitBtn.disabled = true
                 submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>投稿中...'
                 
-                // 画像アップロード処理
+                const token = getToken()
+                if (!token) {
+                    showToast('認証エラー：ログインしてください', 'error')
+                    submitBtn.disabled = false
+                    submitBtn.innerHTML = '<i class="fas fa-paper-plane mr-2"></i>投稿する'
+                    return
+                }
+                
+                // 複数画像アップロード処理
+                let imageUrls = []
                 let thumbnailUrl = null
-                if (thumbnail && thumbnail.size > 0) {
+                if (images && images.length > 0) {
                     try {
-                        console.log('Starting image upload, file size:', thumbnail.size)
-                        const uploadFormData = new FormData()
-                        uploadFormData.append('thumbnail', thumbnail)
+                        showToast(images.length + '枚の画像をアップロード中...', 'info')
+                        console.log('Starting multiple images upload, count:', images.length)
                         
-                        const token = getToken()
-                        console.log('Token exists:', !!token)
-                        
-                        if (!token) {
-                            console.error('No token found for image upload')
-                            showToast('認証エラー：画像をアップロードできません', 'error')
-                        } else {
-                            const uploadResponse = await fetch('/api/upload/post-thumbnail', {
+                        // 並列アップロード
+                        const uploadPromises = Array.from(images).map(async (imageFile, index) => {
+                            const uploadFormData = new FormData()
+                            uploadFormData.append('media', imageFile)
+                            
+                            const uploadResponse = await fetch('/api/upload/post-media', {
                                 method: 'POST',
                                 headers: {
                                     'Authorization': 'Bearer ' + token
@@ -1936,18 +1993,24 @@ tenantPublic.get('/posts/new', async (c) => {
                                 body: uploadFormData
                             })
                             
-                            console.log('Upload response status:', uploadResponse.status)
                             const uploadData = await uploadResponse.json()
-                            console.log('Upload response data:', uploadData)
-                            
                             if (uploadData.success) {
-                                thumbnailUrl = uploadData.thumbnail_url
-                                console.log('Image uploaded successfully:', thumbnailUrl)
-                                showToast('画像をアップロードしました', 'success')
+                                console.log('Image ' + (index + 1) + ' uploaded:', uploadData.media_url)
+                                return uploadData.media_url
                             } else {
-                                console.warn('画像アップロード失敗:', uploadData.error)
-                                showToast('画像のアップロードに失敗しました：' + (uploadData.error || '不明なエラー'), 'warning')
+                                console.warn('Image ' + (index + 1) + ' upload failed:', uploadData.error)
+                                return null
                             }
+                        })
+                        
+                        imageUrls = (await Promise.all(uploadPromises)).filter(url => url !== null)
+                        
+                        if (imageUrls.length > 0) {
+                            // 最初の画像をサムネイルとして使用
+                            thumbnailUrl = imageUrls[0]
+                            showToast(imageUrls.length + '枚の画像をアップロードしました', 'success')
+                        } else {
+                            showToast('画像のアップロードに失敗しました', 'warning')
                         }
                     } catch (uploadError) {
                         console.error('画像アップロードエラー:', uploadError)
@@ -2040,12 +2103,14 @@ tenantPublic.get('/posts/new', async (c) => {
                     status: status,
                     thumbnail_url: thumbnailUrl,
                     video_url: videoUrl,
+                    image_urls: imageUrls, // 複数画像URL
                     visibility: visibility
                 }
                 
                 console.log('Submitting post data:', postData)
                 console.log('Thumbnail URL in post data:', thumbnailUrl)
                 console.log('Video URL in post data:', videoUrl)
+                console.log('Image URLs in post data:', imageUrls)
                 
                 const response = await apiRequest('/api/posts', {
                     method: 'POST',

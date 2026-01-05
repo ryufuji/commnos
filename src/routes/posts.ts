@@ -107,13 +107,14 @@ posts.get('/:id', tenantMiddleware, async (c) => {
 posts.post('/', authMiddleware, async (c) => {
   const userId = c.get('userId')
   const tenantId = c.get('tenantId')
-  const { title, content, category, status, thumbnail_url, video_url, visibility } = await c.req.json<{
+  const { title, content, category, status, thumbnail_url, video_url, image_urls, visibility } = await c.req.json<{
     title: string
     content: string
     category?: string | null
     status?: 'draft' | 'published'
     thumbnail_url?: string | null
     video_url?: string | null
+    image_urls?: string[]
     visibility?: 'public' | 'members_only'
   }>()
   const db = c.env.DB
@@ -166,17 +167,31 @@ posts.post('/', authMiddleware, async (c) => {
       throw new Error('Failed to create post')
     }
 
+    const postId = result.meta.last_row_id
+
+    // 複数画像がある場合、post_imagesテーブルに保存
+    if (image_urls && image_urls.length > 0) {
+      for (let i = 0; i < image_urls.length; i++) {
+        await db
+          .prepare(`
+            INSERT INTO post_images (post_id, image_url, display_order, created_at)
+            VALUES (?, ?, ?, datetime('now'))
+          `)
+          .bind(postId, image_urls[i], i)
+          .run()
+      }
+    }
+
     // 作成した投稿を取得
     const post = await db
       .prepare(`
         SELECT p.*, u.nickname as author_name 
         FROM posts p
         LEFT JOIN users u ON p.author_id = u.id
-        WHERE p.tenant_id = ? AND p.author_id = ?
-        ORDER BY p.id DESC 
+        WHERE p.id = ?
         LIMIT 1
       `)
-      .bind(tenantId, userId)
+      .bind(postId)
       .first<any>()
 
     return c.json({
