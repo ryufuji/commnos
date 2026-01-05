@@ -48,6 +48,43 @@ posts.get('/', tenantMiddleware, async (c) => {
 })
 
 /**
+ * GET /api/posts/my-posts
+ * 自分の投稿一覧取得（認証必須）
+ */
+posts.get('/my-posts', authMiddleware, async (c) => {
+  const userId = c.get('userId')
+  const tenantId = c.get('tenantId')
+  const db = c.env.DB
+
+  try {
+    const result = await db
+      .prepare(`
+        SELECT 
+          p.id, p.title, p.excerpt, p.thumbnail_url, p.video_url, p.status,
+          p.view_count, p.published_at, p.created_at, p.updated_at,
+          u.id as author_id, u.nickname as author_name, u.avatar_url as author_avatar
+        FROM posts p
+        JOIN users u ON p.author_id = u.id
+        WHERE p.tenant_id = ? AND p.author_id = ?
+        ORDER BY p.created_at DESC
+      `)
+      .bind(tenantId, userId)
+      .all()
+
+    return c.json({
+      success: true,
+      posts: result.results || []
+    })
+  } catch (error) {
+    console.error('[Get My Posts Error]', error)
+    return c.json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to get my posts'
+    }, 500)
+  }
+})
+
+/**
  * GET /api/posts/:id
  * 投稿詳細取得
  */
