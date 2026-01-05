@@ -1620,6 +1620,14 @@ app.get('/dashboard', (c) => {
                             <h3 class="font-bold text-gray-900 mb-2">公開設定</h3>
                             <p class="text-sm text-secondary-600">表示設定を変更</p>
                         </button>
+                        
+                        <a id="subscriptionLink" href="#" class="card-interactive p-6 text-center hidden">
+                            <div class="text-4xl mb-3 text-purple-500">
+                                <i class="fas fa-credit-card"></i>
+                            </div>
+                            <h3 class="font-bold text-gray-900 mb-2">サブスク管理</h3>
+                            <p class="text-sm text-secondary-600">プラン・請求を管理</p>
+                        </a>
                     </div>
                 </div>
             </main>
@@ -1834,6 +1842,14 @@ app.get('/dashboard', (c) => {
                         </div>
                     </div>
                 \`
+
+                // オーナーのみサブスクリプション管理リンクを表示
+                if (membership.role === 'owner') {
+                    const subscriptionLink = document.getElementById('subscriptionLink')
+                    const subdomain = membership.subdomain || 'test'
+                    subscriptionLink.href = \`/tenant/subscription?subdomain=\${subdomain}\`
+                    subscriptionLink.classList.remove('hidden')
+                }
 
                 // 統計データを取得（管理者のみ）
                 console.log('User membership role:', membership.role)
