@@ -9,7 +9,8 @@ const notifications = new Hono<AppContext>()
 // ============================================
 notifications.get('/', authMiddleware, async (c) => {
   const { DB } = c.env
-  const { userId, tenantId } = c.get('auth')
+  const userId = c.get('userId')
+  const tenantId = c.get('tenantId')
   
   try {
     // クエリパラメータ
@@ -86,7 +87,8 @@ notifications.get('/', authMiddleware, async (c) => {
 // ============================================
 notifications.get('/unread-count', authMiddleware, async (c) => {
   const { DB } = c.env
-  const { userId, tenantId } = c.get('auth')
+  const userId = c.get('userId')
+  const tenantId = c.get('tenantId')
   
   try {
     const result = await DB.prepare(`
@@ -103,7 +105,11 @@ notifications.get('/unread-count', authMiddleware, async (c) => {
     })
   } catch (error) {
     console.error('Error fetching unread count:', error)
-    return c.json({ success: false, error: 'Failed to fetch unread count' }, 500)
+    return c.json({ 
+      success: false, 
+      error: 'Failed to fetch unread count',
+      details: error instanceof Error ? error.message : String(error)
+    }, 500)
   }
 })
 
@@ -112,7 +118,8 @@ notifications.get('/unread-count', authMiddleware, async (c) => {
 // ============================================
 notifications.put('/:notificationId/read', authMiddleware, async (c) => {
   const { DB } = c.env
-  const { userId, tenantId } = c.get('auth')
+  const userId = c.get('userId')
+  const tenantId = c.get('tenantId')
   const notificationId = Number(c.req.param('notificationId'))
   
   if (!notificationId || isNaN(notificationId)) {
@@ -152,7 +159,8 @@ notifications.put('/:notificationId/read', authMiddleware, async (c) => {
 // ============================================
 notifications.put('/read-all', authMiddleware, async (c) => {
   const { DB } = c.env
-  const { userId, tenantId } = c.get('auth')
+  const userId = c.get('userId')
+  const tenantId = c.get('tenantId')
   
   try {
     await DB.prepare(`
