@@ -10,6 +10,7 @@ import type { AppContext } from './types'
 
 // ルート
 import auth from './routes/auth'
+import passwordReset from './routes/password-reset' // パスワードリセット
 import members from './routes/members'
 import admin from './routes/admin'
 import adminPosts from './routes/admin-posts' // 管理者用投稿管理
@@ -46,6 +47,7 @@ app.use('/static/*', serveStatic({ root: './public' }))
 
 // 認証ルート
 app.route('/api/auth', auth)
+app.route('/api/auth', passwordReset) // パスワードリセット
 
 // プロフィールルート（Week 5-6）
 app.route('/api/profile', profile)
