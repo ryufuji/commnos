@@ -5091,5 +5091,380 @@ tenantPublic.get('/liked-posts', async (c) => {
 })
 
 
+/**
+ * GET /tenant/subscription
+ * サブスクリプション管理ページ（オーナーのみ）
+ */
+tenantPublic.get('/subscription', async (c) => {
+  const subdomain = c.req.query('subdomain')
+  
+  if (!subdomain) {
+    return c.html(`<!DOCTYPE html><html><body>?subdomain=your-subdomain を追加してください</body></html>`)
+  }
+
+  const tenant = await c.env.DB
+    .prepare('SELECT * FROM tenants WHERE subdomain = ? AND status = ?')
+    .bind(subdomain, 'active')
+    .first<any>()
+
+  if (!tenant) {
+    return c.html(`<!DOCTYPE html><html><body>コミュニティが見つかりません</body></html>`)
+  }
+
+  return c.html(`
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>サブスクリプション管理 - ${tenant.name}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50">
+    <!-- ヘッダー -->
+    <header class="bg-white shadow-sm sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-4">
+            <div class="flex items-center justify-between">
+                <h1 class="text-2xl font-bold text-gray-900">
+                    <i class="fas fa-credit-card mr-2"></i>サブスクリプション管理
+                </h1>
+                <a href="/tenant/home?subdomain=${subdomain}" class="text-blue-600 hover:text-blue-800">
+                    <i class="fas fa-arrow-left mr-2"></i>ホームに戻る
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- メインコンテンツ -->
+    <main class="max-w-7xl mx-auto px-4 py-8">
+        <!-- ローディング -->
+        <div id="loading" class="text-center py-12">
+            <i class="fas fa-spinner fa-spin text-4xl text-blue-600"></i>
+            <p class="mt-4 text-gray-600">読み込み中...</p>
+        </div>
+
+        <!-- エラー -->
+        <div id="error" class="hidden">
+            <div class="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
+                <i class="fas fa-exclamation-circle text-3xl text-red-600 mb-4"></i>
+                <p id="errorMessage" class="text-red-800"></p>
+            </div>
+        </div>
+
+        <!-- コンテンツ -->
+        <div id="content" class="hidden space-y-6">
+            <!-- 現在のプラン -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h2 class="text-xl font-bold mb-4 flex items-center">
+                    <i class="fas fa-star text-yellow-500 mr-2"></i>現在のプラン
+                </h2>
+                <div class="grid md:grid-cols-3 gap-4">
+                    <div>
+                        <p class="text-sm text-gray-600">プラン</p>
+                        <p id="currentPlan" class="text-2xl font-bold text-blue-600">-</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-600">ステータス</p>
+                        <p id="currentStatus" class="text-lg font-semibold">-</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-600">次回更新日</p>
+                        <p id="nextBilling" class="text-lg">-</p>
+                    </div>
+                </div>
+                <div id="cancelNotice" class="hidden mt-4 bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                    <p class="text-yellow-800">
+                        <i class="fas fa-exclamation-triangle mr-2"></i>
+                        <span id="cancelMessage"></span>
+                    </p>
+                </div>
+            </div>
+
+            <!-- 使用状況 -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h2 class="text-xl font-bold mb-4">
+                    <i class="fas fa-chart-bar mr-2"></i>使用状況
+                </h2>
+                <div class="grid md:grid-cols-3 gap-4">
+                    <div>
+                        <p class="text-sm text-gray-600">メンバー数</p>
+                        <p id="memberCount" class="text-2xl font-bold">0</p>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-600">ストレージ使用量</p>
+                        <div class="flex items-baseline gap-2">
+                            <p id="storageUsed" class="text-2xl font-bold">0</p>
+                            <p class="text-gray-600">/ <span id="storageLimit">0</span> MB</p>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2 mt-2">
+                            <div id="storageBar" class="bg-blue-600 h-2 rounded-full" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    <div>
+                        <p class="text-sm text-gray-600">ストレージ使用率</p>
+                        <p id="storagePercent" class="text-2xl font-bold">0%</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- プラン変更 -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h2 class="text-xl font-bold mb-4">
+                    <i class="fas fa-exchange-alt mr-2"></i>プラン変更
+                </h2>
+                <div class="grid md:grid-cols-3 gap-4">
+                    <!-- Free -->
+                    <div class="border rounded-lg p-4 hover:shadow-lg transition">
+                        <h3 class="text-lg font-bold">Free</h3>
+                        <p class="text-3xl font-bold my-2">¥0<span class="text-sm text-gray-600">/月</span></p>
+                        <ul class="text-sm text-gray-600 space-y-1 mb-4">
+                            <li><i class="fas fa-check text-green-600 mr-2"></i>メンバー 50人まで</li>
+                            <li><i class="fas fa-check text-green-600 mr-2"></i>1GB ストレージ</li>
+                        </ul>
+                        <button onclick="changePlan('free')" class="w-full bg-gray-600 text-white py-2 rounded hover:bg-gray-700">
+                            ダウングレード
+                        </button>
+                    </div>
+                    
+                    <!-- Starter -->
+                    <div class="border-2 border-blue-500 rounded-lg p-4 hover:shadow-lg transition">
+                        <h3 class="text-lg font-bold text-blue-600">Starter</h3>
+                        <p class="text-3xl font-bold my-2">¥980<span class="text-sm text-gray-600">/月</span></p>
+                        <ul class="text-sm text-gray-600 space-y-1 mb-4">
+                            <li><i class="fas fa-check text-green-600 mr-2"></i>メンバー 500人まで</li>
+                            <li><i class="fas fa-check text-green-600 mr-2"></i>10GB ストレージ</li>
+                        </ul>
+                        <button onclick="changePlan('starter')" class="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700">
+                            選択
+                        </button>
+                    </div>
+                    
+                    <!-- Pro -->
+                    <div class="border rounded-lg p-4 hover:shadow-lg transition">
+                        <h3 class="text-lg font-bold">Pro</h3>
+                        <p class="text-3xl font-bold my-2">¥2,980<span class="text-sm text-gray-600">/月</span></p>
+                        <ul class="text-sm text-gray-600 space-y-1 mb-4">
+                            <li><i class="fas fa-check text-green-600 mr-2"></i>無制限メンバー</li>
+                            <li><i class="fas fa-check text-green-600 mr-2"></i>100GB ストレージ</li>
+                        </ul>
+                        <button onclick="changePlan('pro')" class="w-full bg-purple-600 text-white py-2 rounded hover:bg-purple-700">
+                            選択
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- アクション -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h2 class="text-xl font-bold mb-4">
+                    <i class="fas fa-cog mr-2"></i>サブスクリプション管理
+                </h2>
+                <div class="space-y-3">
+                    <button id="reactivateBtn" onclick="reactivate()" class="hidden w-full md:w-auto bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700">
+                        <i class="fas fa-redo mr-2"></i>キャンセルを取り消す
+                    </button>
+                    <button id="cancelBtn" onclick="cancelSubscription()" class="hidden w-full md:w-auto bg-red-600 text-white px-6 py-2 rounded hover:bg-red-700">
+                        <i class="fas fa-times-circle mr-2"></i>サブスクリプションをキャンセル
+                    </button>
+                </div>
+            </div>
+
+            <!-- 請求履歴 -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h2 class="text-xl font-bold mb-4">
+                    <i class="fas fa-file-invoice mr-2"></i>請求履歴
+                </h2>
+                <div id="invoicesList" class="space-y-2">
+                    <p class="text-gray-600">読み込み中...</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+    <script src="/static/app.js"></script>
+    <script>
+        const subdomain = '${subdomain}'
+        let subscriptionData = null
+
+        async function loadSubscription() {
+            try {
+                const token = getToken()
+                if (!token) {
+                    window.location.href = '/login?subdomain=' + subdomain
+                    return
+                }
+
+                const response = await axios.get('/api/subscription/status', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                })
+
+                if (response.data.success) {
+                    subscriptionData = response.data.subscription
+                    updateUI()
+                    loadInvoices()
+                }
+            } catch (error) {
+                console.error('Load error:', error)
+                document.getElementById('loading').classList.add('hidden')
+                document.getElementById('error').classList.remove('hidden')
+                document.getElementById('errorMessage').textContent = error.response?.data?.error || 'データの読み込みに失敗しました'
+            }
+        }
+
+        function updateUI() {
+            document.getElementById('loading').classList.add('hidden')
+            document.getElementById('content').classList.remove('hidden')
+
+            const plan = subscriptionData.plan || 'free'
+            const status = subscriptionData.subscription_status || 'inactive'
+            
+            document.getElementById('currentPlan').textContent = plan.toUpperCase()
+            document.getElementById('currentStatus').textContent = getStatusLabel(status)
+            document.getElementById('currentStatus').className = 'text-lg font-semibold ' + getStatusColor(status)
+
+            if (subscriptionData.current_period_end) {
+                document.getElementById('nextBilling').textContent = new Date(subscriptionData.current_period_end).toLocaleDateString('ja-JP')
+            }
+
+            if (subscriptionData.cancel_at) {
+                document.getElementById('cancelNotice').classList.remove('hidden')
+                document.getElementById('cancelMessage').textContent = new Date(subscriptionData.cancel_at).toLocaleDateString('ja-JP') + ' にキャンセルされます'
+                document.getElementById('reactivateBtn').classList.remove('hidden')
+                document.getElementById('cancelBtn').classList.add('hidden')
+            } else if (plan !== 'free') {
+                document.getElementById('cancelBtn').classList.remove('hidden')
+            }
+
+            document.getElementById('memberCount').textContent = subscriptionData.usage.member_count
+            document.getElementById('storageUsed').textContent = subscriptionData.usage.storage_used_mb
+            document.getElementById('storageLimit').textContent = subscriptionData.usage.storage_limit_mb
+            
+            const percent = Math.round((subscriptionData.usage.storage_used / subscriptionData.usage.storage_limit) * 100)
+            document.getElementById('storagePercent').textContent = percent + '%'
+            document.getElementById('storageBar').style.width = percent + '%'
+        }
+
+        async function loadInvoices() {
+            try {
+                const token = getToken()
+                const response = await axios.get('/api/subscription/invoices', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                })
+
+                if (response.data.success) {
+                    const list = document.getElementById('invoicesList')
+                    if (response.data.invoices.length === 0) {
+                        list.innerHTML = '<p class="text-gray-600">請求履歴がありません</p>'
+                    } else {
+                        list.innerHTML = response.data.invoices.map(inv => \`
+                            <div class="border rounded-lg p-4 flex justify-between items-center hover:bg-gray-50">
+                                <div>
+                                    <p class="font-semibold">\${inv.number || inv.id}</p>
+                                    <p class="text-sm text-gray-600">\${new Date(inv.created * 1000).toLocaleDateString('ja-JP')}</p>
+                                </div>
+                                <div class="text-right">
+                                    <p class="font-bold">¥\${(inv.amount_paid / 100).toLocaleString()}</p>
+                                    <a href="\${inv.invoice_pdf}" target="_blank" class="text-sm text-blue-600 hover:underline">
+                                        <i class="fas fa-download mr-1"></i>PDF
+                                    </a>
+                                </div>
+                            </div>
+                        \`).join('')
+                    }
+                }
+            } catch (error) {
+                console.error('Invoices error:', error)
+            }
+        }
+
+        async function changePlan(plan) {
+            if (!confirm(\`プランを \${plan.toUpperCase()} に変更しますか？\`)) return
+
+            try {
+                const token = getToken()
+                const response = await axios.post('/api/subscription/change-plan', 
+                    { plan },
+                    { headers: { 'Authorization': 'Bearer ' + token }}
+                )
+
+                if (response.data.success) {
+                    if (response.data.checkout_url) {
+                        window.location.href = response.data.checkout_url
+                    } else {
+                        alert(response.data.message)
+                        loadSubscription()
+                    }
+                }
+            } catch (error) {
+                alert(error.response?.data?.error || 'エラーが発生しました')
+            }
+        }
+
+        async function cancelSubscription() {
+            if (!confirm('サブスクリプションをキャンセルしますか？\\n\\n現在の請求期間終了時にキャンセルされます。')) return
+
+            try {
+                const token = getToken()
+                const response = await axios.post('/api/subscription/cancel',
+                    { immediate: false },
+                    { headers: { 'Authorization': 'Bearer ' + token }}
+                )
+
+                if (response.data.success) {
+                    alert(response.data.message)
+                    loadSubscription()
+                }
+            } catch (error) {
+                alert(error.response?.data?.error || 'エラーが発生しました')
+            }
+        }
+
+        async function reactivate() {
+            if (!confirm('キャンセルを取り消しますか？')) return
+
+            try {
+                const token = getToken()
+                const response = await axios.post('/api/subscription/reactivate', {},
+                    { headers: { 'Authorization': 'Bearer ' + token }}
+                )
+
+                if (response.data.success) {
+                    alert(response.data.message)
+                    loadSubscription()
+                }
+            } catch (error) {
+                alert(error.response?.data?.error || 'エラーが発生しました')
+            }
+        }
+
+        function getStatusLabel(status) {
+            const labels = {
+                'active': 'アクティブ',
+                'past_due': '支払い遅延',
+                'canceled': 'キャンセル済み',
+                'incomplete': '未完了',
+                'trialing': 'トライアル中',
+                'inactive': '無効'
+            }
+            return labels[status] || status
+        }
+
+        function getStatusColor(status) {
+            if (status === 'active') return 'text-green-600'
+            if (status === 'past_due') return 'text-yellow-600'
+            if (status === 'canceled') return 'text-red-600'
+            return 'text-gray-600'
+        }
+
+        loadSubscription()
+    </script>
+</body>
+</html>
+  `)
+})
+
+
 export default tenantPublic
 

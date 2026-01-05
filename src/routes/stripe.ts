@@ -8,11 +8,16 @@ const app = new Hono()
 // --------------------------------------------
 app.post('/checkout', async (c) => {
   try {
-    const { plan } = await c.req.json()
+    const { plan, tenantId } = await c.req.json()
 
     // プランの検証
     if (!['starter', 'pro'].includes(plan)) {
       return c.json({ error: '無効なプランです' }, 400)
+    }
+
+    // テナントIDの検証
+    if (!tenantId) {
+      return c.json({ error: 'テナントIDが必要です' }, 400)
     }
 
     // Stripe インスタンスの初期化（環境変数から）
@@ -20,6 +25,16 @@ app.post('/checkout', async (c) => {
     const stripe = new Stripe(env.STRIPE_SECRET_KEY || '', {
       apiVersion: '2024-12-18.acacia'
     })
+
+    // テナント情報を取得
+    const tenant = await env.DB
+      .prepare('SELECT * FROM tenants WHERE id = ?')
+      .bind(tenantId)
+      .first<any>()
+
+    if (!tenant) {
+      return c.json({ error: 'テナントが見つかりません' }, 404)
+    }
 
     // 価格IDの取得
     const priceId = plan === 'starter' 
@@ -39,18 +54,20 @@ app.post('/checkout', async (c) => {
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
       payment_method_types: ['card'],
+      customer: tenant.stripe_customer_id || undefined,
       line_items: [
         {
           price: priceId,
           quantity: 1
         }
       ],
-      success_url: `${baseUrl}/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${baseUrl}/cancel`,
+      success_url: `${baseUrl}/tenant/subscription/success?session_id={CHECKOUT_SESSION_ID}&subdomain=${tenant.subdomain}`,
+      cancel_url: `${baseUrl}/tenant/subscription?subdomain=${tenant.subdomain}`,
       // プロモーションコード入力を許可
       allow_promotion_codes: true,
       metadata: {
-        plan: plan
+        plan: plan,
+        tenant_id: tenantId.toString()
       },
       // 請求情報の収集
       billing_address_collection: 'auto',
@@ -91,6 +108,8 @@ app.post('/webhook', async (c) => {
     // Stripe イベントの検証
     const event = stripe.webhooks.constructEvent(body, sig, webhookSecret)
 
+    console.log('[Stripe Webhook]', event.type)
+
     // イベントタイプに応じた処理
     switch (event.type) {
       case 'checkout.session.completed': {
@@ -100,26 +119,40 @@ app.post('/webhook', async (c) => {
           sessionId: session.id,
           customerId: session.customer,
           subscriptionId: session.subscription,
-          plan: session.metadata?.plan
+          plan: session.metadata?.plan,
+          tenantId: session.metadata?.tenant_id
         })
 
-        // TODO: データベースを更新してテナントのプランをアップグレード
-        // const { DB } = c.env
-        // await DB.prepare(`
-        //   UPDATE tenants 
-        //   SET plan = ?,
-        //       stripe_customer_id = ?,
-        //       stripe_subscription_id = ?,
-        //       subscription_status = 'active',
-        //       subscription_current_period_end = datetime(?, 'unixepoch')
-        //   WHERE id = ?
-        // `).bind(
-        //   session.metadata?.plan,
-        //   session.customer,
-        //   session.subscription,
-        //   session.subscription?.current_period_end,
-        //   tenantId
-        // ).run()
+        const tenantId = parseInt(session.metadata?.tenant_id || '0')
+        if (!tenantId) {
+          console.error('Tenant ID not found in session metadata')
+          break
+        }
+
+        // サブスクリプション情報を取得
+        const subscription = await stripe.subscriptions.retrieve(session.subscription as string)
+
+        // データベースを更新してテナントのプランをアップグレード
+        await env.DB.prepare(`
+          UPDATE tenants 
+          SET plan = ?,
+              stripe_customer_id = ?,
+              stripe_subscription_id = ?,
+              subscription_status = 'active',
+              subscription_current_period_start = datetime(?, 'unixepoch'),
+              subscription_current_period_end = datetime(?, 'unixepoch'),
+              subscription_updated_at = datetime('now')
+          WHERE id = ?
+        `).bind(
+          session.metadata?.plan || 'starter',
+          session.customer as string,
+          session.subscription as string,
+          subscription.current_period_start,
+          subscription.current_period_end,
+          tenantId
+        ).run()
+
+        console.log(`Tenant ${tenantId} upgraded to ${session.metadata?.plan}`)
 
         break
       }
@@ -133,7 +166,35 @@ app.post('/webhook', async (c) => {
           status: subscription.status
         })
 
-        // TODO: サブスクリプション情報を更新
+        // サブスクリプションIDからテナントを検索
+        const tenant = await env.DB
+          .prepare('SELECT id FROM tenants WHERE stripe_subscription_id = ?')
+          .bind(subscription.id)
+          .first<{ id: number }>()
+
+        if (!tenant) {
+          console.error('Tenant not found for subscription:', subscription.id)
+          break
+        }
+
+        // サブスクリプション情報を更新
+        await env.DB.prepare(`
+          UPDATE tenants
+          SET subscription_status = ?,
+              subscription_current_period_start = datetime(?, 'unixepoch'),
+              subscription_current_period_end = datetime(?, 'unixepoch'),
+              subscription_cancel_at = ?,
+              subscription_updated_at = datetime('now')
+          WHERE id = ?
+        `).bind(
+          subscription.status,
+          subscription.current_period_start,
+          subscription.current_period_end,
+          subscription.cancel_at ? new Date(subscription.cancel_at * 1000).toISOString() : null,
+          tenant.id
+        ).run()
+
+        console.log(`Tenant ${tenant.id} subscription updated to status: ${subscription.status}`)
 
         break
       }
@@ -146,7 +207,94 @@ app.post('/webhook', async (c) => {
           customerId: subscription.customer
         })
 
-        // TODO: プランをFreeにダウングレード
+        // サブスクリプションIDからテナントを検索
+        const tenant = await env.DB
+          .prepare('SELECT id FROM tenants WHERE stripe_subscription_id = ?')
+          .bind(subscription.id)
+          .first<{ id: number }>()
+
+        if (!tenant) {
+          console.error('Tenant not found for subscription:', subscription.id)
+          break
+        }
+
+        // プランをFreeにダウングレード
+        await env.DB.prepare(`
+          UPDATE tenants
+          SET plan = 'free',
+              subscription_status = 'canceled',
+              subscription_cancel_at = datetime('now'),
+              subscription_updated_at = datetime('now')
+          WHERE id = ?
+        `).bind(tenant.id).run()
+
+        console.log(`Tenant ${tenant.id} downgraded to free plan`)
+
+        break
+      }
+
+      case 'invoice.payment_failed': {
+        const invoice = event.data.object as Stripe.Invoice
+
+        console.log('Payment failed:', {
+          invoiceId: invoice.id,
+          customerId: invoice.customer,
+          subscriptionId: invoice.subscription
+        })
+
+        // サブスクリプションIDからテナントを検索
+        const tenant = await env.DB
+          .prepare('SELECT id FROM tenants WHERE stripe_subscription_id = ?')
+          .bind(invoice.subscription as string)
+          .first<{ id: number }>()
+
+        if (!tenant) {
+          console.error('Tenant not found for subscription:', invoice.subscription)
+          break
+        }
+
+        // ステータスを past_due に更新
+        await env.DB.prepare(`
+          UPDATE tenants
+          SET subscription_status = 'past_due',
+              subscription_updated_at = datetime('now')
+          WHERE id = ?
+        `).bind(tenant.id).run()
+
+        console.log(`Tenant ${tenant.id} payment failed - status set to past_due`)
+
+        break
+      }
+
+      case 'invoice.payment_succeeded': {
+        const invoice = event.data.object as Stripe.Invoice
+
+        console.log('Payment succeeded:', {
+          invoiceId: invoice.id,
+          customerId: invoice.customer,
+          subscriptionId: invoice.subscription
+        })
+
+        // サブスクリプションIDからテナントを検索
+        const tenant = await env.DB
+          .prepare('SELECT id FROM tenants WHERE stripe_subscription_id = ?')
+          .bind(invoice.subscription as string)
+          .first<{ id: number }>()
+
+        if (!tenant) {
+          console.error('Tenant not found for subscription:', invoice.subscription)
+          break
+        }
+
+        // ステータスを active に更新
+        await env.DB.prepare(`
+          UPDATE tenants
+          SET subscription_status = 'active',
+              subscription_updated_at = datetime('now')
+          WHERE id = ?
+        `).bind(tenant.id).run()
+
+        console.log(`Tenant ${tenant.id} payment succeeded - status set to active`)
 
         break
       }
