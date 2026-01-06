@@ -4511,7 +4511,7 @@ tenantPublic.get('/mypage', async (c) => {
             const membership = {
                 role: user.role,
                 member_number: user.memberNumber,
-                joined_at: user.created_at
+                joined_at: user.joinedAt || user.created_at
             }
             
             document.getElementById('cardNickname').textContent = user.nickname || '未設定'

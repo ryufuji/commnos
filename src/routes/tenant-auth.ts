@@ -231,7 +231,9 @@ tenantAuth.post('/login', async (c) => {
         role: membership.role,
         memberNumber: membership.member_number,
         tenantId: tenant.id,
-        tenantName: tenant.name
+        tenantName: tenant.name,
+        joinedAt: membership.joined_at,
+        createdAt: user.created_at
       }
     })
   } catch (error: any) {
