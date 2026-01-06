@@ -2556,9 +2556,9 @@ app.get('/posts-admin', (c) => {
         </main>
 
         <!-- 編集モーダル -->
-        <div id="editModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4 overflow-y-auto">
-            <div class="bg-white rounded-lg shadow-2xl max-w-4xl w-full my-8">
-                <div class="p-6 border-b border-gray-200 sticky top-0 bg-white rounded-t-lg">
+        <div id="editModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div class="bg-white rounded-lg shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto my-8">
+                <div class="p-6 border-b border-gray-200 bg-white rounded-t-lg">
                     <div class="flex justify-between items-center">
                         <h2 class="text-2xl font-bold text-gray-900">
                             <i class="fas fa-edit mr-2 text-blue-600"></i>
