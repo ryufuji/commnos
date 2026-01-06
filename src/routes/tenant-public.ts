@@ -4481,13 +4481,30 @@ tenantPublic.get('/mypage', async (c) => {
                 return false
             }
             
+            // membership オブジェクトを user から構築
+            const membership = {
+                role: user.role,
+                tenant_id: user.tenantId,
+                member_number: user.memberNumber,
+                tenant_name: user.tenantName
+            }
+            
+            // 管理者用ナビゲーションを設定
+            updateNavigation(membership)
+            
             return true
         }
         
         // 会員証情報を更新
         function updateMemberCard() {
             const user = JSON.parse(localStorage.getItem('user') || '{}')
-            const membership = JSON.parse(localStorage.getItem('membership') || '{}')
+            
+            // membership を user から構築
+            const membership = {
+                role: user.role,
+                member_number: user.memberNumber,
+                joined_at: user.created_at
+            }
             
             document.getElementById('cardNickname').textContent = user.nickname || '未設定'
             
