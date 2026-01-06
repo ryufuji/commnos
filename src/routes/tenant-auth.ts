@@ -38,32 +38,54 @@ tenantAuth.post('/register', async (c) => {
       }, 404)
     }
 
-    // Check if user already exists
-    const existingUser = await DB.prepare(`
-      SELECT id FROM users WHERE email = ?
-    `).bind(email).first()
+    // Check if user already exists globally
+    let existingUser = await DB.prepare(`
+      SELECT id, email, nickname FROM users WHERE email = ?
+    `).bind(email).first() as any
+
+    let userId: number
 
     if (existingUser) {
-      return c.json({
-        success: false,
-        message: 'このメールアドレスは既に登録されています'
-      }, 400)
+      // User exists globally - check if already member of this tenant
+      const existingMembership = await DB.prepare(`
+        SELECT id, status FROM tenant_memberships 
+        WHERE tenant_id = ? AND user_id = ?
+      `).bind(tenant.id, existingUser.id).first() as any
+
+      if (existingMembership) {
+        if (existingMembership.status === 'pending') {
+          return c.json({
+            success: false,
+            message: 'このテナントへの会員申請は既に送信されています。承認をお待ちください。'
+          }, 400)
+        } else if (existingMembership.status === 'active') {
+          return c.json({
+            success: false,
+            message: 'このテナントには既に登録されています。'
+          }, 400)
+        }
+      }
+
+      // Existing user, new tenant membership
+      userId = existingUser.id
+      
+      // Note: Password is ignored for existing users
+      // They should use their existing password to login
+    } else {
+      // New user - create account
+      const hashedPassword = await bcrypt.hash(password, 10)
+
+      const userResult = await DB.prepare(`
+        INSERT INTO users (email, password_hash, nickname, created_at)
+        VALUES (?, ?, ?, datetime('now'))
+      `).bind(email, hashedPassword, nickname).run()
+
+      if (!userResult.success) {
+        throw new Error('ユーザーの作成に失敗しました')
+      }
+
+      userId = userResult.meta.last_row_id
     }
-
-    // Hash password
-    const hashedPassword = await bcrypt.hash(password, 10)
-
-    // Insert user
-    const userResult = await DB.prepare(`
-      INSERT INTO users (email, password_hash, nickname, created_at)
-      VALUES (?, ?, ?, datetime('now'))
-    `).bind(email, hashedPassword, nickname).run()
-
-    if (!userResult.success) {
-      throw new Error('ユーザーの作成に失敗しました')
-    }
-
-    const userId = userResult.meta.last_row_id
 
     // Get next member number
     const memberCountResult = await DB.prepare(`
