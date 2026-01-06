@@ -6267,7 +6267,7 @@ tenantPublic.get('/chat', async (c) => {
                 const lastMessageTime = room.last_message_at ? new Date(room.last_message_at).toLocaleString('ja-JP', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : ''
                 
                 return \`
-                    <a href="/tenant/chat/room?id=\${room.id}&subdomain=${subdomain}" 
+                    <a href="/tenant/chat/\${room.id}?subdomain=${subdomain}" 
                        class="block bg-white rounded-lg shadow-md hover:shadow-xl transition p-6 border-l-4 border-primary">
                         <div class="flex items-start justify-between mb-3">
                             <h3 class="text-xl font-bold text-gray-900 flex-1">
@@ -6557,6 +6557,10 @@ tenantPublic.get('/chat/:id', async (c) => {
         const roomId = '${roomId}'
         let currentUser = null
         let pollingInterval = null
+        
+        console.log('[Chat Room] subdomain:', subdomain)
+        console.log('[Chat Room] roomId:', roomId)
+        console.log('[Chat Room] Current URL:', window.location.href)
 
         // ナビゲーションを更新
         function updateNavigation(user) {
