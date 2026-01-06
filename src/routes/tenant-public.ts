@@ -253,7 +253,7 @@ tenantPublic.get('/login', async (c) => {
 
                         // Redirect to home
                         setTimeout(() => {
-                            window.location.href = \`/home?subdomain=\${subdomain}\`;
+                            window.location.href = '/home?subdomain=' + subdomain;
                         }, 1500);
                     } else {
                         throw new Error(response.data.message || 'ログインに失敗しました');

@@ -728,7 +728,6 @@ app.get('/login', (c) => {
             })
         </script>
         <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
-        <script src="/static/app.js"></script>
         <script>
             // ログイン済みの場合はダッシュボードにリダイレクト
             if (isLoggedIn()) {
