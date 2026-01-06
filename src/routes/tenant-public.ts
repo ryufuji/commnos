@@ -6764,28 +6764,120 @@ tenantPublic.get('/chat/:id', async (c) => {
             }
         }
 
-        // メッセージをレンダリング
+        // メッセージをレンダリング（LINE風UI）
         function renderMessages(messages) {
             const messagesList = document.getElementById('messagesList')
             messagesList.innerHTML = messages.map(msg => {
                 const isOwn = msg.user_id === currentUser.id
-                const messageClass = isOwn ? 'message-own ml-auto' : 'message-other mr-auto'
                 const time = new Date(msg.created_at).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })
+                const avatarUrl = msg.avatar_url || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(msg.nickname || 'User') + '&background=random'
+                
+                // 既読状態の計算
+                const readCount = msg.read_count || 0
+                const totalMembers = msg.total_members || 1
+                const isRead = readCount >= totalMembers - 1 // 自分以外全員が既読
+                
+                // 1分以内かチェック
+                const createdAt = new Date(msg.created_at).getTime()
+                const now = Date.now()
+                const canDelete = isOwn && (now - createdAt < 60000)
 
-                return \`
-                    <div class="flex \${isOwn ? 'justify-end' : 'justify-start'}">
-                        <div class="message-bubble \${messageClass} px-4 py-2">
-                            \${!isOwn ? \`<p class="text-xs font-semibold mb-1">\${msg.nickname || 'ユーザー'}</p>\` : ''}
-                            <p class="whitespace-pre-wrap break-words">\${msg.message}</p>
-                            <p class="text-xs mt-1 \${isOwn ? 'text-blue-100' : 'text-gray-500'}">\${time}</p>
+                if (isOwn) {
+                    // 自分のメッセージ（右側）
+                    return \`
+                        <div class="flex justify-end items-end gap-2 group">
+                            <div class="flex flex-col items-end">
+                                <div class="flex items-end gap-2">
+                                    <div class="flex flex-col items-end text-xs text-gray-500">
+                                        <span>\${time}</span>
+                                        \${isRead ? '<span class="text-blue-500">既読</span>' : '<span class="text-gray-400">未読</span>'}
+                                    </div>
+                                    <div class="message-bubble message-own px-4 py-2 max-w-md relative">
+                                        <p class="whitespace-pre-wrap break-words">\${msg.message}</p>
+                                        \${canDelete ? \`
+                                            <button 
+                                                onclick="deleteMessage(\${msg.id})" 
+                                                class="absolute -left-8 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600"
+                                                title="削除"
+                                            >
+                                                <i class="fas fa-times text-xs"></i>
+                                            </button>
+                                        \` : ''}
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                \`
+                    \`
+                } else {
+                    // 相手のメッセージ（左側、アイコン付き）
+                    return \`
+                        <div class="flex items-start gap-2">
+                            <img 
+                                src="\${avatarUrl}" 
+                                alt="\${msg.nickname}" 
+                                class="w-10 h-10 rounded-full flex-shrink-0"
+                            />
+                            <div class="flex flex-col">
+                                <p class="text-xs font-semibold text-gray-700 mb-1 ml-1">\${msg.nickname || 'ユーザー'}</p>
+                                <div class="flex items-end gap-2">
+                                    <div class="message-bubble message-other px-4 py-2 max-w-md">
+                                        <p class="whitespace-pre-wrap break-words">\${msg.message}</p>
+                                    </div>
+                                    <span class="text-xs text-gray-500">\${time}</span>
+                                </div>
+                            </div>
+                        </div>
+                    \`
+                }
             }).join('')
 
             // 最下部にスクロール
             const container = document.getElementById('messagesContainer')
             container.scrollTop = container.scrollHeight
+            
+            // 未読メッセージを既読にする
+            markMessagesAsRead(messages)
+        }
+        
+        // メッセージを既読にする
+        async function markMessagesAsRead(messages) {
+            const token = getToken()
+            const unreadMessages = messages.filter(msg => msg.user_id !== currentUser.id)
+            
+            for (const msg of unreadMessages) {
+                try {
+                    await fetch('/api/chat/messages/' + msg.id + '/read', {
+                        method: 'POST',
+                        headers: { 'Authorization': 'Bearer ' + token }
+                    })
+                } catch (error) {
+                    console.error('Failed to mark message as read:', error)
+                }
+            }
+        }
+        
+        // メッセージを削除
+        window.deleteMessage = async function(messageId) {
+            if (!confirm('このメッセージを削除しますか？')) return
+            
+            const token = getToken()
+            try {
+                const response = await fetch('/api/chat/messages/' + messageId, {
+                    method: 'DELETE',
+                    headers: { 'Authorization': 'Bearer ' + token }
+                })
+                
+                const data = await response.json()
+                if (data.success) {
+                    showToast('メッセージを削除しました', 'success')
+                    loadMessages() // 再読み込み
+                } else {
+                    showToast(data.error || 'メッセージの削除に失敗しました', 'error')
+                }
+            } catch (error) {
+                console.error('Failed to delete message:', error)
+                showToast('メッセージの削除に失敗しました', 'error')
+            }
         }
 
         // メッセージを送信

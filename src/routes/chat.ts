@@ -257,11 +257,13 @@ chat.get('/rooms/:id/messages', async (c) => {
       return c.json({ success: false, error: 'Access denied' }, 403)
     }
 
-    // メッセージ取得
+    // メッセージ取得（既読情報を含む）
     let query = `
       SELECT 
-        cm.id, cm.message, cm.created_at,
-        u.id as user_id, u.nickname, u.avatar_url
+        cm.id, cm.message, cm.created_at, cm.user_id,
+        u.nickname, u.avatar_url,
+        (SELECT COUNT(*) FROM chat_message_reads WHERE message_id = cm.id) as read_count,
+        (SELECT COUNT(*) FROM chat_room_members WHERE room_id = cm.room_id) as total_members
       FROM chat_messages cm
       INNER JOIN users u ON cm.user_id = u.id
       WHERE cm.room_id = ?
@@ -415,6 +417,106 @@ chat.post('/rooms/:id/members', async (c) => {
     })
   } catch (error: any) {
     console.error('[Chat Add Members Error]', error)
+    return c.json({ success: false, error: error.message }, 500)
+  }
+})
+
+/**
+ * POST /api/chat/messages/:id/read
+ * メッセージを既読にする
+ */
+chat.post('/messages/:id/read', async (c) => {
+  try {
+    const authHeader = c.req.header('Authorization')
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return c.json({ success: false, error: 'Unauthorized' }, 401)
+    }
+
+    const token = authHeader.substring(7)
+    const result = await verifyToken(token, c.env.JWT_SECRET)
+    if (!result.valid || !result.payload) {
+      return c.json({ success: false, error: 'Invalid token' }, 401)
+    }
+
+    const userId = result.payload.userId
+    const messageId = c.req.param('id')
+
+    // メッセージが存在し、ユーザーがそのルームのメンバーか確認
+    const message = await c.env.DB.prepare(`
+      SELECT cm.*, crm.user_id as is_member
+      FROM chat_messages cm
+      INNER JOIN chat_room_members crm ON cm.room_id = crm.room_id AND crm.user_id = ?
+      WHERE cm.id = ?
+    `).bind(userId, messageId).first()
+
+    if (!message) {
+      return c.json({ success: false, error: 'Message not found or access denied' }, 404)
+    }
+
+    // 既読マークを追加（重複は無視）
+    await c.env.DB.prepare(`
+      INSERT OR IGNORE INTO chat_message_reads (message_id, user_id)
+      VALUES (?, ?)
+    `).bind(messageId, userId).run()
+
+    return c.json({ success: true })
+  } catch (error: any) {
+    console.error('[Mark Message as Read Error]', error)
+    return c.json({ success: false, error: error.message }, 500)
+  }
+})
+
+/**
+ * DELETE /api/chat/messages/:id
+ * メッセージを削除（1分以内のみ）
+ */
+chat.delete('/messages/:id', async (c) => {
+  try {
+    const authHeader = c.req.header('Authorization')
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return c.json({ success: false, error: 'Unauthorized' }, 401)
+    }
+
+    const token = authHeader.substring(7)
+    const result = await verifyToken(token, c.env.JWT_SECRET)
+    if (!result.valid || !result.payload) {
+      return c.json({ success: false, error: 'Invalid token' }, 401)
+    }
+
+    const userId = result.payload.userId
+    const messageId = c.req.param('id')
+
+    // メッセージを取得
+    const message: any = await c.env.DB.prepare(`
+      SELECT * FROM chat_messages WHERE id = ?
+    `).bind(messageId).first()
+
+    if (!message) {
+      return c.json({ success: false, error: 'Message not found' }, 404)
+    }
+
+    // 自分のメッセージか確認
+    if (message.user_id !== userId) {
+      return c.json({ success: false, error: 'You can only delete your own messages' }, 403)
+    }
+
+    // 1分以内か確認
+    const createdAt = new Date(message.created_at).getTime()
+    const now = Date.now()
+    const oneMinute = 60 * 1000
+
+    if (now - createdAt > oneMinute) {
+      return c.json({ success: false, error: 'Messages can only be deleted within 1 minute' }, 403)
+    }
+
+    // メッセージを削除
+    await c.env.DB.prepare(`
+      DELETE FROM chat_messages WHERE id = ?
+    `).bind(messageId).run()
+
+    return c.json({ success: true })
+  } catch (error: any) {
+    console.error('[Delete Message Error]', error)
     return c.json({ success: false, error: error.message }, 500)
   }
 })
