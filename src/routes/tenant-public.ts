@@ -6403,6 +6403,442 @@ tenantPublic.get('/chat', async (c) => {
 })
 
 /**
+ * GET /chat/:id
+ * チャットルーム個別ページ
+ */
+tenantPublic.get('/chat/:id', async (c) => {
+  const { DB } = c.env
+  const subdomain = c.req.query('subdomain')
+  const roomId = c.req.param('id')
+  
+  if (!subdomain) {
+    return c.json({ error: 'Subdomain required' }, 400)
+  }
+  
+  // テナント情報を取得
+  const tenant = await DB.prepare(
+    'SELECT * FROM tenants WHERE subdomain = ? AND status = ?'
+  ).bind(subdomain, 'active').first()
+  
+  if (!tenant) {
+    return c.json({ error: 'Tenant not found' }, 404)
+  }
+  
+  const tenantName = tenant.name
+  const tenantSubtitle = tenant.subtitle || ''
+  
+  return c.html(`<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>チャット - ${tenantName}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --primary-color: #3B82F6;
+        }
+        .has-bottom-nav {
+            padding-bottom: 80px;
+        }
+        #messagesContainer {
+            height: calc(100vh - 300px);
+            min-height: 400px;
+        }
+        .message-bubble {
+            max-width: 70%;
+        }
+        .message-own {
+            background: var(--primary-color);
+            color: white;
+            border-radius: 18px 18px 4px 18px;
+        }
+        .message-other {
+            background: #F3F4F6;
+            color: #1F2937;
+            border-radius: 18px 18px 18px 4px;
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- ヘッダー -->
+    <header class="bg-white shadow-sm sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 py-4">
+            <div class="flex justify-between items-center">
+                <div>
+                    <h1 class="text-2xl md:text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                        <i class="fas fa-users mr-2"></i>${tenantName}
+                    </h1>
+                    ${tenantSubtitle ? `<p class="text-gray-600 mt-1">${tenantSubtitle}</p>` : ''}
+                </div>
+                <!-- デスクトップナビ (動的に更新される) -->
+                <nav class="hidden md:flex gap-4" id="desktopNav">
+                    <!-- 認証後に updateNavigation() で内容が設定されます -->
+                    <a href="/login?subdomain=${subdomain}" id="loginBtn" class="auth-hide px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition">
+                        <i class="fas fa-sign-in-alt mr-2"></i>ログイン
+                    </a>
+                </nav>
+                <!-- モバイルメニューボタン -->
+                <button id="mobileMenuBtn" class="md:hidden p-2 text-gray-700 hover:bg-gray-100 rounded-lg">
+                    <i class="fas fa-bars text-xl"></i>
+                </button>
+            </div>
+            <!-- モバイルメニュー (動的に更新される) -->
+            <div id="mobileMenu" class="hidden md:hidden mt-4 space-y-2">
+                <!-- 認証後に updateNavigation() で内容が設定されます -->
+            </div>
+        </div>
+    </header>
+
+    <!-- メインコンテンツ -->
+    <main class="max-w-5xl mx-auto px-4 py-8">
+        <!-- 戻るボタンとルーム情報 -->
+        <div class="mb-6">
+            <a href="/tenant/chat?subdomain=${subdomain}" class="inline-flex items-center text-primary hover:underline mb-4">
+                <i class="fas fa-arrow-left mr-2"></i>チャットルーム一覧に戻る
+            </a>
+            <div class="bg-white rounded-lg shadow-sm p-6" id="roomInfo">
+                <div class="animate-pulse">
+                    <div class="h-6 bg-gray-200 rounded w-1/3 mb-2"></div>
+                    <div class="h-4 bg-gray-200 rounded w-2/3"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- メッセージ表示エリア -->
+        <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
+            <div id="messagesContainer" class="overflow-y-auto space-y-4 mb-4">
+                <!-- ローディング -->
+                <div id="messagesLoading" class="flex justify-center py-12">
+                    <div class="text-center">
+                        <i class="fas fa-spinner fa-spin text-4xl text-gray-400 mb-4"></i>
+                        <p class="text-gray-600">メッセージを読み込み中...</p>
+                    </div>
+                </div>
+                
+                <!-- メッセージリスト -->
+                <div id="messagesList" class="hidden space-y-4">
+                    <!-- JavaScriptで動的に生成 -->
+                </div>
+                
+                <!-- 空の状態 -->
+                <div id="messagesEmpty" class="hidden text-center py-12">
+                    <i class="fas fa-comment-slash text-6xl text-gray-300 mb-4"></i>
+                    <p class="text-xl text-gray-600">まだメッセージがありません</p>
+                    <p class="text-gray-500">最初のメッセージを送信しましょう</p>
+                </div>
+            </div>
+
+            <!-- メッセージ送信フォーム -->
+            <form id="messageForm" class="flex gap-2">
+                <input
+                    type="text"
+                    id="messageInput"
+                    placeholder="メッセージを入力..."
+                    class="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                    required
+                />
+                <button
+                    type="submit"
+                    id="sendBtn"
+                    class="px-6 py-3 bg-primary text-white rounded-lg hover:bg-blue-700 transition flex items-center gap-2"
+                >
+                    <i class="fas fa-paper-plane"></i>
+                    <span class="hidden sm:inline">送信</span>
+                </button>
+            </form>
+        </div>
+    </main>
+
+    <script src="/static/app.js"></script>
+    <script>
+        const subdomain = '${subdomain}'
+        const roomId = '${roomId}'
+        let currentUser = null
+        let pollingInterval = null
+
+        // ナビゲーションを更新
+        function updateNavigation(user) {
+            const isAdmin = user.role === 'owner' || user.role === 'admin'
+            const desktopNav = document.getElementById('desktopNav')
+            const mobileMenu = document.getElementById('mobileMenu')
+            
+            if (isAdmin) {
+                if (desktopNav) {
+                    desktopNav.innerHTML = \`
+                        <a href="/tenant/home?subdomain=\${subdomain}" class="text-gray-600 hover:text-primary transition">
+                            <i class="fas fa-home mr-2"></i>ホーム
+                        </a>
+                        <a href="/tenant/members?subdomain=\${subdomain}" class="text-gray-600 hover:text-primary transition">
+                            <i class="fas fa-users mr-2"></i>会員管理
+                        </a>
+                        <a href="/posts-admin" class="text-gray-600 hover:text-primary transition">
+                            <i class="fas fa-file-alt mr-2"></i>投稿管理
+                        </a>
+                        <a href="/tenant/chat?subdomain=\${subdomain}" class="text-primary font-semibold">
+                            <i class="fas fa-comments mr-2"></i>チャット
+                        </a>
+                        <div class="relative group">
+                            <button class="text-gray-600 hover:text-primary transition flex items-center">
+                                <i class="fas fa-user-circle mr-2"></i>
+                                \${user.nickname || 'ユーザー'}
+                                <i class="fas fa-chevron-down ml-2 text-xs"></i>
+                            </button>
+                            <div class="hidden group-hover:block absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-50">
+                                <a href="/tenant/mypage?subdomain=\${subdomain}" class="block px-4 py-2 text-gray-700 hover:bg-gray-50 transition">
+                                    <i class="fas fa-user mr-2"></i>マイページ
+                                </a>
+                                <a href="/tenant/settings?subdomain=\${subdomain}" class="block px-4 py-2 text-gray-700 hover:bg-gray-50 transition">
+                                    <i class="fas fa-cog mr-2"></i>設定
+                                </a>
+                                <button onclick="logout()" class="block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-50 transition">
+                                    <i class="fas fa-sign-out-alt mr-2"></i>ログアウト
+                                </button>
+                            </div>
+                        </div>
+                    \`
+                }
+            } else {
+                if (desktopNav) {
+                    desktopNav.innerHTML = \`
+                        <a href="/tenant/home?subdomain=\${subdomain}" class="text-gray-600 hover:text-primary transition">
+                            <i class="fas fa-home mr-2"></i>ホーム
+                        </a>
+                        <a href="/tenant/posts?subdomain=\${subdomain}" class="text-gray-600 hover:text-primary transition">
+                            <i class="fas fa-newspaper mr-2"></i>投稿
+                        </a>
+                        <a href="/tenant/chat?subdomain=\${subdomain}" class="text-primary font-semibold">
+                            <i class="fas fa-comments mr-2"></i>チャット
+                        </a>
+                        <a href="/tenant/members?subdomain=\${subdomain}" class="text-gray-600 hover:text-primary transition">
+                            <i class="fas fa-users mr-2"></i>メンバー
+                        </a>
+                        <div class="relative group">
+                            <button class="text-gray-600 hover:text-primary transition flex items-center">
+                                <i class="fas fa-user-circle mr-2"></i>
+                                \${user.nickname || 'ユーザー'}
+                                <i class="fas fa-chevron-down ml-2 text-xs"></i>
+                            </button>
+                            <div class="hidden group-hover:block absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-50">
+                                <a href="/profile" class="block px-4 py-2 text-gray-700 hover:bg-gray-50 transition">
+                                    <i class="fas fa-user mr-2"></i>プロフィール
+                                </a>
+                                <button onclick="logout()" class="block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-50 transition">
+                                    <i class="fas fa-sign-out-alt mr-2"></i>ログアウト
+                                </button>
+                            </div>
+                        </div>
+                    \`
+                }
+            }
+        }
+
+        window.logout = function() {
+            localStorage.removeItem('token')
+            localStorage.removeItem('user')
+            localStorage.removeItem('membership')
+            window.location.href = '/tenant/home?subdomain=' + subdomain
+        }
+
+        // モバイルメニュー切り替え
+        const mobileMenuBtn = document.getElementById('mobileMenuBtn')
+        const mobileMenu = document.getElementById('mobileMenu')
+        if (mobileMenuBtn && mobileMenu) {
+            mobileMenuBtn.addEventListener('click', () => {
+                mobileMenu.classList.toggle('hidden')
+            })
+        }
+
+        // 認証チェック
+        async function checkAuth() {
+            const token = getToken()
+            if (!token) {
+                window.location.href = '/login?subdomain=' + subdomain
+                return false
+            }
+
+            const userStr = localStorage.getItem('user')
+            if (!userStr) {
+                window.location.href = '/login?subdomain=' + subdomain
+                return false
+            }
+
+            currentUser = JSON.parse(userStr)
+            updateNavigation(currentUser)
+            return true
+        }
+
+        // ルーム情報を取得
+        async function loadRoomInfo() {
+            const token = getToken()
+            try {
+                const response = await fetch('/api/chat/rooms/' + roomId, {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                })
+
+                if (!response.ok) {
+                    if (response.status === 403) {
+                        showToast('このチャットルームにアクセスする権限がありません', 'error')
+                        setTimeout(() => {
+                            window.location.href = '/tenant/chat?subdomain=' + subdomain
+                        }, 2000)
+                        return
+                    }
+                    throw new Error('Failed to load room info')
+                }
+
+                const data = await response.json()
+                if (data.success) {
+                    const room = data.room
+                    document.getElementById('roomInfo').innerHTML = \`
+                        <div class="flex items-start justify-between">
+                            <div>
+                                <h2 class="text-2xl font-bold text-gray-900 mb-2">
+                                    <i class="fas fa-comments mr-2 text-primary"></i>
+                                    \${room.name}
+                                </h2>
+                                \${room.description ? \`<p class="text-gray-600 mb-4">\${room.description}</p>\` : ''}
+                                <div class="flex items-center gap-4 text-sm text-gray-500">
+                                    <span>
+                                        <i class="fas fa-users mr-1"></i>
+                                        \${room.members?.length || 0}人のメンバー
+                                    </span>
+                                    \${room.is_private ? '<span class="px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs font-semibold"><i class="fas fa-lock mr-1"></i>非公開</span>' : '<span class="px-2 py-1 bg-green-100 text-green-700 rounded text-xs font-semibold"><i class="fas fa-globe mr-1"></i>公開</span>'}
+                                </div>
+                            </div>
+                        </div>
+                    \`
+                }
+            } catch (error) {
+                console.error('Failed to load room info:', error)
+                showToast('ルーム情報の取得に失敗しました', 'error')
+            }
+        }
+
+        // メッセージを取得
+        async function loadMessages() {
+            const token = getToken()
+            try {
+                const response = await fetch('/api/chat/rooms/' + roomId + '/messages?page=1&limit=50', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                })
+
+                if (!response.ok) throw new Error('Failed to load messages')
+
+                const data = await response.json()
+                document.getElementById('messagesLoading').classList.add('hidden')
+
+                if (data.success && data.messages.length > 0) {
+                    document.getElementById('messagesList').classList.remove('hidden')
+                    document.getElementById('messagesEmpty').classList.add('hidden')
+                    renderMessages(data.messages)
+                } else {
+                    document.getElementById('messagesList').classList.add('hidden')
+                    document.getElementById('messagesEmpty').classList.remove('hidden')
+                }
+            } catch (error) {
+                console.error('Failed to load messages:', error)
+                document.getElementById('messagesLoading').classList.add('hidden')
+                document.getElementById('messagesEmpty').classList.remove('hidden')
+            }
+        }
+
+        // メッセージをレンダリング
+        function renderMessages(messages) {
+            const messagesList = document.getElementById('messagesList')
+            messagesList.innerHTML = messages.map(msg => {
+                const isOwn = msg.user_id === currentUser.id
+                const messageClass = isOwn ? 'message-own ml-auto' : 'message-other mr-auto'
+                const time = new Date(msg.created_at).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })
+
+                return \`
+                    <div class="flex \${isOwn ? 'justify-end' : 'justify-start'}">
+                        <div class="message-bubble \${messageClass} px-4 py-2">
+                            \${!isOwn ? \`<p class="text-xs font-semibold mb-1">\${msg.nickname || 'ユーザー'}</p>\` : ''}
+                            <p class="whitespace-pre-wrap break-words">\${msg.message}</p>
+                            <p class="text-xs mt-1 \${isOwn ? 'text-blue-100' : 'text-gray-500'}">\${time}</p>
+                        </div>
+                    </div>
+                \`
+            }).join('')
+
+            // 最下部にスクロール
+            const container = document.getElementById('messagesContainer')
+            container.scrollTop = container.scrollHeight
+        }
+
+        // メッセージを送信
+        document.getElementById('messageForm').addEventListener('submit', async (e) => {
+            e.preventDefault()
+            const messageInput = document.getElementById('messageInput')
+            const sendBtn = document.getElementById('sendBtn')
+            const message = messageInput.value.trim()
+
+            if (!message) return
+
+            sendBtn.disabled = true
+            sendBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>'
+
+            try {
+                const token = getToken()
+                const response = await fetch('/api/chat/rooms/' + roomId + '/messages', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + token
+                    },
+                    body: JSON.stringify({ message })
+                })
+
+                if (!response.ok) throw new Error('Failed to send message')
+
+                const data = await response.json()
+                if (data.success) {
+                    messageInput.value = ''
+                    loadMessages() // 再読み込み
+                }
+            } catch (error) {
+                console.error('Failed to send message:', error)
+                showToast('メッセージの送信に失敗しました', 'error')
+            } finally {
+                sendBtn.disabled = false
+                sendBtn.innerHTML = '<i class="fas fa-paper-plane"></i><span class="hidden sm:inline">送信</span>'
+            }
+        })
+
+        // ポーリングでメッセージを更新（5秒ごと）
+        function startPolling() {
+            pollingInterval = setInterval(() => {
+                loadMessages()
+            }, 5000)
+        }
+
+        // 初期化
+        async function init() {
+            const authenticated = await checkAuth()
+            if (authenticated) {
+                await loadRoomInfo()
+                await loadMessages()
+                startPolling()
+            }
+        }
+
+        init()
+
+        // ページを離れるときにポーリングを停止
+        window.addEventListener('beforeunload', () => {
+            if (pollingInterval) {
+                clearInterval(pollingInterval)
+            }
+        })
+    </script>
+</body>
+</html>
+  `)
+})
+
+/**
  * GET /forgot-password
  * パスワード忘れページ
  */
