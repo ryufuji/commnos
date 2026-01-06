@@ -270,11 +270,28 @@ async function editPost(postId) {
     console.log('post.status:', post.status)
     console.log('post.visibility:', post.visibility)
     
-    document.getElementById('editPostId').value = post.id
-    document.getElementById('editTitle').value = post.title || ''
-    document.getElementById('editContent').value = post.content || ''
-    document.getElementById('editStatus').value = post.status || 'draft'
-    document.getElementById('editVisibility').value = post.visibility || 'public'
+    const editPostIdEl = document.getElementById('editPostId')
+    const editTitleEl = document.getElementById('editTitle')
+    const editContentEl = document.getElementById('editContent')
+    const editStatusEl = document.getElementById('editStatus')
+    const editVisibilityEl = document.getElementById('editVisibility')
+    
+    console.log('Form elements found:')
+    console.log('editPostId:', !!editPostIdEl)
+    console.log('editTitle:', !!editTitleEl)
+    console.log('editContent:', !!editContentEl)
+    console.log('editStatus:', !!editStatusEl)
+    console.log('editVisibility:', !!editVisibilityEl)
+    
+    if (editPostIdEl) editPostIdEl.value = post.id
+    if (editTitleEl) editTitleEl.value = post.title || ''
+    if (editContentEl) editContentEl.value = post.content || ''
+    if (editStatusEl) editStatusEl.value = post.status || 'draft'
+    if (editVisibilityEl) editVisibilityEl.value = post.visibility || 'public'
+    
+    console.log('Form values after setting:')
+    console.log('editTitle.value:', editTitleEl?.value)
+    console.log('editContent.value:', editContentEl?.value)
 
     // 現在のメディア情報を表示（削除ボタン付き）
     let mediaInfo = '<div class="space-y-2">'
