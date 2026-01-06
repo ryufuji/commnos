@@ -832,22 +832,6 @@ tenantPublic.get('/home', async (c) => {
 
     <!-- メインコンテンツ -->
     <main class="max-w-7xl mx-auto px-4 py-8">
-        <!-- ヒーローセクション -->
-        <div class="text-center mb-12">
-            <h2 class="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
-                ${tenantName}へようこそ
-            </h2>
-            ${tenantSubtitle ? `<p class="text-xl text-gray-600 mb-6">${tenantSubtitle}</p>` : ''}
-            <div id="heroCTAs" class="auth-hide flex gap-4 justify-center flex-wrap">
-                <a href="/tenant/register?subdomain=${subdomain}" class="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg text-lg transition-colors">
-                    <i class="fas fa-user-plus mr-2"></i>メンバー申請
-                </a>
-                <a href="/login?subdomain=${subdomain}" class="px-8 py-3 bg-gray-600 hover:bg-gray-700 text-white font-semibold rounded-lg text-lg transition-colors">
-                    <i class="fas fa-sign-in-alt mr-2"></i>ログイン
-                </a>
-            </div>
-        </div>
-
         <!-- 統計 -->
         <div class="grid md:grid-cols-3 gap-6 mb-12">
             <div class="bg-white rounded-lg shadow-md p-6 text-center">
