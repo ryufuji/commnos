@@ -6951,6 +6951,340 @@ tenantPublic.get('/chat/:id', async (c) => {
 })
 
 /**
+ * GET /profile
+ * ユーザープロフィールページ
+ */
+tenantPublic.get('/profile', async (c) => {
+  return c.html(`<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>プロフィール - Commons</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50">
+    <!-- ヘッダー -->
+    <header class="bg-white shadow-sm sticky top-0 z-40">
+        <div class="max-w-7xl mx-auto px-4 py-4">
+            <div class="flex justify-between items-center">
+                <h1 class="text-2xl font-bold text-gray-900">
+                    <i class="fas fa-user-circle mr-2 text-primary"></i>
+                    プロフィール
+                </h1>
+                <a href="javascript:history.back()" class="text-gray-600 hover:text-primary transition">
+                    <i class="fas fa-times text-xl"></i>
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- メインコンテンツ -->
+    <main class="max-w-4xl mx-auto px-4 py-8">
+        <!-- ローディング -->
+        <div id="loading" class="flex justify-center py-12">
+            <div class="text-center">
+                <i class="fas fa-spinner fa-spin text-4xl text-gray-400 mb-4"></i>
+                <p class="text-gray-600">読み込み中...</p>
+            </div>
+        </div>
+
+        <!-- プロフィール表示 -->
+        <div id="profileContent" class="hidden">
+            <!-- アバターセクション -->
+            <div class="bg-white rounded-lg shadow-sm p-8 mb-6">
+                <div class="flex flex-col items-center">
+                    <div class="relative mb-4">
+                        <img 
+                            id="avatarPreview" 
+                            src="" 
+                            alt="アバター" 
+                            class="w-32 h-32 rounded-full object-cover border-4 border-primary"
+                        />
+                        <button 
+                            id="changeAvatarBtn"
+                            class="absolute bottom-0 right-0 bg-primary text-white rounded-full w-10 h-10 flex items-center justify-center hover:bg-blue-700 transition shadow-lg"
+                        >
+                            <i class="fas fa-camera"></i>
+                        </button>
+                        <input type="file" id="avatarInput" accept="image/*" class="hidden" />
+                    </div>
+                    <h2 id="userName" class="text-2xl font-bold text-gray-900 mb-2"></h2>
+                    <p id="userEmail" class="text-gray-600 mb-4"></p>
+                    <div class="flex gap-2">
+                        <span id="userRole" class="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-semibold"></span>
+                        <span id="userStatus" class="px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-semibold"></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- プロフィール編集フォーム -->
+            <div class="bg-white rounded-lg shadow-sm p-8">
+                <h3 class="text-xl font-bold text-gray-900 mb-6">
+                    <i class="fas fa-edit mr-2 text-primary"></i>
+                    プロフィール編集
+                </h3>
+                
+                <form id="profileForm" class="space-y-6">
+                    <!-- ニックネーム -->
+                    <div>
+                        <label for="nickname" class="block text-sm font-semibold text-gray-700 mb-2">
+                            ニックネーム <span class="text-red-500">*</span>
+                        </label>
+                        <input
+                            type="text"
+                            id="nickname"
+                            name="nickname"
+                            required
+                            maxlength="50"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                            placeholder="ニックネームを入力"
+                        />
+                        <p class="text-xs text-gray-500 mt-1">最大50文字</p>
+                    </div>
+
+                    <!-- 自己紹介 -->
+                    <div>
+                        <label for="bio" class="block text-sm font-semibold text-gray-700 mb-2">
+                            自己紹介
+                        </label>
+                        <textarea
+                            id="bio"
+                            name="bio"
+                            rows="5"
+                            maxlength="500"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                            placeholder="自己紹介を入力"
+                        ></textarea>
+                        <p class="text-xs text-gray-500 mt-1">最大500文字</p>
+                    </div>
+
+                    <!-- アカウント情報 -->
+                    <div class="pt-6 border-t border-gray-200">
+                        <h4 class="text-lg font-bold text-gray-900 mb-4">アカウント情報</h4>
+                        <div class="space-y-3 text-sm">
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">メールアドレス:</span>
+                                <span id="emailDisplay" class="font-medium text-gray-900"></span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">登録日:</span>
+                                <span id="createdAt" class="font-medium text-gray-900"></span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-600">最終ログイン:</span>
+                                <span id="lastLogin" class="font-medium text-gray-900"></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ボタン -->
+                    <div class="flex gap-4 pt-6">
+                        <button
+                            type="submit"
+                            id="saveBtn"
+                            class="flex-1 bg-primary text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition font-semibold"
+                        >
+                            <i class="fas fa-save mr-2"></i>
+                            保存
+                        </button>
+                        <button
+                            type="button"
+                            onclick="history.back()"
+                            class="flex-1 bg-gray-200 text-gray-700 px-6 py-3 rounded-lg hover:bg-gray-300 transition font-semibold"
+                        >
+                            <i class="fas fa-times mr-2"></i>
+                            キャンセル
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </main>
+
+    <script src="/static/app.js"></script>
+    <script>
+        let currentUser = null
+
+        // プロフィールを読み込み
+        async function loadProfile() {
+            const token = getToken()
+            if (!token) {
+                window.location.href = '/login'
+                return
+            }
+
+            try {
+                const response = await fetch('/api/profile', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                })
+
+                if (!response.ok) throw new Error('Failed to load profile')
+
+                const data = await response.json()
+                if (data.success) {
+                    currentUser = data.user
+                    displayProfile(data.user)
+                }
+            } catch (error) {
+                console.error('Failed to load profile:', error)
+                showToast('プロフィールの読み込みに失敗しました', 'error')
+            } finally {
+                document.getElementById('loading').classList.add('hidden')
+                document.getElementById('profileContent').classList.remove('hidden')
+            }
+        }
+
+        // プロフィールを表示
+        function displayProfile(user) {
+            // アバター
+            const avatarUrl = user.avatar_url || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(user.nickname || user.email) + '&background=random&size=256'
+            document.getElementById('avatarPreview').src = avatarUrl
+
+            // 基本情報
+            document.getElementById('userName').textContent = user.nickname || 'ユーザー'
+            document.getElementById('userEmail').textContent = user.email
+
+            // ロールとステータス
+            const roleMap = {
+                'owner': 'オーナー',
+                'admin': '管理者',
+                'member': 'メンバー'
+            }
+            document.getElementById('userRole').textContent = roleMap[user.role] || user.role
+
+            const statusMap = {
+                'active': 'アクティブ',
+                'pending': '承認待ち',
+                'suspended': '停止中'
+            }
+            document.getElementById('userStatus').textContent = statusMap[user.status] || user.status
+
+            // フォーム
+            document.getElementById('nickname').value = user.nickname || ''
+            document.getElementById('bio').value = user.bio || ''
+            document.getElementById('emailDisplay').textContent = user.email
+
+            // 日時
+            if (user.created_at) {
+                document.getElementById('createdAt').textContent = new Date(user.created_at).toLocaleDateString('ja-JP')
+            }
+            if (user.last_login_at) {
+                document.getElementById('lastLogin').textContent = new Date(user.last_login_at).toLocaleString('ja-JP')
+            }
+        }
+
+        // プロフィール更新
+        document.getElementById('profileForm').addEventListener('submit', async (e) => {
+            e.preventDefault()
+            const saveBtn = document.getElementById('saveBtn')
+            const nickname = document.getElementById('nickname').value.trim()
+            const bio = document.getElementById('bio').value.trim()
+
+            if (!nickname) {
+                showToast('ニックネームを入力してください', 'error')
+                return
+            }
+
+            saveBtn.disabled = true
+            saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>保存中...'
+
+            try {
+                const token = getToken()
+                const response = await fetch('/api/profile', {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + token
+                    },
+                    body: JSON.stringify({ nickname, bio })
+                })
+
+                const data = await response.json()
+                if (data.success) {
+                    showToast('プロフィールを更新しました', 'success')
+                    
+                    // localStorageのユーザー情報も更新
+                    const userStr = localStorage.getItem('user')
+                    if (userStr) {
+                        const user = JSON.parse(userStr)
+                        user.nickname = nickname
+                        localStorage.setItem('user', JSON.stringify(user))
+                    }
+                    
+                    // 再読み込み
+                    setTimeout(() => loadProfile(), 1000)
+                } else {
+                    showToast(data.error || 'プロフィールの更新に失敗しました', 'error')
+                }
+            } catch (error) {
+                console.error('Failed to update profile:', error)
+                showToast('プロフィールの更新に失敗しました', 'error')
+            } finally {
+                saveBtn.disabled = false
+                saveBtn.innerHTML = '<i class="fas fa-save mr-2"></i>保存'
+            }
+        })
+
+        // アバター変更
+        document.getElementById('changeAvatarBtn').addEventListener('click', () => {
+            document.getElementById('avatarInput').click()
+        })
+
+        document.getElementById('avatarInput').addEventListener('change', async (e) => {
+            const file = e.target.files[0]
+            if (!file) return
+
+            // 5MB制限
+            if (file.size > 5 * 1024 * 1024) {
+                showToast('画像サイズは5MB以下にしてください', 'error')
+                return
+            }
+
+            // プレビュー表示
+            const reader = new FileReader()
+            reader.onload = (e) => {
+                document.getElementById('avatarPreview').src = e.target.result
+            }
+            reader.readAsDataURL(file)
+
+            // アップロード
+            try {
+                const token = getToken()
+                const formData = new FormData()
+                formData.append('avatar', file)
+
+                const response = await fetch('/api/profile/avatar', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': 'Bearer ' + token
+                    },
+                    body: formData
+                })
+
+                const data = await response.json()
+                if (data.success) {
+                    showToast('アバターを更新しました', 'success')
+                    loadProfile() // 再読み込み
+                } else {
+                    showToast(data.error || 'アバターの更新に失敗しました', 'error')
+                }
+            } catch (error) {
+                console.error('Failed to upload avatar:', error)
+                showToast('アバターの更新に失敗しました', 'error')
+            }
+        })
+
+        // 初期化
+        loadProfile()
+    </script>
+</body>
+</html>
+  `)
+})
+
+/**
  * GET /forgot-password
  * パスワード忘れページ
  */
