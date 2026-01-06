@@ -249,18 +249,32 @@ function closeImageModal() {
 
 // editPost 関数
 async function editPost(postId) {
+    console.log('=== editPost called ===')
+    console.log('postId:', postId)
+    console.log('allPosts length:', allPosts.length)
+    console.log('allPosts:', allPosts)
+    
     const post = allPosts.find(p => p.id === postId)
+    console.log('Found post:', post)
+    
     if (!post) {
         showToast('投稿が見つかりません', 'error')
         return
     }
 
     currentPost = post
+    console.log('Setting form values...')
+    console.log('post.id:', post.id)
+    console.log('post.title:', post.title)
+    console.log('post.content:', post.content)
+    console.log('post.status:', post.status)
+    console.log('post.visibility:', post.visibility)
+    
     document.getElementById('editPostId').value = post.id
-    document.getElementById('editTitle').value = post.title
-    document.getElementById('editContent').value = post.content
-    document.getElementById('editStatus').value = post.status
-    document.getElementById('editVisibility').value = post.visibility
+    document.getElementById('editTitle').value = post.title || ''
+    document.getElementById('editContent').value = post.content || ''
+    document.getElementById('editStatus').value = post.status || 'draft'
+    document.getElementById('editVisibility').value = post.visibility || 'public'
 
     // 現在のメディア情報を表示（削除ボタン付き）
     let mediaInfo = '<div class="space-y-2">'
