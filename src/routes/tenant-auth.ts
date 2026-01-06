@@ -87,12 +87,15 @@ tenantAuth.post('/register', async (c) => {
       userId = userResult.meta.last_row_id
     }
 
-    // Get next member number
+    // Get next member number (5-digit format: 00001-99999)
+    // オーナーは 00000、一般会員は 00001 から開始
     const memberCountResult = await DB.prepare(`
       SELECT COUNT(*) as count FROM tenant_memberships WHERE tenant_id = ?
     `).bind(tenant.id).first() as any
 
-    const memberNumber = `M-${String(memberCountResult.count + 1).padStart(3, '0')}`
+    // 次の会員番号を計算（既存会員数 + 1）
+    const nextNumber = memberCountResult.count + 1
+    const memberNumber = String(nextNumber).padStart(5, '0')
 
     // Create tenant membership (status: pending - waiting for approval)
     const membershipResult = await DB.prepare(`
