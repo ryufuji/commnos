@@ -1555,19 +1555,29 @@ tenantPublic.get('/posts/new', async (c) => {
             }
             
             try {
-                // Check localStorage membership data directly
-                const membershipStr = localStorage.getItem('membership')
-                if (!membershipStr) {
-                    console.warn('No membership found, redirecting to login')
+                // Check user data from localStorage
+                const userStr = localStorage.getItem('user')
+                if (!userStr) {
+                    console.warn('No user found, redirecting to login')
                     window.location.href = '/login?subdomain=${subdomain}'
                     return
                 }
                 
-                const membership = JSON.parse(membershipStr)
+                const user = JSON.parse(userStr)
+                console.log('User:', user)
+                
+                // Build membership object from user data
+                const membership = {
+                    role: user.role,
+                    subdomain: '${subdomain}',
+                    tenant_id: user.tenantId,
+                    member_number: user.memberNumber,
+                    status: user.status || 'active'
+                }
                 console.log('Membership:', membership)
                 
-                // Check if subdomain matches
-                if (membership.subdomain !== '${subdomain}') {
+                // Check if user belongs to this tenant
+                if (user.tenantId !== ${tenant.id}) {
                     alert('このコミュニティの会員ではありません')
                     window.location.href = '/tenant/home?subdomain=${subdomain}'
                     return
