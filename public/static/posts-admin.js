@@ -477,9 +477,9 @@ function initPostsAdmin() {
         return
     }
 
-    const memberData = JSON.parse(localStorage.getItem('membership') || '{}')
-    console.log('Member data:', memberData)
-    const isAdmin = memberData.role === 'admin' || memberData.role === 'owner'
+    const userData = JSON.parse(localStorage.getItem('user') || '{}')
+    console.log('User data:', userData)
+    const isAdmin = userData.role === 'admin' || userData.role === 'owner'
     console.log('Is admin:', isAdmin)
     if (!isAdmin) {
         showToast('管理者権限が必要です', 'error')
