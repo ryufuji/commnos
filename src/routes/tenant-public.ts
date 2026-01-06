@@ -4500,17 +4500,6 @@ tenantPublic.get('/mypage', async (c) => {
                 return false
             }
             
-            // membership オブジェクトを user から構築
-            const membership = {
-                role: user.role,
-                tenant_id: user.tenantId,
-                member_number: user.memberNumber,
-                tenant_name: user.tenantName
-            }
-            
-            // 管理者用ナビゲーションを設定
-            updateNavigation(membership)
-            
             return true
         }
         
