@@ -1576,6 +1576,14 @@ tenantPublic.get('/posts/new', async (c) => {
                 }
                 console.log('Membership:', membership)
                 
+                // 管理者権限チェック
+                const isAdmin = membership.role === 'owner' || membership.role === 'admin'
+                if (!isAdmin) {
+                    alert('投稿作成は管理者のみ可能です')
+                    window.location.href = '/tenant/home?subdomain=${subdomain}'
+                    return
+                }
+                
                 // Check if user belongs to this tenant
                 if (user.tenantId !== ${tenant.id}) {
                     alert('このコミュニティの会員ではありません')
@@ -1697,9 +1705,6 @@ tenantPublic.get('/posts/new', async (c) => {
                         </a>
                         <a href="/tenant/posts?subdomain=${subdomain}" class="text-gray-600 hover:text-primary transition">
                             <i class="fas fa-newspaper mr-2"></i>投稿
-                        </a>
-                        <a href="/tenant/posts/new?subdomain=${subdomain}" class="text-primary font-semibold">
-                            <i class="fas fa-plus-circle mr-2"></i>投稿作成
                         </a>
                         <a href="/tenant/members?subdomain=${subdomain}" class="text-gray-600 hover:text-primary transition">
                             <i class="fas fa-users mr-2"></i>メンバー
