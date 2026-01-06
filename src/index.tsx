@@ -1715,9 +1715,12 @@ app.get('/dashboard', (c) => {
                     return
                 }
                 
+                // user.role を優先的にチェック、なければ membership.role をチェック
+                const userRole = user.role || membership.role
+                
                 // 一般メンバーはテナントホームにリダイレクト
-                if (membership.role !== 'admin' && membership.role !== 'owner') {
-                    const subdomain = membership.subdomain || 'test'
+                if (userRole !== 'admin' && userRole !== 'owner') {
+                    const subdomain = membership.subdomain || user.tenantId || 'test'
                     window.location.href = \`/tenant/home?subdomain=\${subdomain}\`
                     return
                 }
@@ -1732,23 +1735,23 @@ app.get('/dashboard', (c) => {
                             <div>
                                 <h2 class="text-2xl font-bold text-gray-900">\${user.nickname || 'ユーザー'}</h2>
                                 <p class="text-secondary-600">\${user.email}</p>
-                                <span class="status-active mt-2">\${membership.role || 'member'}</span>
+                                <span class="status-active mt-2">\${userRole || 'member'}</span>
                             </div>
                         </div>
                     </div>
                 \`
 
                 // オーナーのみサブスクリプション管理リンクを表示
-                if (membership.role === 'owner') {
+                if (userRole === 'owner') {
                     const subscriptionLink = document.getElementById('subscriptionLink')
-                    const subdomain = membership.subdomain || 'test'
+                    const subdomain = membership.subdomain || user.tenantId || 'test'
                     subscriptionLink.href = \`/tenant/subscription?subdomain=\${subdomain}\`
                     subscriptionLink.classList.remove('hidden')
                 }
 
                 // 統計データを取得（管理者のみ）
-                console.log('User membership role:', membership.role)
-                if (membership.role === 'admin' || membership.role === 'owner') {
+                console.log('User role:', userRole)
+                if (userRole === 'admin' || userRole === 'owner') {
                     console.log('User is admin/owner, fetching stats...')
                     try {
                         const token = localStorage.getItem('token')
