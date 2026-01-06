@@ -28,6 +28,7 @@ import passwordResetPages from './routes/password-reset-pages' // パスワー�
 import tenantAuth from './routes/tenant-auth' // Phase 2 - テナント会員認証
 import likes from './routes/likes' // Phase 4 - いいね機能
 import notifications from './routes/notifications' // Phase 5 - 通知機能
+import chat from './routes/chat' // Phase 6 - チャット機能
 
 const app = new Hono<AppContext>()
 
@@ -91,6 +92,9 @@ app.route('/api/likes', likes)
 
 // 通知ルート（Phase 5）
 app.route('/api/notifications', notifications)
+
+// チャットルート（Phase 6）
+app.route('/api/chat', chat)
 
 // --------------------------------------------
 // ルーティングロジック
