@@ -1068,7 +1068,7 @@ tenantPublic.get('/home', async (c) => {
                                 <i class="fas fa-chevron-down ml-2 text-xs"></i>
                             </button>
                             <div id="memberUserDropdown" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-50">
-                                <a href="/profile" class="block px-4 py-2 text-gray-700 hover:bg-gray-50 transition">
+                                <a href="/profile?subdomain=${subdomain}" class="block px-4 py-2 text-gray-700 hover:bg-gray-50 transition">
                                     <i class="fas fa-user mr-2"></i>プロフィール
                                 </a>
                                 <button onclick="logout()" class="block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-50 transition">
@@ -1317,7 +1317,7 @@ tenantPublic.get('/posts/new', async (c) => {
                 <span class="text-xs">自分</span>
                 <!-- ドロップアップメニュー -->
                 <div id="profileDropup" class="hidden absolute bottom-full right-0 mb-2 w-48 bg-white rounded-lg shadow-xl border border-gray-200">
-                    <a href="/profile" class="block px-4 py-3 text-gray-700 hover:bg-gray-50 transition">
+                    <a href="/profile?subdomain=${subdomain}" class="block px-4 py-3 text-gray-700 hover:bg-gray-50 transition">
                         <i class="fas fa-user mr-2"></i>プロフィール
                     </a>
                     <button onclick="logout()" class="block w-full text-left px-4 py-3 text-gray-700 hover:bg-gray-50 transition border-t">
@@ -1877,7 +1877,7 @@ tenantPublic.get('/posts/new', async (c) => {
                                 <i class="fas fa-chevron-down ml-2 text-xs"></i>
                             </button>
                             <div class="hidden group-hover:block absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-200 py-2">
-                                <a href="/profile" class="block px-4 py-2 text-gray-700 hover:bg-gray-50 transition">
+                                <a href="/profile?subdomain=${subdomain}" class="block px-4 py-2 text-gray-700 hover:bg-gray-50 transition">
                                     <i class="fas fa-user mr-2"></i>プロフィール
                                 </a>
                                 <button onclick="logout()" class="block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-50 transition">
@@ -6685,7 +6685,7 @@ tenantPublic.get('/chat/:id', async (c) => {
                                 <i class="fas fa-chevron-down ml-2 text-xs"></i>
                             </button>
                             <div id="chatMemberDropdown" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-50">
-                                <a href="/profile" class="block px-4 py-2 text-gray-700 hover:bg-gray-50 transition">
+                                <a href="/profile?subdomain=${subdomain}" class="block px-4 py-2 text-gray-700 hover:bg-gray-50 transition">
                                     <i class="fas fa-user mr-2"></i>プロフィール
                                 </a>
                                 <button onclick="logout()" class="block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-50 transition">

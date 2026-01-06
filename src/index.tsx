@@ -1179,6 +1179,16 @@ app.get('/profile', (c) => {
         <script>
             let currentProfile = null
 
+            // URLパラメータからsubdomainを取得してlocalStorageに保存
+            const urlParams = new URLSearchParams(window.location.search)
+            const urlSubdomain = urlParams.get('subdomain')
+            if (urlSubdomain) {
+                const membership = JSON.parse(localStorage.getItem('membership') || '{}')
+                membership.subdomain = urlSubdomain
+                localStorage.setItem('membership', JSON.stringify(membership))
+                console.log('[Profile] Saved subdomain to localStorage:', urlSubdomain)
+            }
+
             // ページロード時にプロフィール取得
             async function loadProfile() {
                 const token = getToken()
@@ -1372,16 +1382,43 @@ app.get('/profile', (c) => {
                 const user = JSON.parse(localStorage.getItem('user') || '{}')
                 const membership = JSON.parse(localStorage.getItem('membership') || '{}')
                 const userRole = user.role || membership.role
+                
+                console.log('[Profile] setupBackLink user:', user)
+                console.log('[Profile] setupBackLink membership:', membership)
+                console.log('[Profile] setupBackLink userRole:', userRole)
+                
                 const backLink = document.getElementById('backLink')
                 const backLinkText = document.getElementById('backLinkText')
+                
+                if (!backLink || !backLinkText) {
+                    console.error('[Profile] Back link elements not found')
+                    return
+                }
                 
                 if (userRole === 'owner' || userRole === 'admin') {
                     backLink.href = '/dashboard'
                     backLinkText.textContent = 'ダッシュボードに戻る'
+                    console.log('[Profile] Admin back link set to:', backLink.href)
                 } else {
-                    const subdomain = membership.subdomain || user.tenantId || 'test'
+                    // Try multiple sources for subdomain
+                    let subdomain = membership.subdomain 
+                                 || membership.tenant_subdomain 
+                                 || user.tenant_subdomain
+                                 || 'test'
+                    
+                    // If still no subdomain, try to get from current URL
+                    if (subdomain === 'test') {
+                        const urlParams = new URLSearchParams(window.location.search)
+                        const urlSubdomain = urlParams.get('subdomain')
+                        if (urlSubdomain) {
+                            subdomain = urlSubdomain
+                        }
+                    }
+                    
+                    console.log('[Profile] Using subdomain:', subdomain)
                     backLink.href = '/tenant/home?subdomain=' + subdomain
                     backLinkText.textContent = 'ホームに戻る'
+                    console.log('[Profile] Member back link set to:', backLink.href)
                 }
             }
 
