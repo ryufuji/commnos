@@ -965,6 +965,136 @@ tenantPublic.get('/home', async (c) => {
         // ページ読み込み時に未読数を取得
         loadUnreadCount()
         
+        // ナビゲーションを更新
+        function updateNavigation(user) {
+            const isAdmin = user.role === 'owner' || user.role === 'admin'
+            const desktopNav = document.getElementById('desktopNav')
+            const mobileMenu = document.getElementById('mobileMenu')
+            
+            console.log('[Tenant Home] Updating navigation:', {
+                isAdmin,
+                desktopNavExists: !!desktopNav,
+                mobileMenuExists: !!mobileMenu
+            })
+            
+            if (isAdmin) {
+                // 管理者用ナビゲーション
+                console.log('[Tenant Home] Setting up ADMIN navigation')
+                
+                if (desktopNav) {
+                    desktopNav.innerHTML = \`
+                        <a href="/tenant/home?subdomain=${subdomain}" class="text-gray-600 hover:text-primary transition">
+                            <i class="fas fa-home mr-2"></i>ホーム
+                        </a>
+                        <a href="/tenant/members?subdomain=${subdomain}" class="text-gray-600 hover:text-primary transition">
+                            <i class="fas fa-users mr-2"></i>会員管理
+                        </a>
+                        <a href="/posts-admin" class="text-gray-600 hover:text-primary transition">
+                            <i class="fas fa-file-alt mr-2"></i>投稿管理
+                        </a>
+                        <a href="/tenant/chat?subdomain=${subdomain}" class="text-gray-600 hover:text-primary transition">
+                            <i class="fas fa-comments mr-2"></i>チャット
+                        </a>
+                        <div class="relative group">
+                            <button class="text-gray-600 hover:text-primary transition flex items-center">
+                                <i class="fas fa-user-circle mr-2"></i>
+                                \${user.nickname || 'ユーザー'}
+                                <i class="fas fa-chevron-down ml-2 text-xs"></i>
+                            </button>
+                            <div class="hidden group-hover:block absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-50">
+                                <a href="/tenant/mypage?subdomain=${subdomain}" class="block px-4 py-2 text-gray-700 hover:bg-gray-50 transition">
+                                    <i class="fas fa-user mr-2"></i>マイページ
+                                </a>
+                                <a href="/tenant/settings?subdomain=${subdomain}" class="block px-4 py-2 text-gray-700 hover:bg-gray-50 transition">
+                                    <i class="fas fa-cog mr-2"></i>設定
+                                </a>
+                                <button onclick="logout()" class="block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-50 transition">
+                                    <i class="fas fa-sign-out-alt mr-2"></i>ログアウト
+                                </button>
+                            </div>
+                        </div>
+                    \`
+                    console.log('[Tenant Home] Admin desktop nav HTML set')
+                }
+                
+                if (mobileMenu) {
+                    mobileMenu.innerHTML = \`
+                        <a href="/tenant/home?subdomain=${subdomain}" class="block py-3 text-gray-700 hover:bg-gray-50 transition rounded">
+                            <i class="fas fa-home mr-2"></i>ホーム
+                        </a>
+                        <a href="/tenant/members?subdomain=${subdomain}" class="block py-3 text-gray-700 hover:bg-gray-50 transition rounded">
+                            <i class="fas fa-users mr-2"></i>会員管理
+                        </a>
+                        <a href="/posts-admin" class="block py-3 text-gray-700 hover:bg-gray-50 transition rounded">
+                            <i class="fas fa-file-alt mr-2"></i>投稿管理
+                        </a>
+                        <a href="/tenant/chat?subdomain=${subdomain}" class="block py-3 text-gray-700 hover:bg-gray-50 transition rounded">
+                            <i class="fas fa-comments mr-2"></i>チャット
+                        </a>
+                        <a href="/tenant/mypage?subdomain=${subdomain}" class="block py-3 text-gray-700 hover:bg-gray-50 transition rounded">
+                            <i class="fas fa-user mr-2"></i>マイページ
+                        </a>
+                        <a href="/tenant/settings?subdomain=${subdomain}" class="block py-3 text-gray-700 hover:bg-gray-50 transition rounded">
+                            <i class="fas fa-cog mr-2"></i>設定
+                        </a>
+                        <button onclick="logout()" class="block w-full text-left py-3 text-gray-700 hover:bg-gray-50 transition rounded">
+                            <i class="fas fa-sign-out-alt mr-2"></i>ログアウト
+                        </button>
+                    \`
+                    console.log('[Tenant Home] Admin mobile menu HTML set')
+                }
+            } else {
+                // 一般メンバー用ナビゲーション
+                console.log('[Tenant Home] Setting up MEMBER navigation')
+                
+                if (desktopNav) {
+                    desktopNav.innerHTML = \`
+                        <a href="/tenant/home?subdomain=${subdomain}" class="text-gray-600 hover:text-primary transition">
+                            <i class="fas fa-home mr-2"></i>ホーム
+                        </a>
+                        <a href="/tenant/posts?subdomain=${subdomain}" class="text-gray-600 hover:text-primary transition">
+                            <i class="fas fa-newspaper mr-2"></i>投稿
+                        </a>
+                        <a href="/tenant/chat?subdomain=${subdomain}" class="text-gray-600 hover:text-primary transition">
+                            <i class="fas fa-comments mr-2"></i>チャット
+                        </a>
+                        <a href="/tenant/members?subdomain=${subdomain}" class="text-gray-600 hover:text-primary transition">
+                            <i class="fas fa-users mr-2"></i>メンバー
+                        </a>
+                        <div class="relative group">
+                            <button class="text-gray-600 hover:text-primary transition flex items-center">
+                                <i class="fas fa-user-circle mr-2"></i>
+                                \${user.nickname || 'ユーザー'}
+                                <i class="fas fa-chevron-down ml-2 text-xs"></i>
+                            </button>
+                            <div class="hidden group-hover:block absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-50">
+                                <a href="/profile" class="block px-4 py-2 text-gray-700 hover:bg-gray-50 transition">
+                                    <i class="fas fa-user mr-2"></i>プロフィール
+                                </a>
+                                <button onclick="logout()" class="block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-50 transition">
+                                    <i class="fas fa-sign-out-alt mr-2"></i>ログアウト
+                                </button>
+                            </div>
+                        </div>
+                    \`
+                    console.log('[Tenant Home] Member desktop nav HTML set')
+                }
+                
+                // 一般メンバーの場合はモバイルメニューは不要（ボトムナビを使う）
+                if (mobileMenu) {
+                    mobileMenu.innerHTML = ''
+                }
+            }
+        }
+        
+        // logout関数をグローバルに定義
+        window.logout = function() {
+            localStorage.removeItem('token')
+            localStorage.removeItem('user')
+            localStorage.removeItem('membership')
+            window.location.reload()
+        }
+        
         // 認証状態をチェックしてUIを更新
         function updateAuthUI() {
             const token = localStorage.getItem('token')
@@ -974,12 +1104,16 @@ tenantPublic.get('/home', async (c) => {
             console.log('[Tenant Home] Auth check:', {
                 hasToken: !!token,
                 hasUser: !!user,
+                userRole: user?.role,
                 userNickname: user?.nickname
             })
             
             if (token && user) {
                 // ログイン済み：bodyに authenticated クラスを追加
                 document.body.classList.add('authenticated')
+                
+                // ナビゲーションを更新
+                updateNavigation(user)
                 
                 // ユーザーメニューの表示とニックネーム設定
                 const userNickname = document.getElementById('userNickname')
