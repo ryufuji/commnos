@@ -245,15 +245,16 @@ tenantPublic.get('/login', async (c) => {
                     });
 
                     if (response.data.success) {
-                        // Store token
-                        localStorage.setItem('authToken', response.data.token);
+                        // Store token (キー名を'token'に統一)
+                        localStorage.setItem('token', response.data.token);
                         localStorage.setItem('user', JSON.stringify(response.data.user));
+                        localStorage.setItem('membership', JSON.stringify(response.data.membership));
 
                         showToast('ログインに成功しました', 'success');
 
-                        // Redirect to home
+                        // Redirect to tenant home
                         setTimeout(() => {
-                            window.location.href = '/home?subdomain=' + subdomain;
+                            window.location.href = '/tenant/home?subdomain=' + subdomain;
                         }, 1500);
                     } else {
                         throw new Error(response.data.message || 'ログインに失敗しました');
