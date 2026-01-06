@@ -1977,9 +1977,82 @@ app.get('/dashboard', (c) => {
               }
             }
 
+            // 認証チェック
+            function checkAuth() {
+              const token = localStorage.getItem('token');
+              const user = localStorage.getItem('user');
+              
+              if (!token || !user) {
+                console.error('Not authenticated, redirecting to login...');
+                showToast('ログインしてください', 'error');
+                
+                // Get subdomain from URL or membership
+                const urlParams = new URLSearchParams(window.location.search);
+                const subdomain = urlParams.get('subdomain');
+                
+                if (subdomain) {
+                  window.location.href = '/login?subdomain=' + subdomain;
+                } else {
+                  // Try to get subdomain from membership
+                  const membershipStr = localStorage.getItem('membership');
+                  if (membershipStr) {
+                    try {
+                      const membership = JSON.parse(membershipStr);
+                      const subdomainFromMembership = membership.subdomain || membership.tenant?.subdomain;
+                      if (subdomainFromMembership) {
+                        window.location.href = '/login?subdomain=' + subdomainFromMembership;
+                        return false;
+                      }
+                    } catch (e) {
+                      console.error('Failed to parse membership:', e);
+                    }
+                  }
+                  // Fallback: redirect to home
+                  window.location.href = '/';
+                }
+                return false;
+              }
+              
+              // Check user role
+              try {
+                const userData = JSON.parse(user);
+                if (userData.role !== 'owner' && userData.role !== 'admin') {
+                  console.error('Not authorized: user role is', userData.role);
+                  showToast('管理者のみアクセス可能です', 'error');
+                  
+                  // Redirect to tenant home
+                  const membershipStr = localStorage.getItem('membership');
+                  if (membershipStr) {
+                    try {
+                      const membership = JSON.parse(membershipStr);
+                      const subdomain = membership.subdomain || membership.tenant?.subdomain;
+                      if (subdomain) {
+                        setTimeout(function() {
+                          window.location.href = '/tenant/home?subdomain=' + subdomain;
+                        }, 1500);
+                        return false;
+                      }
+                    } catch (e) {
+                      console.error('Failed to parse membership:', e);
+                    }
+                  }
+                  window.location.href = '/';
+                  return false;
+                }
+              } catch (e) {
+                console.error('Failed to parse user data:', e);
+                window.location.href = '/';
+                return false;
+              }
+              
+              return true;
+            }
+
             // Navigate to tenant post creation page
             // ページロード時
-            loadDashboard()
+            if (checkAuth()) {
+              loadDashboard();
+            }
         </script>
     </body>
     </html>
