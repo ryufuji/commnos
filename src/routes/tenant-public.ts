@@ -5921,6 +5921,389 @@ tenantPublic.get('/plans', async (c) => {
 })
 
 /**
+ * GET /chat
+ * チャットルーム一覧ページ
+ */
+tenantPublic.get('/chat', async (c) => {
+  const { DB } = c.env
+  const subdomain = c.req.query('subdomain')
+  
+  if (!subdomain) {
+    return c.text('Subdomain required', 400)
+  }
+  
+  const tenant = await DB.prepare(
+    'SELECT * FROM tenants WHERE subdomain = ? AND status = ?'
+  ).bind(subdomain, 'active').first()
+  
+  if (!tenant) {
+    return c.text('Tenant not found', 404)
+  }
+
+  return c.html(`<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>チャット - ${tenant.name}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="/static/styles.css" rel="stylesheet">
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- ヘッダー -->
+    <header class="bg-white shadow-sm sticky top-0 z-50">
+        <div class="container mx-auto px-4 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-4">
+                    <a href="/tenant/home?subdomain=${subdomain}" class="text-xl md:text-2xl font-bold text-primary">
+                        ${tenant.name}
+                    </a>
+                </div>
+                
+                <nav id="desktopNav" class="hidden md:flex items-center space-x-6">
+                    <!-- JavaScriptで動的に生成 -->
+                </nav>
+                
+                <button id="mobileMenuToggle" class="md:hidden text-gray-600 hover:text-primary">
+                    <i class="fas fa-bars text-xl"></i>
+                </button>
+            </div>
+            
+            <nav id="mobileMenu" class="md:hidden mt-4 pb-4 space-y-2 hidden">
+                <!-- JavaScriptで動的に生成 -->
+            </nav>
+        </div>
+    </header>
+    
+    <div class="container mx-auto px-4 py-8 max-w-6xl">
+        <div class="flex items-center justify-between mb-6">
+            <h1 class="text-3xl font-bold text-gray-900">
+                <i class="fas fa-comments mr-3 text-primary"></i>
+                チャット
+            </h1>
+            <button id="createRoomBtn" class="hidden px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary-dark transition font-semibold shadow-md">
+                <i class="fas fa-plus mr-2"></i>ルーム作成
+            </button>
+        </div>
+        
+        <!-- ローディング -->
+        <div id="loading" class="text-center py-12">
+            <i class="fas fa-spinner fa-spin text-4xl text-primary mb-4"></i>
+            <p class="text-gray-600">読み込み中...</p>
+        </div>
+        
+        <!-- チャットルーム一覧 -->
+        <div id="roomsList" class="hidden grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- JavaScriptで動的に生成 -->
+        </div>
+        
+        <!-- 空の状態 -->
+        <div id="emptyState" class="hidden text-center py-12">
+            <i class="fas fa-comments text-6xl text-gray-300 mb-4"></i>
+            <p class="text-xl text-gray-600 mb-2">チャットルームがありません</p>
+            <p class="text-gray-500" id="emptyMessage">管理者がチャットルームを作成するとここに表示されます</p>
+        </div>
+    </div>
+    
+    <!-- チャットルーム作成モーダル -->
+    <div id="createRoomModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-lg shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div class="p-6 border-b border-gray-200">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-2xl font-bold text-gray-900">
+                        <i class="fas fa-plus-circle mr-2 text-primary"></i>
+                        チャットルーム作成
+                    </h2>
+                    <button onclick="closeCreateRoomModal()" class="text-gray-500 hover:text-gray-700">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <form id="createRoomForm" class="p-6 space-y-6">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        ルーム名 <span class="text-red-500">*</span>
+                    </label>
+                    <input type="text" id="roomName" required maxlength="100"
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary">
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        説明
+                    </label>
+                    <textarea id="roomDescription" rows="3" maxlength="500"
+                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary"></textarea>
+                </div>
+                
+                <div>
+                    <label class="flex items-center space-x-2 cursor-pointer">
+                        <input type="checkbox" id="isPrivate" checked class="w-4 h-4 text-primary">
+                        <span class="text-sm text-gray-700">プライベート（招待されたメンバーのみ）</span>
+                    </label>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        メンバーを招待
+                    </label>
+                    <div id="membersList" class="space-y-2 max-h-64 overflow-y-auto border border-gray-300 rounded-lg p-4">
+                        <!-- JavaScriptで動的に生成 -->
+                    </div>
+                </div>
+                
+                <div class="flex gap-4 pt-4">
+                    <button type="submit" class="flex-1 px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary-dark transition font-semibold">
+                        <i class="fas fa-check mr-2"></i>作成する
+                    </button>
+                    <button type="button" onclick="closeCreateRoomModal()" class="px-6 py-3 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition">
+                        キャンセル
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+    <script src="/static/app.js"></script>
+    <script>
+        let currentUser = null
+        let allMembers = []
+        
+        // 認証チェック
+        async function checkAuth() {
+            const token = getToken()
+            const user = JSON.parse(localStorage.getItem('user') || 'null')
+            
+            if (!token || !user) {
+                window.location.href = '/login?subdomain=${subdomain}'
+                return false
+            }
+            
+            currentUser = user
+            
+            // 管理者の場合は作成ボタンを表示
+            if (user.role === 'owner' || user.role === 'admin') {
+                document.getElementById('createRoomBtn').classList.remove('hidden')
+                document.getElementById('emptyMessage').textContent = 'ルーム作成ボタンから新しいチャットルームを作成できます'
+            }
+            
+            // ナビゲーション更新
+            updateNavigation(user)
+            
+            return true
+        }
+        
+        // ナビゲーション更新
+        function updateNavigation(user) {
+            const isAdmin = user.role === 'owner' || user.role === 'admin'
+            const desktopNav = document.getElementById('desktopNav')
+            const mobileMenu = document.getElementById('mobileMenu')
+            
+            const navHTML = isAdmin ? \`
+                <a href="/tenant/home?subdomain=${subdomain}" class="text-gray-600 hover:text-primary transition">
+                    <i class="fas fa-home mr-2"></i>ホーム
+                </a>
+                <a href="/tenant/members?subdomain=${subdomain}" class="text-gray-600 hover:text-primary transition">
+                    <i class="fas fa-users mr-2"></i>会員管理
+                </a>
+                <a href="/tenant/posts?subdomain=${subdomain}" class="text-gray-600 hover:text-primary transition">
+                    <i class="fas fa-file-alt mr-2"></i>投稿管理
+                </a>
+                <a href="/tenant/chat?subdomain=${subdomain}" class="text-primary font-semibold">
+                    <i class="fas fa-comments mr-2"></i>チャット
+                </a>
+                <button onclick="handleLogout()" class="text-gray-600 hover:text-primary transition">
+                    <i class="fas fa-sign-out-alt mr-2"></i>ログアウト
+                </button>
+            \` : \`
+                <a href="/tenant/home?subdomain=${subdomain}" class="text-gray-600 hover:text-primary transition">
+                    <i class="fas fa-home mr-2"></i>ホーム
+                </a>
+                <a href="/tenant/posts?subdomain=${subdomain}" class="text-gray-600 hover:text-primary transition">
+                    <i class="fas fa-newspaper mr-2"></i>投稿
+                </a>
+                <a href="/tenant/chat?subdomain=${subdomain}" class="text-primary font-semibold">
+                    <i class="fas fa-comments mr-2"></i>チャット
+                </a>
+                <button onclick="handleLogout()" class="text-gray-600 hover:text-primary transition">
+                    <i class="fas fa-sign-out-alt mr-2"></i>ログアウト
+                </button>
+            \`
+            
+            if (desktopNav) desktopNav.innerHTML = navHTML
+            if (mobileMenu) mobileMenu.innerHTML = navHTML.replace(/md:flex/g, 'block py-3')
+        }
+        
+        // チャットルーム一覧読み込み
+        async function loadRooms() {
+            try {
+                const token = getToken()
+                const response = await axios.get('/api/chat/rooms', {
+                    headers: { 'Authorization': \`Bearer \${token}\` }
+                })
+                
+                document.getElementById('loading').classList.add('hidden')
+                
+                if (response.data.success && response.data.rooms.length > 0) {
+                    renderRooms(response.data.rooms)
+                    document.getElementById('roomsList').classList.remove('hidden')
+                } else {
+                    document.getElementById('emptyState').classList.remove('hidden')
+                }
+            } catch (error) {
+                console.error('Failed to load rooms:', error)
+                document.getElementById('loading').classList.add('hidden')
+                document.getElementById('emptyState').classList.remove('hidden')
+            }
+        }
+        
+        // チャットルーム一覧描画
+        function renderRooms(rooms) {
+            const container = document.getElementById('roomsList')
+            container.innerHTML = rooms.map(room => {
+                const lastMessage = room.last_message ? room.last_message.substring(0, 50) + (room.last_message.length > 50 ? '...' : '') : 'メッセージはまだありません'
+                const lastMessageTime = room.last_message_at ? new Date(room.last_message_at).toLocaleString('ja-JP', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : ''
+                
+                return \`
+                    <a href="/tenant/chat/room?id=\${room.id}&subdomain=${subdomain}" 
+                       class="block bg-white rounded-lg shadow-md hover:shadow-xl transition p-6 border-l-4 border-primary">
+                        <div class="flex items-start justify-between mb-3">
+                            <h3 class="text-xl font-bold text-gray-900 flex-1">
+                                <i class="fas fa-comments text-primary mr-2"></i>
+                                \${room.name}
+                            </h3>
+                            \${room.is_private ? '<span class="px-2 py-1 bg-purple-100 text-purple-700 text-xs font-semibold rounded-full"><i class="fas fa-lock mr-1"></i>プライベート</span>' : ''}
+                        </div>
+                        
+                        <p class="text-gray-600 text-sm mb-4 line-clamp-2">\${room.description || 'チャットルーム'}</p>
+                        
+                        <div class="flex items-center justify-between text-sm text-gray-500">
+                            <div class="flex items-center space-x-4">
+                                <span><i class="fas fa-users mr-1"></i>\${room.member_count}人</span>
+                                <span><i class="fas fa-user mr-1"></i>\${room.creator_name}</span>
+                            </div>
+                            <span class="text-xs">\${lastMessageTime}</span>
+                        </div>
+                        
+                        <div class="mt-3 pt-3 border-t border-gray-200">
+                            <p class="text-sm text-gray-600 italic">\${lastMessage}</p>
+                        </div>
+                    </a>
+                \`
+            }).join('')
+        }
+        
+        // チャットルーム作成モーダルを開く
+        async function openCreateRoomModal() {
+            document.getElementById('createRoomModal').classList.remove('hidden')
+            await loadMembers()
+        }
+        
+        // チャットルーム作成モーダルを閉じる
+        function closeCreateRoomModal() {
+            document.getElementById('createRoomModal').classList.add('hidden')
+            document.getElementById('createRoomForm').reset()
+        }
+        
+        // メンバー一覧読み込み
+        async function loadMembers() {
+            try {
+                const token = getToken()
+                const response = await axios.get('/api/admin/members?status=active', {
+                    headers: { 'Authorization': \`Bearer \${token}\` }
+                })
+                
+                if (response.data.success) {
+                    allMembers = response.data.members
+                    renderMembersList()
+                }
+            } catch (error) {
+                console.error('Failed to load members:', error)
+            }
+        }
+        
+        // メンバー一覧描画
+        function renderMembersList() {
+            const container = document.getElementById('membersList')
+            container.innerHTML = allMembers.map(member => \`
+                <label class="flex items-center space-x-3 p-2 hover:bg-gray-50 rounded cursor-pointer">
+                    <input type="checkbox" name="memberIds" value="\${member.id}" class="w-4 h-4 text-primary">
+                    <div class="flex items-center space-x-2 flex-1">
+                        <img src="\${member.avatar_url || '/static/default-avatar.png'}" 
+                             class="w-8 h-8 rounded-full" alt="">
+                        <div>
+                            <div class="font-medium text-gray-900">\${member.nickname}</div>
+                            <div class="text-xs text-gray-500">\${member.email}</div>
+                        </div>
+                    </div>
+                    <span class="text-xs px-2 py-1 bg-gray-100 text-gray-600 rounded-full">\${member.role === 'owner' ? 'オーナー' : member.role === 'admin' ? '管理者' : '一般'}</span>
+                </label>
+            \`).join('')
+        }
+        
+        // チャットルーム作成フォーム送信
+        document.getElementById('createRoomForm').addEventListener('submit', async (e) => {
+            e.preventDefault()
+            
+            const name = document.getElementById('roomName').value
+            const description = document.getElementById('roomDescription').value
+            const isPrivate = document.getElementById('isPrivate').checked
+            const memberCheckboxes = document.querySelectorAll('input[name="memberIds"]:checked')
+            const memberIds = Array.from(memberCheckboxes).map(cb => parseInt(cb.value))
+            
+            try {
+                const token = getToken()
+                const response = await axios.post('/api/chat/rooms', {
+                    name,
+                    description,
+                    isPrivate,
+                    memberIds
+                }, {
+                    headers: { 'Authorization': \`Bearer \${token}\` }
+                })
+                
+                if (response.data.success) {
+                    showToast('チャットルームを作成しました', 'success')
+                    closeCreateRoomModal()
+                    
+                    // 一覧を再読み込み
+                    document.getElementById('roomsList').classList.add('hidden')
+                    document.getElementById('emptyState').classList.add('hidden')
+                    document.getElementById('loading').classList.remove('hidden')
+                    await loadRooms()
+                }
+            } catch (error) {
+                console.error('Failed to create room:', error)
+                showToast('チャットルームの作成に失敗しました', 'error')
+            }
+        })
+        
+        // イベントリスナー
+        document.getElementById('createRoomBtn').addEventListener('click', openCreateRoomModal)
+        
+        document.getElementById('mobileMenuToggle').addEventListener('click', () => {
+            document.getElementById('mobileMenu').classList.toggle('hidden')
+        })
+        
+        // 初期化
+        async function init() {
+            const authOk = await checkAuth()
+            if (authOk) {
+                await loadRooms()
+            }
+        }
+        
+        init()
+    </script>
+</body>
+</html>
+  `)
+})
+
+/**
  * GET /forgot-password
  * パスワード忘れページ
  */
