@@ -463,7 +463,7 @@ tenantPublic.get('/register', async (c) => {
             <div class="mt-6 text-center">
                 <p class="text-gray-600">
                     すでにアカウントをお持ちですか？
-                    <a href="/tenant/login?subdomain=${subdomain}" class="text-blue-600 hover:text-blue-700 font-semibold">
+                    <a href="/login?subdomain=${subdomain}" class="text-blue-600 hover:text-blue-700 font-semibold">
                         ログイン
                     </a>
                 </p>
