@@ -1598,7 +1598,7 @@ tenantPublic.get('/posts/new', async (c) => {
             const isAdmin = membership.role === 'owner' || membership.role === 'admin'
             const desktopNav = document.getElementById('desktopNav')
             const mobileMenu = document.getElementById('mobileMenu')
-            const mobileMenuToggle = document.getElementById('mobileMenuToggle')
+            const mobileMenuBtn = document.getElementById('mobileMenuBtn')
             const bottomNav = document.getElementById('bottomNav')
             
             if (isAdmin) {
@@ -1669,8 +1669,8 @@ tenantPublic.get('/posts/new', async (c) => {
                 }
                 
                 // モバイルメニューボタンを表示
-                if (mobileMenuToggle) {
-                    mobileMenuToggle.classList.remove('hidden')
+                if (mobileMenuBtn) {
+                    mobileMenuBtn.classList.remove('hidden')
                 }
                 
             } else {
@@ -1761,7 +1761,7 @@ tenantPublic.get('/posts/new', async (c) => {
         // DOMContentLoaded後に実行
         document.addEventListener('DOMContentLoaded', function() {
             // モバイルメニュー切替
-            document.getElementById('mobileMenuToggle')?.addEventListener('click', () => {
+            document.getElementById('mobileMenuBtn')?.addEventListener('click', () => {
                 const menu = document.getElementById('mobileMenu')
                 menu.classList.toggle('hidden')
             })
