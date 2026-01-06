@@ -1080,9 +1080,9 @@ app.get('/profile', (c) => {
             <div class="max-w-2xl mx-auto">
                 <!-- ヘッダー -->
                 <div class="mb-8">
-                    <a href="/dashboard" class="text-blue-600 hover:underline">
+                    <a href="#" id="backLink" class="text-blue-600 hover:underline">
                         <i class="fas fa-arrow-left mr-2"></i>
-                        ダッシュボードに戻る
+                        <span id="backLinkText">ホームに戻る</span>
                     </a>
                 </div>
 
@@ -1190,9 +1190,18 @@ app.get('/profile', (c) => {
             // ページロード時にプロフィール取得
             async function loadProfile() {
                 const token = getToken()
-                if (!token) {
+                const user = JSON.parse(localStorage.getItem('user') || '{}')
+                
+                if (!token || !user.id) {
                     showToast('ログインしてください', 'error')
-                    setTimeout(() => window.location.href = '/login', 1500)
+                    
+                    // テナント情報からサブドメインを取得してログインページにリダイレクト
+                    const membership = JSON.parse(localStorage.getItem('membership') || '{}')
+                    const subdomain = membership.subdomain || user.tenantId || 'test'
+                    
+                    setTimeout(() => {
+                        window.location.href = '/login?subdomain=' + subdomain
+                    }, 1500)
                     return
                 }
 
@@ -1208,6 +1217,7 @@ app.get('/profile', (c) => {
                         displayProfile(response.user)
                     }
                 } catch (error) {
+                    console.error('Profile load error:', error)
                     showToast('プロフィールの取得に失敗しました', 'error')
                 }
             }
@@ -1365,8 +1375,27 @@ app.get('/profile', (c) => {
                 await handleLogout()
             })
 
+            // 戻るリンクの設定
+            function setupBackLink() {
+                const user = JSON.parse(localStorage.getItem('user') || '{}')
+                const membership = JSON.parse(localStorage.getItem('membership') || '{}')
+                const userRole = user.role || membership.role
+                const backLink = document.getElementById('backLink')
+                const backLinkText = document.getElementById('backLinkText')
+                
+                if (userRole === 'owner' || userRole === 'admin') {
+                    backLink.href = '/dashboard'
+                    backLinkText.textContent = 'ダッシュボードに戻る'
+                } else {
+                    const subdomain = membership.subdomain || user.tenantId || 'test'
+                    backLink.href = '/tenant/home?subdomain=' + subdomain
+                    backLinkText.textContent = 'ホームに戻る'
+                }
+            }
+
             // ページロード時
             loadProfile()
+            setupBackLink()
         </script>
     </body>
     </html>
