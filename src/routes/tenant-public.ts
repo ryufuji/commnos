@@ -6403,6 +6403,22 @@ tenantPublic.get('/chat', async (c) => {
 })
 
 /**
+ * GET /chat/room (旧URL - リダイレクト用)
+ * 互換性のため、旧URLを新URLにリダイレクト
+ */
+tenantPublic.get('/chat/room', async (c) => {
+  const subdomain = c.req.query('subdomain')
+  const id = c.req.query('id')
+  
+  if (!subdomain || !id) {
+    return c.redirect('/tenant/chat?subdomain=' + (subdomain || 'test'))
+  }
+  
+  // 新しいURLにリダイレクト
+  return c.redirect(`/tenant/chat/${id}?subdomain=${subdomain}`)
+})
+
+/**
  * GET /chat/:id
  * チャットルーム個別ページ
  */
