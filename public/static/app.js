@@ -7,7 +7,14 @@ const AppState = {
   token: localStorage.getItem('token'),
   user: JSON.parse(localStorage.getItem('user') || 'null'),
   tenant: JSON.parse(localStorage.getItem('tenant') || 'null'),
-  membership: JSON.parse(localStorage.getItem('membership') || 'null')
+  // membership は user オブジェクトから取得
+  get membership() {
+    return this.user ? {
+      role: this.user.role,
+      tenantId: this.user.tenantId,
+      memberNumber: this.user.memberNumber
+    } : null
+  }
 }
 
 // ============================================

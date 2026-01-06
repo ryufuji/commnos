@@ -222,7 +222,7 @@ tenantPublic.get('/login', async (c) => {
                 e.preventDefault();
 
                 const email = document.getElementById('email').value.trim();
-                const password = document.getElementById('password').value;
+                const password = document.getElementById('password').value.trim();
                 const remember = document.getElementById('remember').checked;
                 const loginBtn = document.getElementById('loginBtn');
 
@@ -237,12 +237,24 @@ tenantPublic.get('/login', async (c) => {
                 loginBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> ログイン中...';
 
                 try {
-                    const response = await axios.post('/api/tenant/login', {
+                    // デバッグ: 送信データを確認
+                    const loginData = {
                         email,
                         password,
                         subdomain,
                         remember
+                    };
+                    console.log('Login request data:', { 
+                        email, 
+                        subdomain, 
+                        remember, 
+                        password: '***',
+                        passwordLength: password.length,
+                        // 一時デバッグ: パスワードの各文字コードを確認
+                        passwordCharCodes: Array.from(password).map(c => c.charCodeAt(0))
                     });
+                    
+                    const response = await axios.post('/api/tenant/login', loginData);
 
                     if (response.data.success) {
                         // Store token (キー名を'token'に統一)
@@ -251,22 +263,17 @@ tenantPublic.get('/login', async (c) => {
 
                         showToast('ログインに成功しました', 'success');
 
-                        // 役割に応じてリダイレクト (APIレスポンスのuser.roleを使用)
-                        const user = response.data.user;
+                        // 全てのユーザーをテナントホームへリダイレクト
                         setTimeout(() => {
-                            if (user && (user.role === 'owner' || user.role === 'admin')) {
-                                // 管理者はダッシュボードへ
-                                window.location.href = '/dashboard';
-                            } else {
-                                // 一般メンバーはテナントホームへ
-                                window.location.href = '/tenant/home?subdomain=' + subdomain;
-                            }
+                            window.location.href = '/tenant/home?subdomain=' + subdomain;
                         }, 1500);
                     } else {
                         throw new Error(response.data.message || 'ログインに失敗しました');
                     }
                 } catch (error) {
                     console.error('Login error:', error);
+                    console.error('Error response:', error.response?.data);
+                    console.error('Error status:', error.response?.status);
                     const errorMessage = error.response?.data?.message || error.message || 'ログインに失敗しました';
                     showToast(errorMessage, 'error');
 
