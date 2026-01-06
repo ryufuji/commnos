@@ -252,9 +252,16 @@ tenantPublic.get('/login', async (c) => {
 
                         showToast('ログインに成功しました', 'success');
 
-                        // Redirect to tenant home
+                        // 役割に応じてリダイレクト
+                        const membership = response.data.membership;
                         setTimeout(() => {
-                            window.location.href = '/tenant/home?subdomain=' + subdomain;
+                            if (membership.role === 'owner' || membership.role === 'admin') {
+                                // 管理者はダッシュボードへ
+                                window.location.href = '/dashboard';
+                            } else {
+                                // 一般メンバーはテナントホームへ
+                                window.location.href = '/tenant/home?subdomain=' + subdomain;
+                            }
                         }, 1500);
                     } else {
                         throw new Error(response.data.message || 'ログインに失敗しました');
