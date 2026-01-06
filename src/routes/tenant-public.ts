@@ -1609,11 +1609,14 @@ tenantPublic.get('/posts/new', async (c) => {
                 // デスクトップ
                 if (desktopNav) {
                     desktopNav.innerHTML = \`
-                        <a href="/dashboard" class="text-gray-600 hover:text-primary transition">
-                            <i class="fas fa-tachometer-alt mr-2"></i>ダッシュボード
-                        </a>
                         <a href="/tenant/home?subdomain=${subdomain}" class="text-gray-600 hover:text-primary transition">
-                            <i class="fas fa-eye mr-2"></i>公開ページ
+                            <i class="fas fa-home mr-2"></i>ホーム
+                        </a>
+                        <a href="/tenant/members?subdomain=${subdomain}" class="text-gray-600 hover:text-primary transition">
+                            <i class="fas fa-users mr-2"></i>会員管理
+                        </a>
+                        <a href="/tenant/posts?subdomain=${subdomain}" class="text-gray-600 hover:text-primary transition">
+                            <i class="fas fa-file-alt mr-2"></i>投稿管理
                         </a>
                         <div class="relative group">
                             <button class="text-gray-600 hover:text-primary transition flex items-center">
@@ -1622,8 +1625,11 @@ tenantPublic.get('/posts/new', async (c) => {
                                 <i class="fas fa-chevron-down ml-2 text-xs"></i>
                             </button>
                             <div class="hidden group-hover:block absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-200 py-2">
-                                <a href="/profile" class="block px-4 py-2 text-gray-700 hover:bg-gray-50 transition">
-                                    <i class="fas fa-user mr-2"></i>プロフィール
+                                <a href="/tenant/mypage?subdomain=${subdomain}" class="block px-4 py-2 text-gray-700 hover:bg-gray-50 transition">
+                                    <i class="fas fa-user mr-2"></i>マイページ
+                                </a>
+                                <a href="/tenant/settings?subdomain=${subdomain}" class="block px-4 py-2 text-gray-700 hover:bg-gray-50 transition">
+                                    <i class="fas fa-cog mr-2"></i>設定
                                 </a>
                                 <button onclick="logout()" class="block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-50 transition">
                                     <i class="fas fa-sign-out-alt mr-2"></i>ログアウト
@@ -1636,14 +1642,20 @@ tenantPublic.get('/posts/new', async (c) => {
                 // モバイル（ハンバーガーメニュー）
                 if (mobileMenu) {
                     mobileMenu.innerHTML = \`
-                        <a href="/dashboard" class="block py-3 text-gray-700 hover:bg-gray-50 transition rounded">
-                            <i class="fas fa-tachometer-alt mr-2"></i>ダッシュボード
-                        </a>
                         <a href="/tenant/home?subdomain=${subdomain}" class="block py-3 text-gray-700 hover:bg-gray-50 transition rounded">
-                            <i class="fas fa-eye mr-2"></i>公開ページ
+                            <i class="fas fa-home mr-2"></i>ホーム
                         </a>
-                        <a href="/profile" class="block py-3 text-gray-700 hover:bg-gray-50 transition rounded">
-                            <i class="fas fa-user mr-2"></i>プロフィール
+                        <a href="/tenant/members?subdomain=${subdomain}" class="block py-3 text-gray-700 hover:bg-gray-50 transition rounded">
+                            <i class="fas fa-users mr-2"></i>会員管理
+                        </a>
+                        <a href="/tenant/posts?subdomain=${subdomain}" class="block py-3 text-gray-700 hover:bg-gray-50 transition rounded">
+                            <i class="fas fa-file-alt mr-2"></i>投稿管理
+                        </a>
+                        <a href="/tenant/mypage?subdomain=${subdomain}" class="block py-3 text-gray-700 hover:bg-gray-50 transition rounded">
+                            <i class="fas fa-user mr-2"></i>マイページ
+                        </a>
+                        <a href="/tenant/settings?subdomain=${subdomain}" class="block py-3 text-gray-700 hover:bg-gray-50 transition rounded">
+                            <i class="fas fa-cog mr-2"></i>設定
                         </a>
                         <button onclick="logout()" class="block w-full text-left py-3 text-gray-700 hover:bg-gray-50 transition rounded">
                             <i class="fas fa-sign-out-alt mr-2"></i>ログアウト
