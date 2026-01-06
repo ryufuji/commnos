@@ -248,14 +248,13 @@ tenantPublic.get('/login', async (c) => {
                         // Store token (キー名を'token'に統一)
                         localStorage.setItem('token', response.data.token);
                         localStorage.setItem('user', JSON.stringify(response.data.user));
-                        localStorage.setItem('membership', JSON.stringify(response.data.membership));
 
                         showToast('ログインに成功しました', 'success');
 
-                        // 役割に応じてリダイレクト
-                        const membership = response.data.membership;
+                        // 役割に応じてリダイレクト (APIレスポンスのuser.roleを使用)
+                        const user = response.data.user;
                         setTimeout(() => {
-                            if (membership.role === 'owner' || membership.role === 'admin') {
+                            if (user && (user.role === 'owner' || user.role === 'admin')) {
                                 // 管理者はダッシュボードへ
                                 window.location.href = '/dashboard';
                             } else {
