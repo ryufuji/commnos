@@ -995,13 +995,13 @@ tenantPublic.get('/home', async (c) => {
                         <a href="/tenant/chat?subdomain=${subdomain}" class="text-gray-600 hover:text-primary transition">
                             <i class="fas fa-comments mr-2"></i>チャット
                         </a>
-                        <div class="relative group">
-                            <button class="text-gray-600 hover:text-primary transition flex items-center">
+                        <div class="relative">
+                            <button id="adminUserMenuBtn" class="text-gray-600 hover:text-primary transition flex items-center">
                                 <i class="fas fa-user-circle mr-2"></i>
                                 \${user.nickname || 'ユーザー'}
                                 <i class="fas fa-chevron-down ml-2 text-xs"></i>
                             </button>
-                            <div class="hidden group-hover:block absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-50">
+                            <div id="adminUserDropdown" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-50">
                                 <a href="/tenant/mypage?subdomain=${subdomain}" class="block px-4 py-2 text-gray-700 hover:bg-gray-50 transition">
                                     <i class="fas fa-user mr-2"></i>マイページ
                                 </a>
@@ -1061,13 +1061,13 @@ tenantPublic.get('/home', async (c) => {
                         <a href="/tenant/members?subdomain=${subdomain}" class="text-gray-600 hover:text-primary transition">
                             <i class="fas fa-users mr-2"></i>メンバー
                         </a>
-                        <div class="relative group">
-                            <button class="text-gray-600 hover:text-primary transition flex items-center">
+                        <div class="relative">
+                            <button id="memberUserMenuBtn" class="text-gray-600 hover:text-primary transition flex items-center">
                                 <i class="fas fa-user-circle mr-2"></i>
                                 \${user.nickname || 'ユーザー'}
                                 <i class="fas fa-chevron-down ml-2 text-xs"></i>
                             </button>
-                            <div class="hidden group-hover:block absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-50">
+                            <div id="memberUserDropdown" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-50">
                                 <a href="/profile" class="block px-4 py-2 text-gray-700 hover:bg-gray-50 transition">
                                     <i class="fas fa-user mr-2"></i>プロフィール
                                 </a>
@@ -1084,6 +1084,50 @@ tenantPublic.get('/home', async (c) => {
                 if (mobileMenu) {
                     mobileMenu.innerHTML = ''
                 }
+            }
+            
+            // ドロップダウンメニューの設定（ナビゲーション更新後に呼ぶ）
+            setTimeout(() => {
+                setupDropdownMenus()
+            }, 100)
+        }
+        
+        // ドロップダウンメニューの設定
+        function setupDropdownMenus() {
+            // 管理者用ドロップダウン
+            const adminUserMenuBtn = document.getElementById('adminUserMenuBtn')
+            const adminUserDropdown = document.getElementById('adminUserDropdown')
+            
+            if (adminUserMenuBtn && adminUserDropdown) {
+                adminUserMenuBtn.addEventListener('click', (e) => {
+                    e.stopPropagation()
+                    adminUserDropdown.classList.toggle('hidden')
+                })
+                
+                // 外側クリックで閉じる
+                document.addEventListener('click', (e) => {
+                    if (!adminUserDropdown.contains(e.target) && e.target !== adminUserMenuBtn) {
+                        adminUserDropdown.classList.add('hidden')
+                    }
+                })
+            }
+            
+            // 一般メンバー用ドロップダウン
+            const memberUserMenuBtn = document.getElementById('memberUserMenuBtn')
+            const memberUserDropdown = document.getElementById('memberUserDropdown')
+            
+            if (memberUserMenuBtn && memberUserDropdown) {
+                memberUserMenuBtn.addEventListener('click', (e) => {
+                    e.stopPropagation()
+                    memberUserDropdown.classList.toggle('hidden')
+                })
+                
+                // 外側クリックで閉じる
+                document.addEventListener('click', (e) => {
+                    if (!memberUserDropdown.contains(e.target) && e.target !== memberUserMenuBtn) {
+                        memberUserDropdown.classList.add('hidden')
+                    }
+                })
             }
         }
         
@@ -6599,13 +6643,13 @@ tenantPublic.get('/chat/:id', async (c) => {
                         <a href="/tenant/chat?subdomain=\${subdomain}" class="text-primary font-semibold">
                             <i class="fas fa-comments mr-2"></i>チャット
                         </a>
-                        <div class="relative group">
-                            <button class="text-gray-600 hover:text-primary transition flex items-center">
+                        <div class="relative">
+                            <button id="chatAdminMenuBtn" class="text-gray-600 hover:text-primary transition flex items-center">
                                 <i class="fas fa-user-circle mr-2"></i>
                                 \${user.nickname || 'ユーザー'}
                                 <i class="fas fa-chevron-down ml-2 text-xs"></i>
                             </button>
-                            <div class="hidden group-hover:block absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-50">
+                            <div id="chatAdminDropdown" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-50">
                                 <a href="/tenant/mypage?subdomain=\${subdomain}" class="block px-4 py-2 text-gray-700 hover:bg-gray-50 transition">
                                     <i class="fas fa-user mr-2"></i>マイページ
                                 </a>
@@ -6634,13 +6678,13 @@ tenantPublic.get('/chat/:id', async (c) => {
                         <a href="/tenant/members?subdomain=\${subdomain}" class="text-gray-600 hover:text-primary transition">
                             <i class="fas fa-users mr-2"></i>メンバー
                         </a>
-                        <div class="relative group">
-                            <button class="text-gray-600 hover:text-primary transition flex items-center">
+                        <div class="relative">
+                            <button id="chatMemberMenuBtn" class="text-gray-600 hover:text-primary transition flex items-center">
                                 <i class="fas fa-user-circle mr-2"></i>
                                 \${user.nickname || 'ユーザー'}
                                 <i class="fas fa-chevron-down ml-2 text-xs"></i>
                             </button>
-                            <div class="hidden group-hover:block absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-50">
+                            <div id="chatMemberDropdown" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-50">
                                 <a href="/profile" class="block px-4 py-2 text-gray-700 hover:bg-gray-50 transition">
                                     <i class="fas fa-user mr-2"></i>プロフィール
                                 </a>
@@ -6652,6 +6696,49 @@ tenantPublic.get('/chat/:id', async (c) => {
                     \`
                 }
             }
+            
+            // ドロップダウンメニューの設定
+            setTimeout(() => {
+                setupChatDropdowns()
+            }, 100)
+        }
+        
+        // チャットページ用ドロップダウン設定
+        function setupChatDropdowns() {
+            // 管理者用
+            const adminBtn = document.getElementById('chatAdminMenuBtn')
+            const adminDropdown = document.getElementById('chatAdminDropdown')
+            
+            if (adminBtn && adminDropdown) {
+                adminBtn.addEventListener('click', (e) => {
+                    e.stopPropagation()
+                    adminDropdown.classList.toggle('hidden')
+                })
+                
+                document.addEventListener('click', (e) => {
+                    if (!adminDropdown.contains(e.target) && e.target !== adminBtn) {
+                        adminDropdown.classList.add('hidden')
+                    }
+                })
+            }
+            
+            // 一般メンバー用
+            const memberBtn = document.getElementById('chatMemberMenuBtn')
+            const memberDropdown = document.getElementById('chatMemberDropdown')
+            
+            if (memberBtn && memberDropdown) {
+                memberBtn.addEventListener('click', (e) => {
+                    e.stopPropagation()
+                    memberDropdown.classList.toggle('hidden')
+                })
+                
+                document.addEventListener('click', (e) => {
+                    if (!memberDropdown.contains(e.target) && e.target !== memberBtn) {
+                        memberDropdown.classList.add('hidden')
+                    }
+                })
+            }
+        }
         }
 
         window.logout = function() {
