@@ -87,7 +87,7 @@ passwordResetPages.get('/forgot-password', async (c) => {
             </div>
 
             <div class="mt-6 text-center">
-                <a href="/login" class="text-purple-600 hover:text-purple-700 text-sm">
+                <a href="#" id="backToLogin" class="text-purple-600 hover:text-purple-700 text-sm">
                     <i class="fas fa-arrow-left mr-1"></i>
                     ログインページに戻る
                 </a>
@@ -148,6 +148,11 @@ passwordResetPages.get('/forgot-password', async (c) => {
                 toast.classList.add('hidden')
             }, 5000)
         }
+        
+        // 戻るリンクの処理 - URLパラメータからsubdomainを取得
+        const urlParams = new URLSearchParams(window.location.search)
+        const subdomain = urlParams.get('subdomain') || 'test'
+        document.getElementById('backToLogin').href = '/login?subdomain=' + subdomain
     </script>
 </body>
 </html>`
@@ -274,7 +279,7 @@ passwordResetPages.get('/reset-password', async (c) => {
                 <p class="text-gray-600 mb-6">
                     新しいパスワードでログインできます。
                 </p>
-                <a href="/login" class="inline-block gradient-bg text-white px-6 py-3 rounded-lg font-semibold hover:opacity-90">
+                <a href="#" id="loginLink" class="inline-block gradient-bg text-white px-6 py-3 rounded-lg font-semibold hover:opacity-90">
                     <i class="fas fa-sign-in-alt mr-2"></i>ログインする
                 </a>
             </div>
@@ -382,6 +387,12 @@ passwordResetPages.get('/reset-password', async (c) => {
                 toast.classList.add('hidden')
             }, 5000)
         }
+
+        // ログインリンクの処理 - URLパラメータからsubdomainを取得
+        const urlParams = new URLSearchParams(window.location.search)
+        const token = urlParams.get('token')
+        const subdomain = urlParams.get('subdomain') || 'test'
+        document.getElementById('loginLink').href = '/login?subdomain=' + subdomain
 
         verifyToken()
     </script>

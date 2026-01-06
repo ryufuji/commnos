@@ -182,10 +182,6 @@ app.get('/', (c) => {
                             <i class="fas fa-rocket mr-2"></i>
                             コミュニティを作る
                         </a>
-                        <a href="/login" class="btn-secondary text-lg px-10 py-4">
-                            <i class="fas fa-sign-in-alt mr-2"></i>
-                            ログイン
-                        </a>
                     </div>
                 </div>
 
@@ -363,10 +359,6 @@ app.get('/communities', async (c) => {
                         <a href="/register" class="btn-primary">
                             <i class="fas fa-plus mr-2"></i>
                             コミュニティを作る
-                        </a>
-                        <a href="/login" class="btn-secondary">
-                            <i class="fas fa-sign-in-alt mr-2"></i>
-                            ログイン
                         </a>
                     </div>
                 </div>
@@ -589,11 +581,6 @@ app.get('/register', (c) => {
                         </button>
                     </form>
 
-                    <!-- ログインリンク -->
-                    <div class="mt-6 text-center text-sm text-secondary-600">
-                        すでにアカウントをお持ちですか？
-                        <a href="/login" class="link-primary font-medium">ログイン</a>
-                    </div>
                 </div>
             </div>
         </div>
@@ -637,109 +624,6 @@ app.get('/register', (c) => {
     </html>
   `)
 })
-
-// --------------------------------------------
-// ログインページ（tenant-public.tsに移行）
-// --------------------------------------------
-/*
-app.get('/login', (c) => {
-  return c.html(`
-    <!DOCTYPE html>
-    <html lang="ja">
-    <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>ログイン - Commons</title>
-        <script src="https://cdn.tailwindcss.com"></script>
-        <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
-        <link href="/static/styles.css" rel="stylesheet">
-    </head>
-    <body class="bg-gradient-to-br from-primary-50 via-white to-secondary-50" data-theme="modern-business">
-        <div class="min-h-screen flex items-center justify-center px-4 py-12">
-            <div class="max-w-md w-full">
-                <!-- ロゴ -->
-                <div class="text-center mb-8 fade-in">
-                    <a href="/" class="text-4xl font-bold text-gradient hover:opacity-80 transition-opacity">
-                        <i class="fas fa-users mr-2"></i>
-                        Commons
-                    </a>
-                    <p class="text-secondary-600 mt-3 text-lg">ログイン</p>
-                </div>
-
-                <!-- ログインフォーム -->
-                <div class="card p-8 fade-in">
-                    <form id="loginForm" class="space-y-5">
-                        <!-- メールアドレス -->
-                        <div>
-                            <label class="form-label">
-                                <i class="fas fa-envelope mr-1 text-primary-500"></i>
-                                メールアドレス
-                            </label>
-                            <input type="email" name="email" required
-                                   class="input-field"
-                                   placeholder="your@example.com">
-                        </div>
-
-                        <!-- パスワード -->
-                        <div>
-                            <label class="form-label">
-                                <i class="fas fa-lock mr-1 text-primary-500"></i>
-                                パスワード
-                            </label>
-                            <input type="password" name="password" required
-                                   class="input-field"
-                                   placeholder="••••••••">
-                        </div>
-
-                        <!-- 送信ボタン -->
-                        <button type="submit" id="submitBtn" class="btn-primary w-full">
-                            <i class="fas fa-sign-in-alt mr-2"></i>
-                            ログイン
-                        </button>
-                    </form>
-
-                    <!-- 登録リンク -->
-                    <div class="mt-6 text-center text-sm text-secondary-600">
-                        アカウントをお持ちでないですか？
-                        <a href="/register" class="link-primary font-medium">新規登録</a>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <script src="/static/app.js"></script>
-        <script>
-            document.getElementById('loginForm').addEventListener('submit', async (e) => {
-                e.preventDefault()
-                
-                const submitBtn = document.getElementById('submitBtn')
-                showLoading(submitBtn)
-                
-                const formData = new FormData(e.target)
-                
-                try {
-                    await handleLogin(
-                        formData.get('email'),
-                        formData.get('password')
-                    )
-                } catch (error) {
-                    hideLoading(submitBtn)
-                }
-            })
-        </script>
-        <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
-        <script>
-            // ログイン済みの場合はダッシュボードにリダイレクト
-            if (isLoggedIn()) {
-                window.location.href = '/dashboard'
-            }
-        </script>
-    </body>
-    </html>
-  `)
-})
-*/
-
 // --------------------------------------------
 // プラン選択ページ（Week 9-10）
 // --------------------------------------------
