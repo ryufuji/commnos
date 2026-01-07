@@ -1773,15 +1773,25 @@ app.get('/dashboard', (c) => {
                     return
                 }
                 
+                console.log('[Dashboard] User data:', user)
+                console.log('[Dashboard] Membership data:', membership)
+                
                 // user.role を優先的にチェック、なければ membership.role をチェック
                 const userRole = user.role || membership.role
                 
+                console.log('[Dashboard] Determined user role:', userRole)
+                console.log('[Dashboard] user.role:', user.role)
+                console.log('[Dashboard] membership.role:', membership.role)
+                
                 // 一般メンバーはテナントホームにリダイレクト
                 if (userRole !== 'admin' && userRole !== 'owner') {
+                    console.log('[Dashboard] User is not admin/owner, redirecting to tenant home')
                     const subdomain = membership.subdomain || user.tenantId || 'test'
                     window.location.href = \`/tenant/home?subdomain=\${subdomain}\`
                     return
                 }
+                
+                console.log('[Dashboard] User is admin/owner, showing dashboard')
 
                 const userInfoEl = document.getElementById('userInfo')
                 userInfoEl.innerHTML = \`
@@ -1800,11 +1810,22 @@ app.get('/dashboard', (c) => {
                 \`
 
                 // オーナーのみサブスクリプション管理リンクを表示
+                console.log('[Dashboard] Checking subscription link visibility for role:', userRole)
                 if (userRole === 'owner') {
+                    console.log('[Dashboard] User is owner, showing subscription link')
                     const subscriptionLink = document.getElementById('subscriptionLink')
                     const subdomain = membership.subdomain || user.tenantId || 'test'
-                    subscriptionLink.href = \`/tenant/subscription?subdomain=\${subdomain}\`
-                    subscriptionLink.classList.remove('hidden')
+                    console.log('[Dashboard] Subscription subdomain:', subdomain)
+                    console.log('[Dashboard] Subscription link element:', subscriptionLink)
+                    if (subscriptionLink) {
+                        subscriptionLink.href = \`/tenant/subscription?subdomain=\${subdomain}\`
+                        subscriptionLink.classList.remove('hidden')
+                        console.log('[Dashboard] Subscription link set to:', subscriptionLink.href)
+                    } else {
+                        console.error('[Dashboard] Subscription link element not found!')
+                    }
+                } else {
+                    console.log('[Dashboard] User is not owner (role:', userRole, '), subscription link hidden')
                 }
 
                 // 統計データを取得（管理者のみ）
