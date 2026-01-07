@@ -257,6 +257,7 @@ tenantPublic.get('/login', async (c) => {
                     const response = await axios.post('/api/tenant/login', loginData);
 
                     if (response.data.success) {
+                        console.log('[Login] ===== LOGIN SUCCESS =====');
                         console.log('[Login] Full response data:', response.data);
                         console.log('[Login] User object:', response.data.user);
                         console.log('[Login] Membership object:', response.data.membership);
@@ -271,8 +272,6 @@ tenantPublic.get('/login', async (c) => {
                             console.log('[Login] Stored membership data:', response.data.membership);
                         }
 
-                        showToast('ログインに成功しました', 'success');
-
                         // 役割に応じてリダイレクト
                         const user = response.data.user;
                         const membership = response.data.membership;
@@ -281,20 +280,30 @@ tenantPublic.get('/login', async (c) => {
                         console.log('[Login] user.role:', user.role);
                         console.log('[Login] membership.role:', membership?.role);
                         console.log('[Login] Final determined userRole:', userRole);
-                        console.log('[Login] Is owner?', userRole === 'owner');
-                        console.log('[Login] Is admin?', userRole === 'admin');
+                        console.log('[Login] Type of userRole:', typeof userRole);
+                        console.log('[Login] userRole === "owner":', userRole === 'owner');
+                        console.log('[Login] userRole === "admin":', userRole === 'admin');
                         
-                        setTimeout(() => {
-                            if (userRole === 'owner' || userRole === 'admin') {
-                                // オーナー/管理者はダッシュボードへ
-                                console.log('[Login] Redirecting owner/admin to dashboard');
-                                window.location.href = '/dashboard';
-                            } else {
-                                // 一般メンバーはテナントホームへ
-                                console.log('Redirecting to tenant home');
-                                window.location.href = '/tenant/home?subdomain=' + subdomain;
-                            }
-                        }, 1500);
+                        // トーストを表示
+                        showToast('ログインに成功しました', 'success');
+                        
+                        // 役割チェックとリダイレクト
+                        if (userRole === 'owner') {
+                            console.log('[Login] ✅ User is OWNER - Redirecting to /dashboard');
+                            console.log('[Login] About to execute: window.location.href = "/dashboard"');
+                            window.location.href = '/dashboard';
+                            console.log('[Login] Redirect command executed');
+                        } else if (userRole === 'admin') {
+                            console.log('[Login] ✅ User is ADMIN - Redirecting to /dashboard');
+                            console.log('[Login] About to execute: window.location.href = "/dashboard"');
+                            window.location.href = '/dashboard';
+                            console.log('[Login] Redirect command executed');
+                        } else {
+                            console.log('[Login] ❌ User is MEMBER - Redirecting to /tenant/home');
+                            console.log('[Login] About to execute: window.location.href = "/tenant/home?subdomain=" + subdomain');
+                            window.location.href = '/tenant/home?subdomain=' + subdomain;
+                            console.log('[Login] Redirect command executed');
+                        }
                     } else {
                         throw new Error(response.data.message || 'ログインに失敗しました');
                     }
