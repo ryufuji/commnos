@@ -1459,7 +1459,11 @@ app.get('/dashboard', (c) => {
                             <span class="sm:hidden">Dashboard</span>
                         </h1>
                         <!-- デスクトップナビ -->
-                        <div class="hidden md:flex gap-4">
+                        <div class="hidden md:flex gap-4 items-center">
+                            <a href="/dashboard" class="text-gray-700 hover:text-primary transition">
+                                <i class="fas fa-home mr-2"></i>
+                                ダッシュボード
+                            </a>
                             <a href="/profile" class="btn-ghost">
                                 <i class="fas fa-user mr-2"></i>
                                 プロフィール
@@ -1476,6 +1480,10 @@ app.get('/dashboard', (c) => {
                     </div>
                     <!-- モバイルメニュー -->
                     <div id="mobileMenu" class="hidden md:hidden mt-4 space-y-2">
+                        <a href="/dashboard" class="block btn-ghost text-center">
+                            <i class="fas fa-home mr-2"></i>
+                            ダッシュボード
+                        </a>
                         <a href="/profile" class="block btn-ghost text-center">
                             <i class="fas fa-user mr-2"></i>
                             プロフィール

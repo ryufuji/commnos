@@ -5735,9 +5735,9 @@ tenantPublic.get('/plans', async (c) => {
                         <i class="fas fa-tags mr-2"></i>
                         プラン管理
                     </h1>
-                    <a href="/tenant/subscription?subdomain=${subdomain}" class="btn-ghost">
+                    <a href="/dashboard" class="btn-ghost">
                         <i class="fas fa-arrow-left mr-2"></i>
-                        戻る
+                        ダッシュボードに戻る
                     </a>
                 </div>
             </div>
