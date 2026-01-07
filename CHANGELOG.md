@@ -1,5 +1,35 @@
 # Changelog
 
+## 2026-01-07 - 一般会員向けプラン選択機能追加
+
+### 追加
+- **一般会員向けプラン選択ページ** `/tenant/member-plans?subdomain=xxx`
+  - 利用可能なプラン一覧表示
+  - 現在のプラン確認
+  - プラン変更機能
+  - プラン詳細（料金、説明、特典）表示
+- **会員プラン管理API**:
+  - `GET /api/tenant/member/plans` - 利用可能なプラン一覧取得
+  - `GET /api/tenant/member/current-plan` - 現在のプラン情報取得
+  - `POST /api/tenant/member/change-plan` - プラン変更
+
+### 使い方
+1. **コミュニティ運営者**: `/tenant/plans?subdomain=xxx` でプランを作成
+2. **一般会員**: `/tenant/member-plans?subdomain=xxx` でプランを選択・変更
+
+### デプロイ
+- **最新デプロイURL**: https://b8304ee9.commons-webapp.pages.dev
+- **本番環境**: https://commons-webapp.pages.dev
+- **プラン選択ページ**: https://commons-webapp.pages.dev/tenant/member-plans?subdomain=test
+- **コミット**: e560b34
+
+### 今後の実装予定
+- Stripe統合によるプラン決済機能
+- プラン変更時の prorating 処理
+- サブスクリプション自動更新機能
+
+---
+
 ## 2026-01-07 - クーポン機能とAPI修正
 
 ### 修正
