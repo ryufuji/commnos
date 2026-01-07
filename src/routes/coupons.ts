@@ -26,9 +26,225 @@
 
 // src/routes/coupons.ts
 import { Hono } from 'hono';
-import type { CloudflareBindings } from '../types';
+import type { CloudflareBindings, AppContext } from '../types';
+import { authMiddleware } from '../middleware/auth';
 
-const coupons = new Hono<{ Bindings: CloudflareBindings }>();
+const coupons = new Hono<AppContext>();
+
+// 有効なクーポンを取得（テナントに適用されているクーポン）
+coupons.get('/active', authMiddleware, async (c) => {
+  const { DB } = c.env;
+  const userId = c.get('userId');
+  
+  if (!userId) {
+    return c.json({ 
+      success: false, 
+      message: '認証が必要です' 
+    }, 401);
+  }
+  
+  try {
+    // ユーザーのテナントIDを取得
+    const membership = await DB.prepare(`
+      SELECT tenant_id FROM tenant_memberships 
+      WHERE user_id = ? AND status = 'active'
+      LIMIT 1
+    `).bind(userId).first();
+    
+    if (!membership) {
+      return c.json({
+        success: true,
+        has_active_coupon: false,
+        coupons: []
+      });
+    }
+    
+    // テナントの有効なクーポンを取得
+    const activeCoupon = await DB.prepare(`
+      SELECT 
+        cu.*,
+        c.code,
+        c.name,
+        c.description,
+        c.discount_type,
+        c.discount_value
+      FROM coupon_usage cu
+      JOIN coupons c ON cu.coupon_id = c.id
+      WHERE cu.tenant_id = ? AND cu.status = 'active'
+    `).bind(membership.tenant_id).first();
+    
+    if (!activeCoupon) {
+      return c.json({
+        success: true,
+        has_active_coupon: false,
+        coupons: []
+      });
+    }
+    
+    return c.json({
+      success: true,
+      has_active_coupon: true,
+      coupons: [{
+        name: activeCoupon.name,
+        description: activeCoupon.description,
+        discount_type: activeCoupon.discount_type,
+        discount_value: activeCoupon.discount_value,
+        expires_at: activeCoupon.expires_at
+      }]
+    });
+  } catch (error) {
+    console.error('[Coupon Active Error]', error);
+    return c.json({ 
+      success: false, 
+      message: 'クーポン情報の取得に失敗しました' 
+    }, 500);
+  }
+});
+
+// クーポン適用（redeem）
+coupons.post('/redeem', authMiddleware, async (c) => {
+  const { DB } = c.env;
+  const userId = c.get('userId');
+  const { code } = await c.req.json();
+  
+  if (!userId) {
+    return c.json({ 
+      success: false, 
+      message: '認証が必要です' 
+    }, 401);
+  }
+  
+  if (!code) {
+    return c.json({ 
+      success: false, 
+      message: 'クーポンコードを入力してください' 
+    }, 400);
+  }
+  
+  try {
+    // ユーザーのテナントIDとオーナー権限を確認
+    const tenant = await DB.prepare(`
+      SELECT t.id, t.owner_user_id 
+      FROM tenants t
+      JOIN tenant_memberships tm ON t.id = tm.tenant_id
+      WHERE tm.user_id = ? AND tm.status = 'active'
+      LIMIT 1
+    `).bind(userId).first();
+    
+    if (!tenant) {
+      return c.json({ 
+        success: false, 
+        message: 'テナントが見つかりません' 
+      }, 404);
+    }
+    
+    // オーナーのみがクーポンを適用可能
+    if (tenant.owner_user_id !== userId) {
+      return c.json({ 
+        success: false, 
+        message: 'クーポンはオーナーのみが適用できます' 
+      }, 403);
+    }
+    
+    // 既にクーポンが適用されているか確認
+    const existingUsage = await DB.prepare(`
+      SELECT id FROM coupon_usage 
+      WHERE tenant_id = ? AND status = 'active'
+    `).bind(tenant.id).first();
+    
+    if (existingUsage) {
+      return c.json({ 
+        success: false, 
+        message: '既にクーポンが適用されています' 
+      }, 400);
+    }
+    
+    // クーポン検証
+    const coupon = await DB.prepare(`
+      SELECT * FROM coupons 
+      WHERE code = ? 
+        AND is_active = 1
+        AND (valid_until IS NULL OR valid_until > datetime('now'))
+    `).bind(code).first();
+    
+    if (!coupon) {
+      return c.json({ 
+        success: false, 
+        message: 'クーポンコードが無効です' 
+      }, 400);
+    }
+    
+    // 使用回数チェック
+    if (coupon.max_uses > 0 && coupon.used_count >= coupon.max_uses) {
+      return c.json({ 
+        success: false, 
+        message: 'このクーポンは使用上限に達しています' 
+      }, 400);
+    }
+    
+    // プラン適用可能性チェック
+    if (coupon.applicable_plans) {
+      const applicablePlans = JSON.parse(coupon.applicable_plans);
+      const currentPlan = await DB.prepare(`
+        SELECT p.name FROM platform_plans p
+        JOIN tenants t ON t.platform_plan_id = p.id
+        WHERE t.id = ?
+      `).bind(tenant.id).first();
+      
+      if (currentPlan && !applicablePlans.includes(currentPlan.name)) {
+        return c.json({ 
+          success: false, 
+          message: 'このクーポンは現在のプランには適用できません' 
+        }, 400);
+      }
+    }
+    
+    // 有効期限計算
+    let expiresAt = null;
+    if (coupon.discount_type === 'free_months') {
+      const now = new Date();
+      now.setMonth(now.getMonth() + coupon.discount_value);
+      expiresAt = now.toISOString();
+    }
+    
+    // トランザクション: クーポンを適用
+    await DB.prepare(`
+      INSERT INTO coupon_usage (coupon_id, tenant_id, user_id, expires_at)
+      VALUES (?, ?, ?, ?)
+    `).bind(coupon.id, tenant.id, userId, expiresAt).run();
+    
+    await DB.prepare(`
+      UPDATE tenants 
+      SET has_coupon = 1,
+          coupon_discount_type = ?,
+          coupon_expires_at = ?
+      WHERE id = ?
+    `).bind(coupon.discount_type, expiresAt, tenant.id).run();
+    
+    await DB.prepare(`
+      UPDATE coupons 
+      SET used_count = used_count + 1
+      WHERE id = ?
+    `).bind(coupon.id).run();
+    
+    return c.json({
+      success: true,
+      message: 'クーポンを適用しました！',
+      coupon: {
+        name: coupon.name,
+        discount_type: coupon.discount_type,
+        description: getDiscountDescription(coupon),
+        expires_at: expiresAt
+      }
+    });
+  } catch (error) {
+    console.error('[Coupon Redeem Error]', error);
+    return c.json({ 
+      success: false, 
+      message: 'クーポンの適用に失敗しました' 
+    }, 500);
+  }
+});
 
 // クーポン検証（コード入力時にリアルタイムチェック）
 coupons.post('/validate', async (c) => {

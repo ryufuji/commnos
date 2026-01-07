@@ -22,7 +22,7 @@ tenantPlans.get('/', authMiddleware, requireRole('owner'), async (c) => {
       .prepare(`
         SELECT 
           id, tenant_id, name, description, price,
-          member_limit, storage_limit, features,
+          features,
           is_active, stripe_price_id, stripe_product_id,
           sort_order, created_at, updated_at
         FROM tenant_plans
@@ -59,8 +59,6 @@ tenantPlans.post('/', authMiddleware, requireRole('owner'), async (c) => {
       name,
       description,
       price,
-      member_limit,
-      storage_limit,
       features
     } = body
 
@@ -120,9 +118,9 @@ tenantPlans.post('/', authMiddleware, requireRole('owner'), async (c) => {
       .prepare(`
         INSERT INTO tenant_plans (
           tenant_id, name, description, price,
-          member_limit, storage_limit, features,
+          features,
           stripe_price_id, stripe_product_id, sort_order
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, 
           COALESCE((SELECT MAX(sort_order) + 1 FROM tenant_plans WHERE tenant_id = ?), 0)
         )
       `)
@@ -131,8 +129,6 @@ tenantPlans.post('/', authMiddleware, requireRole('owner'), async (c) => {
         name,
         description || null,
         price,
-        member_limit || null,
-        storage_limit || null,
         features ? JSON.stringify(features) : null,
         stripePrice.id,
         product.id,
@@ -180,8 +176,6 @@ tenantPlans.patch('/:id', authMiddleware, requireRole('owner'), async (c) => {
       name,
       description,
       price,
-      member_limit,
-      storage_limit,
       features,
       is_active,
       sort_order
@@ -237,8 +231,6 @@ tenantPlans.patch('/:id', authMiddleware, requireRole('owner'), async (c) => {
           name = COALESCE(?, name),
           description = COALESCE(?, description),
           price = COALESCE(?, price),
-          member_limit = COALESCE(?, member_limit),
-          storage_limit = COALESCE(?, storage_limit),
           features = COALESCE(?, features),
           is_active = COALESCE(?, is_active),
           sort_order = COALESCE(?, sort_order),
@@ -250,8 +242,6 @@ tenantPlans.patch('/:id', authMiddleware, requireRole('owner'), async (c) => {
         name || null,
         description || null,
         price || null,
-        member_limit || null,
-        storage_limit || null,
         features ? JSON.stringify(features) : null,
         is_active !== undefined ? is_active : null,
         sort_order || null,

@@ -72,7 +72,7 @@ app.route('/api/tenant-plans', tenantPlans)
 app.route('/api/platform', platform)
 
 // クーポン管理ルート
-app.route('/api/coupons', coupons)
+app.route('/api/coupon', coupons)  // Changed to /api/coupon for frontend compatibility
 
 // 会員管理ルート
 app.route('/api/members', members)
