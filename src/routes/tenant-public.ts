@@ -5760,6 +5760,51 @@ tenantPublic.get('/plans', async (c) => {
                 </div>
             </div>
 
+            <!-- クーポン適用セクション -->
+            <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+                <div class="flex items-center gap-3 mb-4">
+                    <i class="fas fa-ticket-alt text-2xl text-green-600"></i>
+                    <div>
+                        <h2 class="text-xl font-bold">クーポン適用</h2>
+                        <p class="text-sm text-gray-600">クーポンコードをお持ちの方はこちらから適用できます</p>
+                    </div>
+                </div>
+
+                <!-- 有効なクーポン表示 -->
+                <div id="activeCouponSection" class="hidden mb-4">
+                    <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                        <div class="flex items-start gap-3">
+                            <i class="fas fa-check-circle text-green-600 text-xl"></i>
+                            <div class="flex-1">
+                                <h3 class="font-bold text-green-900 mb-1">有効なクーポン</h3>
+                                <p id="activeCouponName" class="text-sm text-green-800 mb-1"></p>
+                                <p id="activeCouponDescription" class="text-xs text-green-700"></p>
+                                <p id="activeCouponExpiry" class="text-xs text-green-600 mt-2"></p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- クーポン入力フォーム -->
+                <div id="couponFormSection">
+                    <form id="couponForm" class="flex gap-3">
+                        <div class="flex-1">
+                            <input type="text" id="couponCode" 
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 uppercase"
+                                placeholder="クーポンコードを入力（例: VIP2025）"
+                                maxlength="20">
+                        </div>
+                        <button type="submit" class="btn-primary whitespace-nowrap">
+                            <i class="fas fa-check mr-2"></i>適用
+                        </button>
+                    </form>
+                    <p class="text-xs text-gray-500 mt-2">
+                        <i class="fas fa-info-circle mr-1"></i>
+                        クーポンを適用すると、プラットフォーム利用料が割引または無料になります
+                    </p>
+                </div>
+            </div>
+
             <!-- プラン一覧 -->
             <div class="bg-white rounded-lg shadow-md p-6 mb-6">
                 <div class="flex justify-between items-center mb-6">
@@ -6106,8 +6151,81 @@ tenantPublic.get('/plans', async (c) => {
             }
         }
 
+        // ============================================
+        // クーポン機能
+        // ============================================
+
+        // 有効なクーポンをチェック
+        async function checkActiveCoupon() {
+            try {
+                const token = localStorage.getItem('token')
+                const response = await axios.get('/api/coupon/active', {
+                    headers: { Authorization: \`Bearer \${token}\` }
+                })
+
+                if (response.data.success && response.data.has_active_coupon) {
+                    const coupon = response.data.coupons[0]
+                    
+                    // 有効なクーポンを表示
+                    document.getElementById('activeCouponName').textContent = coupon.name
+                    document.getElementById('activeCouponDescription').textContent = coupon.description
+                    
+                    // 有効期限の表示
+                    if (coupon.discount_type === 'free_forever') {
+                        document.getElementById('activeCouponExpiry').textContent = '✨ 永久無料'
+                    } else if (coupon.expires_at) {
+                        const expiryDate = new Date(coupon.expires_at)
+                        document.getElementById('activeCouponExpiry').textContent = 
+                            \`有効期限: \${expiryDate.toLocaleDateString('ja-JP')}\`
+                    }
+                    
+                    document.getElementById('activeCouponSection').classList.remove('hidden')
+                    document.getElementById('couponFormSection').classList.add('hidden')
+                }
+            } catch (error) {
+                console.error('Failed to check coupon:', error)
+            }
+        }
+
+        // クーポン適用
+        document.getElementById('couponForm').addEventListener('submit', async (e) => {
+            e.preventDefault()
+            
+            const code = document.getElementById('couponCode').value.trim()
+            
+            if (!code) {
+                showToast('クーポンコードを入力してください', 'error')
+                return
+            }
+
+            try {
+                const token = localStorage.getItem('token')
+                const response = await axios.post('/api/coupon/redeem', 
+                    { code },
+                    { headers: { Authorization: \`Bearer \${token}\` } }
+                )
+
+                if (response.data.success) {
+                    showToast(response.data.message, 'success')
+                    document.getElementById('couponCode').value = ''
+                    
+                    // クーポン情報を再読み込み
+                    setTimeout(() => {
+                        checkActiveCoupon()
+                    }, 1000)
+                } else {
+                    showToast(response.data.message, 'error')
+                }
+            } catch (error) {
+                console.error('Failed to redeem coupon:', error)
+                const message = error.response?.data?.message || 'クーポンの適用に失敗しました'
+                showToast(message, 'error')
+            }
+        })
+
         // 初期化
         if (checkAccess()) {
+            checkActiveCoupon()
             loadPlans()
         }
     </script>

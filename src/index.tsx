@@ -29,6 +29,7 @@ import tenantAuth from './routes/tenant-auth' // Phase 2 - テナント会員認
 import likes from './routes/likes' // Phase 4 - いいね機能
 import notifications from './routes/notifications' // Phase 5 - 通知機能
 import chat from './routes/chat' // Phase 6 - チャット機能
+import { coupon } from './routes/coupon' // クーポン管理
 
 const app = new Hono<AppContext>()
 
@@ -68,6 +69,9 @@ app.route('/api/tenant-plans', tenantPlans)
 
 // プラットフォーム管理ルート（VALUE ARCHITECTS専用）
 app.route('/api/platform', platform)
+
+// クーポン管理ルート
+app.route('/api/coupon', coupon)
 
 // 会員管理ルート
 app.route('/api/members', members)
