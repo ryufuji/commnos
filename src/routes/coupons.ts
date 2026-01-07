@@ -302,7 +302,8 @@ function getDiscountDescription(coupon: any): string {
   }
 }
 
-export { coupons };
+export { coupons }
+export default coupons;
 
 /**
  * ============================================

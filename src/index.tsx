@@ -21,6 +21,7 @@ import stripe from './routes/stripe' // Week 9-10
 import subscription from './routes/subscription' // サブスクリプション管理
 import tenantPlans from './routes/tenant-plans' // テナント独自プラン管理
 import platform from './routes/platform' // プラットフォーム管理（VALUE ARCHITECTS専用）
+import { platformCoupons } from './routes/platform-coupons' // プラットフォーム管理 - クーポンページ
 import upload from './routes/upload' // Phase 2 - 画像アップロード
 import images from './routes/images' // Phase 2 - 画像取得
 import tenantPublic from './routes/tenant-public' // Phase 3 - テナント公開ページ
@@ -29,7 +30,7 @@ import tenantAuth from './routes/tenant-auth' // Phase 2 - テナント会員認
 import likes from './routes/likes' // Phase 4 - いいね機能
 import notifications from './routes/notifications' // Phase 5 - 通知機能
 import chat from './routes/chat' // Phase 6 - チャット機能
-import { coupon } from './routes/coupon' // クーポン管理
+import { coupons } from './routes/coupons' // クーポン管理
 
 const app = new Hono<AppContext>()
 
@@ -71,7 +72,7 @@ app.route('/api/tenant-plans', tenantPlans)
 app.route('/api/platform', platform)
 
 // クーポン管理ルート
-app.route('/api/coupon', coupon)
+app.route('/api/coupons', coupons)
 
 // 会員管理ルート
 app.route('/api/members', members)
@@ -2784,6 +2785,11 @@ app.get('/posts-admin', (c) => {
 // --------------------------------------------
 app.route('/tenant', tenantPublic)
 app.route('/', tenantPublic) // ルートパスにもマウント（/login, /register等）
+
+// --------------------------------------------
+// プラットフォーム管理ページ
+// --------------------------------------------
+app.route('/platform', platformCoupons)
 
 // --------------------------------------------
 // パスワードリセットページ
