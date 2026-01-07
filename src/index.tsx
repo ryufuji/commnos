@@ -1576,10 +1576,10 @@ app.get('/dashboard', (c) => {
                         
                         <a id="subscriptionLink" href="#" class="card-interactive p-6 text-center hidden">
                             <div class="text-4xl mb-3 text-purple-500">
-                                <i class="fas fa-credit-card"></i>
+                                <i class="fas fa-tags"></i>
                             </div>
-                            <h3 class="font-bold text-gray-900 mb-2">サブスク管理</h3>
-                            <p class="text-sm text-secondary-600">プラン・請求を管理</p>
+                            <h3 class="font-bold text-gray-900 mb-2">プラン管理</h3>
+                            <p class="text-sm text-secondary-600">メンバー向けプランを作成・編集</p>
                         </a>
                     </div>
                 </div>
@@ -1818,9 +1818,10 @@ app.get('/dashboard', (c) => {
                     console.log('[Dashboard] Subscription subdomain:', subdomain)
                     console.log('[Dashboard] Subscription link element:', subscriptionLink)
                     if (subscriptionLink) {
-                        subscriptionLink.href = \`/tenant/subscription?subdomain=\${subdomain}\`
+                        // オーナーはプラン管理ページへ遷移
+                        subscriptionLink.href = \`/tenant/plans?subdomain=\${subdomain}\`
                         subscriptionLink.classList.remove('hidden')
-                        console.log('[Dashboard] Subscription link set to:', subscriptionLink.href)
+                        console.log('[Dashboard] Plan management link set to:', subscriptionLink.href)
                     } else {
                         console.error('[Dashboard] Subscription link element not found!')
                     }

@@ -5846,6 +5846,33 @@ tenantPublic.get('/plans', async (c) => {
         let plans = []
         let currentEditingPlan = null
 
+        // 権限チェック（オーナーのみアクセス可能）
+        function checkAccess() {
+            const token = localStorage.getItem('token')
+            const user = JSON.parse(localStorage.getItem('user') || '{}')
+            const membership = JSON.parse(localStorage.getItem('membership') || '{}')
+            
+            console.log('[Plans] Checking access - user:', user, 'membership:', membership)
+            
+            if (!token || !user.id) {
+                console.log('[Plans] No token or user, redirecting to login')
+                window.location.href = '/login?subdomain=' + subdomain
+                return false
+            }
+            
+            const userRole = user.role || membership.role
+            console.log('[Plans] User role:', userRole)
+            
+            if (userRole !== 'owner') {
+                console.log('[Plans] User is not owner, redirecting to home')
+                alert('プラン管理はオーナーのみアクセスできます')
+                window.location.href = '/tenant/home?subdomain=' + subdomain
+                return false
+            }
+            
+            return true
+        }
+
         // プラン一覧読み込み
         async function loadPlans() {
             try {
@@ -6055,7 +6082,9 @@ tenantPublic.get('/plans', async (c) => {
         }
 
         // 初期化
-        loadPlans()
+        if (checkAccess()) {
+            loadPlans()
+        }
     </script>
 </body>
 </html>
