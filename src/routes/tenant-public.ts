@@ -96,7 +96,7 @@ tenantPublic.get('/login', async (c) => {
                     </div>
 
                     <!-- Login Form -->
-                    <form id="loginForm" class="space-y-6">
+                    <form id="loginForm" class="space-y-6" onsubmit="return false;">
                         <!-- Email -->
                         <div>
                             <label for="email" class="block text-sm font-medium text-gray-700 mb-2">
@@ -218,8 +218,15 @@ tenantPublic.get('/login', async (c) => {
             }
 
             // Handle login form submission
-            document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            const loginForm = document.getElementById('loginForm');
+            console.log('[Login Page] Login form element:', loginForm);
+            console.log('[Login Page] Registering submit event listener...');
+            
+            loginForm.addEventListener('submit', async (e) => {
+                console.log('[Login Page] ===== FORM SUBMIT EVENT FIRED =====');
+                console.log('[Login Page] Event:', e);
                 e.preventDefault();
+                console.log('[Login Page] Default prevented');
 
                 const email = document.getElementById('email').value.trim();
                 const password = document.getElementById('password').value.trim();
@@ -319,6 +326,9 @@ tenantPublic.get('/login', async (c) => {
                     loginBtn.innerHTML = '<i class="fas fa-sign-in-alt mr-2"></i> ログイン';
                 }
             });
+            
+            console.log('[Login Page] Event listener registered successfully');
+            console.log('[Login Page] Page initialization complete');
         </script>
     </body>
     </html>
