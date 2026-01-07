@@ -187,6 +187,11 @@ tenantAuth.post('/login', async (c) => {
       WHERE tenant_id = ? AND user_id = ?
     `).bind(tenant.id, user.id).first() as any
 
+    console.log('[Tenant Login] User:', user.email)
+    console.log('[Tenant Login] Tenant:', tenant.name, '(subdomain:', subdomain, ')')
+    console.log('[Tenant Login] Membership found:', membership)
+    console.log('[Tenant Login] Role:', membership?.role)
+
     if (!membership) {
       return c.json({
         success: false,
@@ -222,7 +227,7 @@ tenantAuth.post('/login', async (c) => {
       .setExpirationTime('7d')
       .sign(secret)
 
-    return c.json({
+    const responseData = {
       success: true,
       message: 'ログインに成功しました',
       token,
@@ -248,7 +253,13 @@ tenantAuth.post('/login', async (c) => {
         subdomain: subdomain,
         tenant_name: tenant.name
       }
-    })
+    }
+
+    console.log('[Tenant Login] Returning response with role:', membership.role)
+    console.log('[Tenant Login] Response user.role:', responseData.user.role)
+    console.log('[Tenant Login] Response membership.role:', responseData.membership.role)
+
+    return c.json(responseData)
   } catch (error: any) {
     console.error('Tenant login error:', error)
     return c.json({

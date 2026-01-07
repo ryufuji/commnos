@@ -257,7 +257,9 @@ tenantPublic.get('/login', async (c) => {
                     const response = await axios.post('/api/tenant/login', loginData);
 
                     if (response.data.success) {
-                        console.log('Login successful, response data:', response.data);
+                        console.log('[Login] Full response data:', response.data);
+                        console.log('[Login] User object:', response.data.user);
+                        console.log('[Login] Membership object:', response.data.membership);
                         
                         // Store token and user data
                         localStorage.setItem('token', response.data.token);
@@ -266,7 +268,7 @@ tenantPublic.get('/login', async (c) => {
                         // Store membership data if available
                         if (response.data.membership) {
                             localStorage.setItem('membership', JSON.stringify(response.data.membership));
-                            console.log('Stored membership data:', response.data.membership);
+                            console.log('[Login] Stored membership data:', response.data.membership);
                         }
 
                         showToast('ログインに成功しました', 'success');
@@ -276,12 +278,16 @@ tenantPublic.get('/login', async (c) => {
                         const membership = response.data.membership;
                         const userRole = user.role || membership?.role;
                         
-                        console.log('User role for redirect:', userRole);
+                        console.log('[Login] user.role:', user.role);
+                        console.log('[Login] membership.role:', membership?.role);
+                        console.log('[Login] Final determined userRole:', userRole);
+                        console.log('[Login] Is owner?', userRole === 'owner');
+                        console.log('[Login] Is admin?', userRole === 'admin');
                         
                         setTimeout(() => {
                             if (userRole === 'owner' || userRole === 'admin') {
                                 // オーナー/管理者はダッシュボードへ
-                                console.log('Redirecting to dashboard');
+                                console.log('[Login] Redirecting owner/admin to dashboard');
                                 window.location.href = '/dashboard';
                             } else {
                                 // 一般メンバーはテナントホームへ
