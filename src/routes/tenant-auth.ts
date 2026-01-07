@@ -237,6 +237,16 @@ tenantAuth.post('/login', async (c) => {
         tenantName: tenant.name,
         joinedAt: membership.joined_at,
         createdAt: user.created_at
+      },
+      membership: {
+        tenant_id: tenant.id,
+        user_id: user.id,
+        role: membership.role,
+        member_number: membership.member_number,
+        status: membership.status,
+        joined_at: membership.joined_at,
+        subdomain: subdomain,
+        tenant_name: tenant.name
       }
     })
   } catch (error: any) {

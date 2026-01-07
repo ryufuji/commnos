@@ -257,20 +257,35 @@ tenantPublic.get('/login', async (c) => {
                     const response = await axios.post('/api/tenant/login', loginData);
 
                     if (response.data.success) {
-                        // Store token (キー名を'token'に統一)
+                        console.log('Login successful, response data:', response.data);
+                        
+                        // Store token and user data
                         localStorage.setItem('token', response.data.token);
                         localStorage.setItem('user', JSON.stringify(response.data.user));
+                        
+                        // Store membership data if available
+                        if (response.data.membership) {
+                            localStorage.setItem('membership', JSON.stringify(response.data.membership));
+                            console.log('Stored membership data:', response.data.membership);
+                        }
 
                         showToast('ログインに成功しました', 'success');
 
                         // 役割に応じてリダイレクト
                         const user = response.data.user;
+                        const membership = response.data.membership;
+                        const userRole = user.role || membership?.role;
+                        
+                        console.log('User role for redirect:', userRole);
+                        
                         setTimeout(() => {
-                            if (user && (user.role === 'owner' || user.role === 'admin')) {
+                            if (userRole === 'owner' || userRole === 'admin') {
                                 // オーナー/管理者はダッシュボードへ
+                                console.log('Redirecting to dashboard');
                                 window.location.href = '/dashboard';
                             } else {
                                 // 一般メンバーはテナントホームへ
+                                console.log('Redirecting to tenant home');
                                 window.location.href = '/tenant/home?subdomain=' + subdomain;
                             }
                         }, 1500);
