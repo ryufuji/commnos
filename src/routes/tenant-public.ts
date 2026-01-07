@@ -7547,4 +7547,288 @@ tenantPublic.get('/profile', async (c) => {
  * パスワード忘れページ
  */
 
+/**
+ * GET /tenant/member-plans
+ * 一般会員向けプラン選択・変更ページ
+ */
+tenantPublic.get('/member-plans', async (c) => {
+  const { DB } = c.env
+  const subdomain = c.req.query('subdomain')
+
+  if (!subdomain) {
+    return c.text('Subdomain required', 400)
+  }
+
+  // テナント情報取得
+  const tenant = await DB.prepare(`
+    SELECT * FROM tenants WHERE subdomain = ?
+  `).bind(subdomain).first()
+
+  if (!tenant) {
+    return c.text('Tenant not found', 404)
+  }
+
+  return c.html(`
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>プラン選択 - ${(tenant as any).name}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="/static/styles.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+</head>
+<body class="bg-gradient-to-br from-gray-50 to-gray-100">
+    <!-- ヘッダー -->
+    <header class="bg-white/80 backdrop-blur-sm shadow-sm border-b border-gray-200">
+        <div class="container mx-auto px-4 py-4">
+            <div class="flex justify-between items-center">
+                <h1 class="text-xl md:text-2xl font-bold text-gradient">
+                    <i class="fas fa-tags mr-2"></i>
+                    プラン選択
+                </h1>
+                <a href="/tenant/home?subdomain=${subdomain}" class="btn-ghost">
+                    <i class="fas fa-arrow-left mr-2"></i>
+                    ホームに戻る
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- メインコンテンツ -->
+    <main class="container mx-auto px-4 py-8">
+        <!-- 現在のプラン -->
+        <div id="currentPlanSection" class="bg-white rounded-lg shadow-md p-6 mb-8 hidden">
+            <h2 class="text-xl font-bold mb-4">
+                <i class="fas fa-check-circle text-green-600 mr-2"></i>
+                現在のプラン
+            </h2>
+            <div class="bg-green-50 border border-green-200 rounded-lg p-4">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="font-bold text-green-900" id="currentPlanName"></p>
+                        <p class="text-sm text-green-700" id="currentPlanDescription"></p>
+                        <p class="text-xs text-green-600 mt-1" id="currentPlanExpiry"></p>
+                    </div>
+                    <div class="text-right">
+                        <p class="text-2xl font-bold text-green-900" id="currentPlanPrice"></p>
+                        <p class="text-xs text-green-600">/ 月</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- プラン一覧 -->
+        <div class="mb-8">
+            <h2 class="text-2xl font-bold mb-6 text-center">
+                <i class="fas fa-list mr-2"></i>
+                利用可能なプラン
+            </h2>
+            <div id="plansList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <p class="col-span-full text-gray-600 text-center py-8">読み込み中...</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- プラン選択確認モーダル -->
+    <div id="confirmModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-lg shadow-2xl max-w-md w-full p-6">
+            <h2 class="text-2xl font-bold mb-4">プラン変更の確認</h2>
+            <div class="mb-6">
+                <p class="text-gray-700 mb-2">以下のプランに変更しますか？</p>
+                <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                    <p class="font-bold text-gray-900" id="confirmPlanName"></p>
+                    <p class="text-sm text-gray-600" id="confirmPlanDescription"></p>
+                    <p class="text-2xl font-bold text-primary-600 mt-2" id="confirmPlanPrice"></p>
+                </div>
+            </div>
+            <div class="flex gap-3">
+                <button onclick="closeConfirmModal()" class="flex-1 btn-ghost">
+                    キャンセル
+                </button>
+                <button onclick="confirmPlanChange()" class="flex-1 btn-primary">
+                    <i class="fas fa-check mr-2"></i>確定
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast通知 -->
+    <div id="toast" class="hidden fixed top-4 right-4 z-50"></div>
+
+    <script>
+        const subdomain = '${subdomain}'
+        let selectedPlanId = null
+
+        // Toast通知
+        function showToast(message, type = 'info') {
+            const toast = document.getElementById('toast')
+            const bgColor = type === 'success' ? 'bg-green-500' : type === 'error' ? 'bg-red-500' : 'bg-blue-500'
+            toast.className = \`fixed top-4 right-4 z-50 \${bgColor} text-white px-6 py-3 rounded-lg shadow-lg\`
+            toast.textContent = message
+            setTimeout(() => {
+                toast.classList.add('hidden')
+            }, 3000)
+        }
+
+        // 認証トークン取得
+        function getToken() {
+            return localStorage.getItem('token')
+        }
+
+        // 現在のプラン情報を取得
+        async function loadCurrentPlan() {
+            try {
+                const token = getToken()
+                if (!token) return
+
+                const response = await axios.get('/api/tenant/member/current-plan', {
+                    headers: { Authorization: \`Bearer \${token}\` },
+                    params: { subdomain }
+                })
+
+                if (response.data.success && response.data.plan) {
+                    const plan = response.data.plan
+                    document.getElementById('currentPlanName').textContent = plan.name
+                    document.getElementById('currentPlanDescription').textContent = plan.description || ''
+                    document.getElementById('currentPlanPrice').textContent = \`¥\${plan.price.toLocaleString()}\`
+                    
+                    if (response.data.expires_at) {
+                        const expiry = new Date(response.data.expires_at)
+                        document.getElementById('currentPlanExpiry').textContent = 
+                            \`有効期限: \${expiry.toLocaleDateString('ja-JP')}\`
+                    } else {
+                        document.getElementById('currentPlanExpiry').textContent = '継続中'
+                    }
+                    
+                    document.getElementById('currentPlanSection').classList.remove('hidden')
+                }
+            } catch (error) {
+                console.error('Failed to load current plan:', error)
+            }
+        }
+
+        // 利用可能なプラン一覧を取得
+        async function loadPlans() {
+            try {
+                const response = await axios.get('/api/tenant/member/plans', {
+                    params: { subdomain }
+                })
+
+                if (!response.data.success || !response.data.plans.length) {
+                    document.getElementById('plansList').innerHTML = \`
+                        <p class="col-span-full text-gray-600 text-center py-8">
+                            現在利用可能なプランはありません
+                        </p>
+                    \`
+                    return
+                }
+
+                const plansHtml = response.data.plans.map(plan => \`
+                    <div class="bg-white rounded-lg shadow-md p-6 hover:shadow-xl transition-shadow">
+                        <div class="mb-4">
+                            <h3 class="text-2xl font-bold text-gray-900 mb-2">\${plan.name}</h3>
+                            <p class="text-gray-600 text-sm mb-4">\${plan.description || ''}</p>
+                            <div class="flex items-baseline">
+                                <span class="text-4xl font-bold text-primary-600">¥\${plan.price.toLocaleString()}</span>
+                                <span class="text-gray-600 ml-2">/ 月</span>
+                            </div>
+                        </div>
+                        
+                        \${plan.features ? \`
+                            <div class="mb-6">
+                                <p class="text-sm font-semibold text-gray-700 mb-2">
+                                    <i class="fas fa-star text-yellow-500 mr-1"></i>特典
+                                </p>
+                                <ul class="text-sm text-gray-600 space-y-1">
+                                    \${JSON.parse(plan.features).map(f => \`
+                                        <li><i class="fas fa-check text-green-500 mr-2"></i>\${f}</li>
+                                    \`).join('')}
+                                </ul>
+                            </div>
+                        \` : ''}
+                        
+                        <button onclick="selectPlan(\${plan.id}, '\${plan.name}', '\${plan.description || ''}', \${plan.price})" 
+                                class="w-full btn-primary">
+                            <i class="fas fa-check mr-2"></i>このプランを選択
+                        </button>
+                    </div>
+                \`).join('')
+
+                document.getElementById('plansList').innerHTML = plansHtml
+            } catch (error) {
+                console.error('Failed to load plans:', error)
+                document.getElementById('plansList').innerHTML = \`
+                    <p class="col-span-full text-red-600 text-center py-8">
+                        プランの読み込みに失敗しました
+                    </p>
+                \`
+            }
+        }
+
+        // プラン選択
+        function selectPlan(planId, name, description, price) {
+            const token = getToken()
+            if (!token) {
+                showToast('ログインが必要です', 'error')
+                setTimeout(() => {
+                    window.location.href = \`/login?subdomain=\${subdomain}\`
+                }, 1000)
+                return
+            }
+
+            selectedPlanId = planId
+            document.getElementById('confirmPlanName').textContent = name
+            document.getElementById('confirmPlanDescription').textContent = description
+            document.getElementById('confirmPlanPrice').textContent = \`¥\${price.toLocaleString()} / 月\`
+            document.getElementById('confirmModal').classList.remove('hidden')
+        }
+
+        // モーダルを閉じる
+        function closeConfirmModal() {
+            document.getElementById('confirmModal').classList.add('hidden')
+            selectedPlanId = null
+        }
+
+        // プラン変更を確定
+        async function confirmPlanChange() {
+            if (!selectedPlanId) return
+
+            try {
+                const token = getToken()
+                const response = await axios.post('/api/tenant/member/change-plan', {
+                    subdomain,
+                    plan_id: selectedPlanId
+                }, {
+                    headers: { Authorization: \`Bearer \${token}\` }
+                })
+
+                if (response.data.success) {
+                    showToast('プランを変更しました！', 'success')
+                    closeConfirmModal()
+                    setTimeout(() => {
+                        loadCurrentPlan()
+                        loadPlans()
+                    }, 1000)
+                } else {
+                    showToast(response.data.message || 'プラン変更に失敗しました', 'error')
+                }
+            } catch (error) {
+                console.error('Failed to change plan:', error)
+                const message = error.response?.data?.message || 'プラン変更に失敗しました'
+                showToast(message, 'error')
+            }
+        }
+
+        // 初期化
+        loadCurrentPlan()
+        loadPlans()
+    </script>
+</body>
+</html>
+  `)
+})
+
 export default tenantPublic

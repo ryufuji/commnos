@@ -27,6 +27,7 @@ import images from './routes/images' // Phase 2 - 画像取得
 import tenantPublic from './routes/tenant-public' // Phase 3 - テナント公開ページ
 import passwordResetPages from './routes/password-reset-pages' // パスワードリセットページ
 import tenantAuth from './routes/tenant-auth' // Phase 2 - テナント会員認証
+import memberPlans from './routes/member-plans' // 一般会員向けプラン管理
 import likes from './routes/likes' // Phase 4 - いいね機能
 import notifications from './routes/notifications' // Phase 5 - 通知機能
 import chat from './routes/chat' // Phase 6 - チャット機能
@@ -91,6 +92,7 @@ app.route('/api/images', images)
 
 // テナント会員認証ルート（Phase 2）
 app.route('/api/tenant', tenantAuth)
+app.route('/api/tenant/member', memberPlans) // 一般会員向けプラン管理
 
 // いいねルート（Phase 4）
 app.route('/api/likes', likes)
