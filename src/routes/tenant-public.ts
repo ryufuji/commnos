@@ -837,6 +837,9 @@ tenantPublic.get('/home', async (c) => {
                             <a href="/tenant/mypage?subdomain=${subdomain}" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">
                                 <i class="fas fa-user mr-2"></i>プロフィール
                             </a>
+                            <a href="/tenant/member-plans?subdomain=${subdomain}" class="block px-4 py-2 text-gray-700 hover:bg-gray-100">
+                                <i class="fas fa-tags mr-2"></i>プラン選択
+                            </a>
                             <button id="logoutBtnDesktop" class="w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-100">
                                 <i class="fas fa-sign-out-alt mr-2"></i>ログアウト
                             </button>
@@ -861,6 +864,9 @@ tenantPublic.get('/home', async (c) => {
                     </div>
                     <a href="/tenant/mypage?subdomain=${subdomain}" class="block px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg text-center">
                         <i class="fas fa-user mr-2"></i>プロフィール
+                    </a>
+                    <a href="/tenant/member-plans?subdomain=${subdomain}" class="block px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg text-center">
+                        <i class="fas fa-tags mr-2"></i>プラン選択
                     </a>
                     <button id="logoutBtnMobile" class="w-full px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg">
                         <i class="fas fa-sign-out-alt mr-2"></i>ログアウト
@@ -894,6 +900,23 @@ tenantPublic.get('/home', async (c) => {
                 </div>
                 <h3 class="text-3xl font-bold text-gray-900 mb-1">${createdYear}</h3>
                 <p class="text-gray-600">設立年</p>
+            </div>
+        </div>
+
+        <!-- プラン選択CTA（認証済みユーザー向け） -->
+        <div id="plansCTA" class="auth-show hidden mb-12">
+            <div class="bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg shadow-lg p-8 text-white text-center">
+                <div class="mb-4">
+                    <i class="fas fa-star text-5xl text-yellow-300"></i>
+                </div>
+                <h3 class="text-3xl font-bold mb-4">プレミアムプランでもっと楽しもう！</h3>
+                <p class="text-lg mb-6 opacity-90">
+                    ${tenantName}のプレミアムプランで、限定コンテンツや特別な特典をお楽しみいただけます
+                </p>
+                <a href="/tenant/member-plans?subdomain=${subdomain}" 
+                   class="inline-block bg-white text-blue-600 font-bold px-8 py-3 rounded-lg hover:bg-gray-100 transition-colors shadow-lg">
+                    <i class="fas fa-tags mr-2"></i>プランを見る
+                </a>
             </div>
         </div>
 
