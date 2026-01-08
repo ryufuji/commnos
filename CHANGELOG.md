@@ -1,5 +1,65 @@
 # Changelog
 
+## 2026-01-07 - Stripe決済統合実装
+
+### 追加
+- **Stripe Checkout統合** 🎉
+  - プラン選択時にStripe Checkoutセッション作成
+  - 新規サブスクリプション: Checkout→決済→Webhook→プラン適用
+  - 既存サブスクリプション: Customer Portal経由でプラン変更
+- **Stripe Webhook Handler** (`/api/stripe/webhook`)
+  - `checkout.session.completed` - 決済完了処理
+  - `customer.subscription.created` - サブスクリプション作成
+  - `customer.subscription.updated` - サブスクリプション更新
+  - `customer.subscription.deleted` - キャンセル処理
+  - `invoice.payment_succeeded` - 支払い成功記録
+  - `invoice.payment_failed` - 支払い失敗記録
+- **データベース拡張**
+  - `tenant_memberships` に Stripe関連カラム追加:
+    - `stripe_customer_id` - Stripeカスタマー ID
+    - `stripe_subscription_id` - Stripeサブスクリプション ID
+  - マイグレーション: `0017_add_stripe_to_memberships.sql`
+
+### 変更
+- プラン選択フローを Stripe Checkout に変更
+- 決済成功/キャンセル時のメッセージ表示
+
+### ドキュメント
+- [`docs/STRIPE_INTEGRATION.md`](/docs/STRIPE_INTEGRATION.md) - Stripe統合ガイド作成
+  - アーキテクチャとデータフロー
+  - 環境変数設定方法
+  - Webhook設定手順
+  - テスト方法とトラブルシューティング
+
+### 必要な設定
+1. **Stripe Secret Key**:
+   ```bash
+   npx wrangler pages secret put STRIPE_SECRET_KEY --project-name commons-webapp
+   ```
+2. **Stripe Webhook Secret**:
+   - Stripeダッシュボードで Webhook エンドポイント作成
+   - URL: `https://commons-webapp.pages.dev/api/stripe/webhook`
+   ```bash
+   npx wrangler pages secret put STRIPE_WEBHOOK_SECRET --project-name commons-webapp
+   ```
+3. **Platform Domain**:
+   ```bash
+   npx wrangler pages secret put PLATFORM_DOMAIN --project-name commons-webapp
+   ```
+
+### デプロイ
+- **最新デプロイURL**: https://9ff98e88.commons-webapp.pages.dev
+- **本番環境**: https://commons-webapp.pages.dev
+- **コミット**: 03f5879
+
+### 今後の実装予定
+- メール通知（決済完了・失敗・キャンセル）
+- 領収書自動送信
+- プラン変更時の prorating 処理
+- 決済履歴ページのUI実装
+
+---
+
 ## 2026-01-07 - 一般会員向けプラン選択機能追加
 
 ### 追加
