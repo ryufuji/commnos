@@ -121,7 +121,7 @@ memberPlans.get('/current-plan', authMiddleware, async (c) => {
 
 /**
  * POST /api/tenant/member/change-plan
- * 一般会員向け: プラン変更
+ * 一般会員向け: プラン変更（Stripe Checkout統合）
  */
 memberPlans.post('/change-plan', authMiddleware, async (c) => {
   const { DB } = c.env
@@ -136,9 +136,9 @@ memberPlans.post('/change-plan', authMiddleware, async (c) => {
   }
 
   try {
-    // テナントID取得
+    // テナント情報取得
     const tenant = await DB.prepare(`
-      SELECT id FROM tenants WHERE subdomain = ?
+      SELECT id, subdomain, name FROM tenants WHERE subdomain = ?
     `).bind(subdomain).first()
 
     if (!tenant) {
@@ -171,33 +171,84 @@ memberPlans.post('/change-plan', authMiddleware, async (c) => {
       }, 404)
     }
 
-    // プラン変更（Stripe処理は後で実装）
-    await DB.prepare(`
-      UPDATE tenant_memberships
-      SET plan_id = ?, updated_at = CURRENT_TIMESTAMP
-      WHERE user_id = ? AND tenant_id = ?
-    `).bind(plan_id, userId, (tenant as any).id).run()
+    // ユーザー情報取得
+    const user = await DB.prepare(`
+      SELECT email, nickname FROM users WHERE id = ?
+    `).bind(userId).first()
 
-    // TODO: Stripe処理
-    // 1. 既存のサブスクリプションを取得
-    // 2. サブスクリプションアイテムを更新
-    // 3. 請求を prorating で処理
+    if (!user) {
+      return c.json({ success: false, error: 'User not found' }, 404)
+    }
 
-    return c.json({
-      success: true,
-      message: 'プランを変更しました',
-      plan: {
-        id: (plan as any).id,
-        name: (plan as any).name,
-        description: (plan as any).description,
-        price: (plan as any).price
-      }
+    // Stripe Checkoutセッション作成
+    const stripe = new Stripe(c.env.STRIPE_SECRET_KEY || '', {
+      apiVersion: '2024-12-18.acacia'
     })
+
+    // 既存のサブスクリプションをチェック
+    const existingSubscription = await DB.prepare(`
+      SELECT stripe_subscription_id FROM tenant_memberships
+      WHERE user_id = ? AND tenant_id = ? AND stripe_subscription_id IS NOT NULL
+    `).bind(userId, (tenant as any).id).first()
+
+    let checkoutSession
+
+    if ((existingSubscription as any)?.stripe_subscription_id) {
+      // 既存サブスクリプションがある場合は変更（ポータル経由）
+      const portalSession = await stripe.billingPortal.sessions.create({
+        customer: (membership as any).stripe_customer_id,
+        return_url: `${c.env.PLATFORM_DOMAIN}/tenant/member-plans?subdomain=${subdomain}`
+      })
+
+      return c.json({
+        success: true,
+        redirect_url: portalSession.url,
+        is_portal: true,
+        message: 'サブスクリプション管理ポータルにリダイレクトします'
+      })
+    } else {
+      // 新規サブスクリプション作成
+      checkoutSession = await stripe.checkout.sessions.create({
+        mode: 'subscription',
+        payment_method_types: ['card'],
+        line_items: [
+          {
+            price: (plan as any).stripe_price_id,
+            quantity: 1
+          }
+        ],
+        customer_email: (user as any).email,
+        metadata: {
+          user_id: userId.toString(),
+          tenant_id: (tenant as any).id.toString(),
+          plan_id: plan_id.toString(),
+          subdomain: subdomain
+        },
+        subscription_data: {
+          metadata: {
+            user_id: userId.toString(),
+            tenant_id: (tenant as any).id.toString(),
+            plan_id: plan_id.toString(),
+            tenant_name: (tenant as any).name
+          }
+        },
+        success_url: `${c.env.PLATFORM_DOMAIN}/tenant/member-plans?subdomain=${subdomain}&success=true`,
+        cancel_url: `${c.env.PLATFORM_DOMAIN}/tenant/member-plans?subdomain=${subdomain}&canceled=true`
+      })
+
+      return c.json({
+        success: true,
+        checkout_url: checkoutSession.url,
+        session_id: checkoutSession.id,
+        message: 'Stripe Checkoutにリダイレクトします'
+      })
+    }
   } catch (error) {
     console.error('[Change Plan Error]', error)
     return c.json({
       success: false,
-      error: 'Failed to change plan'
+      error: 'Failed to change plan',
+      details: error instanceof Error ? error.message : 'Unknown error'
     }, 500)
   }
 })

@@ -7806,12 +7806,29 @@ tenantPublic.get('/member-plans', async (c) => {
                 })
 
                 if (response.data.success) {
-                    showToast('プランを変更しました！', 'success')
-                    closeConfirmModal()
-                    setTimeout(() => {
-                        loadCurrentPlan()
-                        loadPlans()
-                    }, 1000)
+                    // Stripe Checkoutにリダイレクト
+                    if (response.data.checkout_url) {
+                        showToast('決済ページに移動します...', 'success')
+                        setTimeout(() => {
+                            window.location.href = response.data.checkout_url
+                        }, 1000)
+                    } 
+                    // Stripe Portalにリダイレクト（既存サブスクリプション変更）
+                    else if (response.data.redirect_url && response.data.is_portal) {
+                        showToast('サブスクリプション管理ページに移動します...', 'success')
+                        setTimeout(() => {
+                            window.location.href = response.data.redirect_url
+                        }, 1000)
+                    }
+                    // 直接プラン変更完了（無料プランなど）
+                    else {
+                        showToast(response.data.message || 'プランを変更しました！', 'success')
+                        closeConfirmModal()
+                        setTimeout(() => {
+                            loadCurrentPlan()
+                            loadPlans()
+                        }, 1000)
+                    }
                 } else {
                     showToast(response.data.message || 'プラン変更に失敗しました', 'error')
                 }
@@ -7825,6 +7842,18 @@ tenantPublic.get('/member-plans', async (c) => {
         // 初期化
         loadCurrentPlan()
         loadPlans()
+
+        // URL パラメーターから決済結果をチェック
+        const urlParams = new URLSearchParams(window.location.search)
+        if (urlParams.get('success') === 'true') {
+            showToast('決済が完了しました！プランが適用されました。', 'success')
+            // URLをクリーンアップ
+            window.history.replaceState({}, document.title, window.location.pathname + '?subdomain=' + subdomain)
+        } else if (urlParams.get('canceled') === 'true') {
+            showToast('決済がキャンセルされました。', 'error')
+            // URLをクリーンアップ
+            window.history.replaceState({}, document.title, window.location.pathname + '?subdomain=' + subdomain)
+        }
     </script>
 </body>
 </html>

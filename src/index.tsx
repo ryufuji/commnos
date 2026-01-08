@@ -18,6 +18,7 @@ import tenant from './routes/tenant'
 import profile from './routes/profile' // Week 5-6
 import posts from './routes/posts' // Week 7-8
 import stripe from './routes/stripe' // Week 9-10
+import stripeWebhook from './routes/stripe-webhook' // Stripe Webhook Handler
 import subscription from './routes/subscription' // サブスクリプション管理
 import tenantPlans from './routes/tenant-plans' // テナント独自プラン管理
 import platform from './routes/platform' // プラットフォーム管理（VALUE ARCHITECTS専用）
@@ -62,6 +63,7 @@ app.route('/api/posts', posts)
 
 // Stripe決済ルート（Week 9-10）
 app.route('/api/stripe', stripe)
+app.route('/api/stripe', stripeWebhook) // Stripe Webhook Handler
 
 // サブスクリプション管理ルート
 app.route('/api/subscription', subscription)
