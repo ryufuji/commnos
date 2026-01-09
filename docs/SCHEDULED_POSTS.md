@@ -332,3 +332,162 @@ npx wrangler tail commons-webapp-cron
 **最終更新**: 2026-01-09  
 **デプロイ日時**: 2026-01-09  
 **担当**: AI Assistant
+
+---
+
+## 📝 投稿編集機能での予約投稿
+
+### 編集モーダルでの予約日時変更
+
+**ファイル**: 
+- `src/index.tsx` (編集モーダルHTML)
+- `public/static/posts-admin.js` (編集処理JavaScript)
+- `src/routes/admin-posts.ts` (更新API)
+
+#### 実装内容
+
+1. **ステータス変更時の動的表示**
+   - ステータスを「予約公開」に変更すると、日時フィールドが表示される
+   - それ以外のステータスでは、日時フィールドが非表示
+
+2. **既存の予約日時を編集画面に読み込み**
+   - 予約投稿を編集時、既存の `scheduled_at` を日付・時刻フィールドに自動設定
+   - `editScheduledDate`: `YYYY-MM-DD` 形式
+   - `editScheduledTime`: `HH:MM` 形式
+
+3. **過去日時のバリデーション**
+   - 日付選択で過去の日付は選択不可
+   - 今日の日付を選択した場合、現在時刻より前の時刻は無効化
+
+4. **更新API**
+   - `PUT /api/admin/posts/:id` に `scheduled_at` を追加
+   - ステータスが `scheduled` の場合のみ保存
+   - それ以外のステータスでは `scheduled_at` を `null` に設定
+
+#### コード例（JavaScript）
+
+```javascript
+// posts-admin.js
+
+// ステータス変更で日時フィールドの表示/非表示
+editStatusField.addEventListener('change', function() {
+    const scheduledFields = document.getElementById('editScheduledFields')
+    if (scheduledFields) {
+        scheduledFields.style.display = this.value === 'scheduled' ? 'block' : 'none'
+    }
+})
+
+// 過去日時のバリデーション
+if (editScheduledDate) {
+    const now = new Date()
+    const today = now.toISOString().split('T')[0]
+    editScheduledDate.setAttribute('min', today)
+    
+    editScheduledDate.addEventListener('change', function() {
+        if (this.value === today && editScheduledTime) {
+            const currentTime = now.toTimeString().slice(0, 5)
+            editScheduledTime.setAttribute('min', currentTime)
+            if (editScheduledTime.value && editScheduledTime.value < currentTime) {
+                editScheduledTime.value = currentTime
+            }
+        } else if (editScheduledTime) {
+            editScheduledTime.removeAttribute('min')
+        }
+    })
+}
+
+// 保存時にscheduled_atを送信
+const statusValue = document.getElementById('editStatus').value
+if (statusValue === 'scheduled') {
+    const scheduledDate = document.getElementById('editScheduledDate').value
+    const scheduledTime = document.getElementById('editScheduledTime').value
+    
+    if (scheduledDate && scheduledTime) {
+        data.scheduled_at = scheduledDate + 'T' + scheduledTime + ':00.000Z'
+    } else {
+        showToast('予約投稿には日時の指定が必要です', 'error')
+        return
+    }
+} else {
+    data.scheduled_at = null
+}
+```
+
+#### API仕様（更新）
+
+**エンドポイント**: `PUT /api/admin/posts/:id`
+
+**リクエストボディ**:
+```json
+{
+  "title": "更新後のタイトル",
+  "content": "更新後の本文",
+  "status": "scheduled",
+  "scheduled_at": "2026-01-15T18:00:00.000Z",
+  "visibility": "public",
+  "thumbnail_url": "https://...",
+  "video_url": "https://..."
+}
+```
+
+**レスポンス**:
+```json
+{
+  "success": true,
+  "post": { ... },
+  "message": "投稿を更新しました"
+}
+```
+
+---
+
+## 🧪 追加のテストシナリオ
+
+### テスト5: 予約投稿の編集
+1. 管理者でログイン
+2. `/posts-admin` にアクセス
+3. 既存の予約投稿の「編集」ボタンをクリック
+4. ステータスが「予約公開」の場合、日時フィールドが表示されることを確認
+5. 日時を変更（例：1時間後に変更）
+6. 「更新する」をクリック
+7. 投稿一覧で変更が反映されることを確認
+
+### テスト6: 予約投稿を即公開に変更
+1. 予約投稿を編集
+2. ステータスを「公開」に変更
+3. 「更新する」をクリック
+4. 投稿が即座に公開され、`published_at` が設定されることを確認
+
+### テスト7: 公開済み投稿を予約投稿に変更
+1. 公開済み投稿を編集
+2. ステータスを「予約公開」に変更
+3. 未来の日時を指定
+4. 「更新する」をクリック
+5. 投稿が `status='scheduled'` に変更されることを確認
+
+---
+
+## 🔗 更新されたデプロイ情報
+
+- **本番環境**: https://commons-webapp.pages.dev/
+- **最新デプロイ**: https://d214dfd1.commons-webapp.pages.dev
+- **GitHub**: https://github.com/ryufuji/commnos
+- **コミット**: `456b388`
+- **バンドルサイズ**: 989.71 kB
+
+---
+
+## ✅ 完了（更新）
+- ✅ データベースマイグレーション（`scheduled_at` カラム追加）
+- ✅ 投稿作成フォームに予約投稿UI実装
+- ✅ **投稿編集モーダルに予約投稿UI実装**（NEW）
+- ✅ バックエンドAPIでの `scheduled_at` 保存・更新
+- ✅ Cron Worker による自動公開
+- ✅ 投稿管理画面での予約投稿表示
+- ✅ 過去日時のバリデーション（作成時・編集時）
+- ✅ 本番環境デプロイ
+
+---
+
+**最終更新**: 2026-01-09  
+**バージョン**: Phase 4（予約投稿機能 + 編集機能）
