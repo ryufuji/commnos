@@ -16,7 +16,7 @@ const auth = new Hono<AppContext>()
  */
 auth.post('/register', async (c) => {
   const body = await c.req.json<RegisterRequest>()
-  const { email, password, subdomain, communityName, subtitle, theme, isPublic } = body
+  const { email, password, subdomain, communityName, subtitle, isPublic } = body
 
   // バリデーション
   if (!email || !password || !subdomain || !communityName) {

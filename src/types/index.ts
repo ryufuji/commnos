@@ -165,7 +165,6 @@ export interface RegisterRequest {
   subdomain: string
   communityName: string
   subtitle?: string
-  theme?: 'modern-business' | 'wellness-nature' | 'creative-studio' | 'tech-innovation'
   isPublic?: number // 1: 公開, 0: 非公開（デフォルト: 1）
 }
 

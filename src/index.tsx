@@ -161,7 +161,7 @@ app.get('/', (c) => {
         <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
         <link href="/static/styles.css" rel="stylesheet">
     </head>
-    <body class="bg-gradient-to-br from-gray-50 to-gray-100" data-theme="modern-business">
+    <body class="bg-gradient-to-br from-gray-50 to-gray-100" data-theme="light">
         <div class="min-h-screen flex flex-col">
             <!-- ヘッダー -->
             <header class="bg-white/80 backdrop-blur-sm shadow-sm border-b border-gray-200 sticky top-0 z-10">
@@ -205,7 +205,7 @@ app.get('/', (c) => {
                     <div class="card-hover p-8 text-center">
                         <div class="text-5xl mb-4"><i class="fas fa-bolt text-accent-500"></i></div>
                         <h3 class="text-xl font-bold mb-3 text-gray-900">5分で開設</h3>
-                        <p class="text-secondary-600">技術知識不要。サブドメイン選択、テーマ選択だけで即座に開設。</p>
+                        <p class="text-secondary-600">技術知識不要。サブドメイン選択だけで即座に開設。</p>
                     </div>
                     <div class="card-hover p-8 text-center">
                         <div class="text-5xl mb-4"><i class="fas fa-yen-sign text-success-500"></i></div>
@@ -214,8 +214,8 @@ app.get('/', (c) => {
                     </div>
                     <div class="card-hover p-8 text-center">
                         <div class="text-5xl mb-4"><i class="fas fa-palette text-primary-500"></i></div>
-                        <h3 class="text-xl font-bold mb-3 text-gray-900">カスタマイズ可能</h3>
-                        <p class="text-secondary-600">4つのテーマから選択。あなた色のコミュニティを作成。</p>
+                        <h3 class="text-xl font-bold mb-3 text-gray-900">美しいデザイン</h3>
+                        <p class="text-secondary-600">モダンで統一されたデザイン。プロフェッショナルな印象。</p>
                     </div>
                 </div>
 
@@ -355,7 +355,7 @@ app.get('/communities', async (c) => {
         <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
         <link href="/static/styles.css" rel="stylesheet">
     </head>
-    <body class="bg-gray-50 min-h-screen" data-theme="modern-business">
+    <body class="bg-gray-50 min-h-screen" data-theme="light">
         <!-- ヘッダー -->
         <header class="bg-white shadow-sm sticky top-0 z-50">
             <div class="container mx-auto px-4 py-4">
@@ -467,7 +467,7 @@ app.get('/register', (c) => {
         <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
         <link href="/static/styles.css" rel="stylesheet">
     </head>
-    <body class="bg-gradient-to-br from-primary-50 via-white to-secondary-50" data-theme="modern-business">
+    <body class="bg-gradient-to-br from-primary-50 via-white to-secondary-50" data-theme="light">
         <div class="min-h-screen flex items-center justify-center px-4 py-12">
             <div class="max-w-md w-full">
                 <!-- ロゴ -->
@@ -643,7 +643,7 @@ app.get('/plans', (c) => {
         <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
         <link href="/static/styles.css" rel="stylesheet">
     </head>
-    <body class="bg-gradient-to-br from-primary-50 via-white to-secondary-50" data-theme="modern-business">
+    <body class="bg-gradient-to-br from-primary-50 via-white to-secondary-50" data-theme="light">
         <div class="min-h-screen py-12 px-4">
             <div class="max-w-7xl mx-auto">
                 <!-- ヘッダー -->
@@ -892,7 +892,7 @@ app.get('/success', (c) => {
         <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
         <link href="/static/styles.css" rel="stylesheet">
     </head>
-    <body class="bg-gradient-to-br from-success-50 via-white to-primary-50" data-theme="modern-business">
+    <body class="bg-gradient-to-br from-success-50 via-white to-primary-50" data-theme="light">
         <div class="min-h-screen flex items-center justify-center px-4 py-12">
             <div class="max-w-2xl w-full">
                 <div class="card p-12 text-center fade-in">
@@ -988,7 +988,7 @@ app.get('/cancel', (c) => {
         <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
         <link href="/static/styles.css" rel="stylesheet">
     </head>
-    <body class="bg-gradient-to-br from-warning-50 via-white to-primary-50" data-theme="modern-business">
+    <body class="bg-gradient-to-br from-warning-50 via-white to-primary-50" data-theme="light">
         <div class="min-h-screen flex items-center justify-center px-4 py-12">
             <div class="max-w-2xl w-full">
                 <div class="card p-12 text-center fade-in">
@@ -1078,7 +1078,7 @@ app.get('/profile', (c) => {
         <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
         <link href="/static/styles.css" rel="stylesheet">
     </head>
-    <body class="bg-gray-100" data-theme="modern-business">
+    <body class="bg-gray-100" data-theme="light">
         <div class="min-h-screen py-8 px-4">
             <div class="max-w-2xl mx-auto">
                 <!-- ヘッダー -->
@@ -1577,14 +1577,6 @@ app.get('/dashboard', (c) => {
                             <p class="text-sm text-secondary-600">プロフィールを更新</p>
                         </a>
                         
-                        <button onclick="openThemeModal()" class="card-interactive p-6 text-center">
-                            <div class="text-4xl mb-3 text-accent-500">
-                                <i class="fas fa-palette"></i>
-                            </div>
-                            <h3 class="font-bold text-gray-900 mb-2">テーマ設定</h3>
-                            <p class="text-sm text-secondary-600">デザインを変更</p>
-                        </button>
-                        
                         <button onclick="openPrivacyModal()" class="card-interactive p-6 text-center">
                             <div class="text-4xl mb-3 text-info-500">
                                 <i class="fas fa-eye"></i>
@@ -1603,120 +1595,6 @@ app.get('/dashboard', (c) => {
                     </div>
                 </div>
             </main>
-            
-            <!-- テーマ選択モーダル -->
-            <div id="themeModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                <div class="bg-white rounded-lg shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-                    <div class="p-6 border-b border-gray-200">
-                        <div class="flex justify-between items-center">
-                            <h2 class="text-2xl font-bold text-gray-900">
-                                <i class="fas fa-palette mr-2 text-primary-500"></i>
-                                テーマ設定
-                            </h2>
-                            <button onclick="closeThemeModal()" class="text-gray-500 hover:text-gray-700">
-                                <i class="fas fa-times text-xl"></i>
-                            </button>
-                        </div>
-                        <p class="text-sm text-secondary-600 mt-2">
-                            コミュニティ全体のデザインテーマを選択してください
-                        </p>
-                    </div>
-                    
-                    <div class="p-6">
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <!-- Modern Business -->
-                            <label class="theme-card cursor-pointer">
-                                <input type="radio" name="themeModal" value="modern-business" checked class="hidden theme-radio-modal">
-                                <div class="p-5 border-2 rounded-lg transition-all duration-200 hover:border-primary-400">
-                                    <div class="flex items-center gap-3 mb-3">
-                                        <div class="w-12 h-12 rounded-lg" style="background: linear-gradient(135deg, #4F46E5 0%, #6366F1 100%);"></div>
-                                        <div class="flex-1">
-                                            <p class="font-semibold text-lg text-gray-900">Modern Business</p>
-                                            <p class="text-sm text-secondary-500">プロフェッショナル・信頼感</p>
-                                        </div>
-                                    </div>
-                                    <div class="flex gap-2">
-                                        <div class="w-6 h-6 rounded" style="background: #4F46E5;"></div>
-                                        <div class="w-6 h-6 rounded" style="background: #6366F1;"></div>
-                                        <div class="w-6 h-6 rounded" style="background: #818CF8;"></div>
-                                        <div class="w-6 h-6 rounded" style="background: #64748B;"></div>
-                                    </div>
-                                </div>
-                            </label>
-                            
-                            <!-- Wellness Nature -->
-                            <label class="theme-card cursor-pointer">
-                                <input type="radio" name="themeModal" value="wellness-nature" class="hidden theme-radio-modal">
-                                <div class="p-5 border-2 rounded-lg transition-all duration-200 hover:border-primary-400">
-                                    <div class="flex items-center gap-3 mb-3">
-                                        <div class="w-12 h-12 rounded-lg" style="background: linear-gradient(135deg, #059669 0%, #10B981 100%);"></div>
-                                        <div class="flex-1">
-                                            <p class="font-semibold text-lg text-gray-900">Wellness Nature</p>
-                                            <p class="text-sm text-secondary-500">自然・健康・リラックス</p>
-                                        </div>
-                                    </div>
-                                    <div class="flex gap-2">
-                                        <div class="w-6 h-6 rounded" style="background: #059669;"></div>
-                                        <div class="w-6 h-6 rounded" style="background: #10B981;"></div>
-                                        <div class="w-6 h-6 rounded" style="background: #34D399;"></div>
-                                        <div class="w-6 h-6 rounded" style="background: #84CC16;"></div>
-                                    </div>
-                                </div>
-                            </label>
-                            
-                            <!-- Creative Studio -->
-                            <label class="theme-card cursor-pointer">
-                                <input type="radio" name="themeModal" value="creative-studio" class="hidden theme-radio-modal">
-                                <div class="p-5 border-2 rounded-lg transition-all duration-200 hover:border-primary-400">
-                                    <div class="flex items-center gap-3 mb-3">
-                                        <div class="w-12 h-12 rounded-lg" style="background: linear-gradient(135deg, #8B5CF6 0%, #A78BFA 100%);"></div>
-                                        <div class="flex-1">
-                                            <p class="font-semibold text-lg text-gray-900">Creative Studio</p>
-                                            <p class="text-sm text-secondary-500">創造性・芸術・個性</p>
-                                        </div>
-                                    </div>
-                                    <div class="flex gap-2">
-                                        <div class="w-6 h-6 rounded" style="background: #8B5CF6;"></div>
-                                        <div class="w-6 h-6 rounded" style="background: #A78BFA;"></div>
-                                        <div class="w-6 h-6 rounded" style="background: #EC4899;"></div>
-                                        <div class="w-6 h-6 rounded" style="background: #F59E0B;"></div>
-                                    </div>
-                                </div>
-                            </label>
-                            
-                            <!-- Tech Innovation -->
-                            <label class="theme-card cursor-pointer">
-                                <input type="radio" name="themeModal" value="tech-innovation" class="hidden theme-radio-modal">
-                                <div class="p-5 border-2 rounded-lg transition-all duration-200 hover:border-primary-400">
-                                    <div class="flex items-center gap-3 mb-3">
-                                        <div class="w-12 h-12 rounded-lg" style="background: linear-gradient(135deg, #06B6D4 0%, #22D3EE 100%);"></div>
-                                        <div class="flex-1">
-                                            <p class="font-semibold text-lg text-gray-900">Tech Innovation</p>
-                                            <p class="text-sm text-secondary-500">革新・先進・テクノロジー</p>
-                                        </div>
-                                    </div>
-                                    <div class="flex gap-2">
-                                        <div class="w-6 h-6 rounded" style="background: #06B6D4;"></div>
-                                        <div class="w-6 h-6 rounded" style="background: #22D3EE;"></div>
-                                        <div class="w-6 h-6 rounded" style="background: #6366F1;"></div>
-                                        <div class="w-6 h-6 rounded" style="background: #14B8A6;"></div>
-                                    </div>
-                                </div>
-                            </label>
-                        </div>
-                    </div>
-                    
-                    <div class="p-6 border-t border-gray-200 flex gap-3 justify-end">
-                        <button onclick="closeThemeModal()" class="btn-secondary">
-                            キャンセル
-                        </button>
-                        <button onclick="saveTheme()" class="btn-primary">
-                            <i class="fas fa-save mr-2"></i>
-                            保存
-                        </button>
-                    </div>
-                </div>
-            </div>
             
             <!-- 公開設定モーダル -->
             <div id="privacyModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -1906,66 +1784,6 @@ app.get('/dashboard', (c) => {
                 })
             }
             
-            // テーマモーダル制御
-            window.openThemeModal = function() {
-                document.getElementById('themeModal').classList.remove('hidden')
-                
-                // テーマカードの選択状態を更新
-                document.querySelectorAll('.theme-radio-modal').forEach(radio => {
-                    radio.addEventListener('change', function() {
-                        document.querySelectorAll('#themeModal .theme-card > div').forEach(card => {
-                            card.classList.remove('border-primary-600', 'bg-primary-50', 'shadow-md')
-                            card.classList.add('border-gray-200')
-                        })
-                        
-                        if (this.checked) {
-                            const card = this.nextElementSibling
-                            card.classList.remove('border-gray-200')
-                            card.classList.add('border-primary-600', 'bg-primary-50', 'shadow-md')
-                        }
-                    })
-                })
-                
-                // 初期選択状態を設定
-                const checkedRadio = document.querySelector('.theme-radio-modal:checked')
-                if (checkedRadio) {
-                    const card = checkedRadio.nextElementSibling
-                    card.classList.remove('border-gray-200')
-                    card.classList.add('border-primary-600', 'bg-primary-50', 'shadow-md')
-                }
-            }
-            
-            window.closeThemeModal = function() {
-                document.getElementById('themeModal').classList.add('hidden')
-            }
-            
-            window.saveTheme = async function() {
-                const selectedTheme = document.querySelector('.theme-radio-modal:checked')?.value
-                
-                if (!selectedTheme) {
-                    showToast('テーマを選択してください', 'error')
-                    return
-                }
-                
-                try {
-                    showToast('テーマを保存しています...', 'info')
-                    
-                    // TODO: API実装後に有効化
-                    // await apiRequest('/api/settings/theme', {
-                    //     method: 'PUT',
-                    //     body: JSON.stringify({ theme: selectedTheme })
-                    // })
-                    
-                    // とりあえずローカルに保存してテーマを適用
-                    switchTheme(selectedTheme)
-                    closeThemeModal()
-                    showToast('テーマを変更しました！ページをリロードすると全体に反映されます。', 'success')
-                } catch (error) {
-                    showToast('テーマの保存に失敗しました', 'error')
-                    console.error('Theme save error:', error)
-                }
-            }
-
             // 公開設定モーダル制御
             window.openPrivacyModal = async function() {
                 document.getElementById('privacyModal').classList.remove('hidden')
@@ -2168,7 +1986,7 @@ app.get('/dashboard', (c) => {
 app.get('/members', (c) => {
   return c.html(`
     <!DOCTYPE html>
-    <html lang="ja" data-theme="modern-business">
+    <html lang="ja" data-theme="light">
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
