@@ -1,5 +1,49 @@
 # Changelog
 
+## 2026-01-09 - デバッグログシステム追加
+
+### 新機能 ✨
+- **包括的なデバッグログシステムを実装**
+  - `public/static/app.js` に詳細なログ機能を追加
+  - 13のログカテゴリ（INIT, API_REQUEST, AUTH, FORM, UI, ERROR等）
+  - カラー付きコンソールグループ表示
+  - スタックトレース自動出力
+  
+- **トレース対象**
+  - API リクエスト/レスポンス
+  - 認証フロー（ログイン、登録、ログアウト）
+  - フォーム送信
+  - UI インタラクション（ボタン、リンククリック）
+  - LocalStorage 操作
+  - グローバルエラー
+  - ページライフサイクル
+  - パフォーマンス情報
+
+### 技術詳細
+- **実装方法**
+  - `debugLog(category, message, data)` ヘルパー関数
+  - Fetch API のインターセプト
+  - LocalStorage のプロキシ
+  - イベントリスナーによるDOM操作トレース
+  
+- **設定**
+  - `const DEBUG = true` でデバッグモードON/OFF切替可能
+  - 本番環境では `false` 推奨
+
+### ドキュメント
+- 新規作成: `docs/DEBUG_LOGGING.md`
+  - 使用方法、ログカテゴリ一覧
+  - デバッグシナリオ例
+  - カスタマイズ方法
+
+### デプロイ
+- 本番: https://commons-webapp.pages.dev
+- 最新: https://dd68bc68.commons-webapp.pages.dev
+- コミット: 35daee0
+- 追加行数: 約150行
+
+---
+
 ## 2026-01-09 - テーマ管理UI完全削除
 
 ### 修正 🔧
