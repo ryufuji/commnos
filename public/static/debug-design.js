@@ -40,11 +40,19 @@
   results.css.files = [];
   
   stylesheets.forEach((sheet, index) => {
+    let rulesCount = 'blocked';
+    try {
+      rulesCount = sheet.cssRules ? sheet.cssRules.length : 'N/A';
+    } catch (e) {
+      // CORS制限でアクセスできない外部CSS（Tailwind CDNなど）
+      rulesCount = 'CORS blocked (external)';
+    }
+    
     const info = {
       index,
       href: sheet.href || 'inline',
       disabled: sheet.disabled,
-      rules: sheet.cssRules ? sheet.cssRules.length : 'blocked',
+      rules: rulesCount,
       media: sheet.media.mediaText || 'all'
     };
     results.css.files.push(info);
@@ -63,11 +71,32 @@
   console.log('\n🎯 重要CSSファイルチェック:');
   criticalCSS.forEach(css => {
     const found = stylesheets.some(sheet => 
-      sheet.href && sheet.href.includes(css)
+      sheet.href && (sheet.href.includes(css) || sheet.href === css)
     );
     console.log(`${found ? '✅' : '❌'} ${css}`);
     results.css[css] = found;
+    
+    // 実際に見つかったファイルのパスも表示
+    if (!found && css.startsWith('/static/')) {
+      console.log(`   💡 ヒント: HTMLに以下を追加してください:`);
+      console.log(`   <link href="${css}" rel="stylesheet">`);
+    }
   });
+  
+  // 実際に読み込まれているCSSファイルのリストを表示
+  console.log('\n📄 実際に読み込まれているCSSファイル:');
+  const loadedCSS = stylesheets
+    .filter(sheet => sheet.href)
+    .map(sheet => sheet.href);
+  
+  if (loadedCSS.length === 0) {
+    console.warn('⚠️ 外部CSSファイルが1つも読み込まれていません！');
+  } else {
+    loadedCSS.forEach((href, index) => {
+      console.log(`${index + 1}. ${href}`);
+    });
+  }
+  
   console.groupEnd();
   
   // ============================================
@@ -129,6 +158,21 @@
   // 5. 主要要素の存在確認
   // ============================================
   console.group('🔍 主要要素の存在確認');
+  
+  // HTMLのlink要素を確認
+  console.log('📌 HTMLの<link>要素:');
+  const linkElements = document.querySelectorAll('link[rel="stylesheet"]');
+  if (linkElements.length === 0) {
+    console.warn('⚠️ <link rel="stylesheet"> 要素が見つかりません！');
+  } else {
+    linkElements.forEach((link, index) => {
+      console.log(`${index + 1}. href="${link.href}"`);
+      console.log(`   ↳ media="${link.media || 'all'}"`);
+      console.log(`   ↳ disabled=${link.disabled}`);
+    });
+  }
+  
+  console.log('\n📌 HTMLの主要要素:');
   const selectors = [
     'header',
     'nav',
@@ -190,7 +234,7 @@
   if (window.performance && window.performance.getEntriesByType) {
     const resources = performance.getEntriesByType('resource');
     const cssResources = resources.filter(r => 
-      r.name.includes('.css') || r.initiatorType === 'css'
+      r.name.includes('.css') || r.initiatorType === 'css' || r.initiatorType === 'link'
     );
     
     console.log(`📊 総リソース数: ${resources.length}`);
@@ -198,11 +242,14 @@
     
     console.log('\n🔗 CSS リソース詳細:');
     cssResources.forEach(resource => {
-      const status = resource.responseStatus === 200 ? '✅' : '❌';
-      console.log(`${status} ${resource.name}`);
+      // responseStatus は一部のブラウザでは使えないため、存在チェック
+      const status = resource.responseStatus || (resource.transferSize > 0 ? 200 : 'unknown');
+      const statusIcon = status === 200 ? '✅' : status === 'unknown' ? '⚠️' : '❌';
+      
+      console.log(`${statusIcon} ${resource.name}`);
       console.log(`   ↳ サイズ: ${(resource.transferSize / 1024).toFixed(2)} KB`);
       console.log(`   ↳ 読込時間: ${resource.duration.toFixed(2)} ms`);
-      console.log(`   ↳ ステータス: ${resource.responseStatus || 'unknown'}`);
+      console.log(`   ↳ ステータス: ${status}`);
     });
     
     results.network = {
@@ -212,7 +259,7 @@
         url: r.name,
         size: r.transferSize,
         duration: r.duration,
-        status: resource.responseStatus
+        status: r.responseStatus || (r.transferSize > 0 ? 200 : 'unknown')
       }))
     };
   } else {
