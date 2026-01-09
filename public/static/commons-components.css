@@ -461,3 +461,190 @@
     padding: 1rem;
   }
 }
+
+/* ========================================
+   Tailwind ユーティリティクラス拡張
+   ※ HTMLで使用しているクラスを定義
+======================================== */
+
+/* カラーユーティリティ */
+.text-primary-500 {
+  color: var(--commons-primary);
+}
+
+.text-primary-600 {
+  color: var(--commons-primary-dark);
+}
+
+.text-accent-500 {
+  color: var(--commons-accent-yellow);
+}
+
+.text-success-500 {
+  color: #10B981;
+}
+
+.text-secondary-500 {
+  color: var(--commons-text-secondary);
+}
+
+.text-secondary-600 {
+  color: var(--commons-text-secondary);
+}
+
+.text-gradient {
+  background: linear-gradient(135deg, var(--commons-primary) 0%, var(--commons-accent-yellow) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* 背景カラー */
+.bg-primary-50 {
+  background-color: var(--commons-primary-light);
+}
+
+.bg-primary-500 {
+  background-color: var(--commons-primary);
+}
+
+.border-primary-500 {
+  border-color: var(--commons-primary);
+}
+
+/* ボタン */
+.btn-primary {
+  background: var(--commons-primary);
+  color: white;
+  padding: 12px 24px;
+  border-radius: var(--radius-lg);
+  font-weight: var(--font-weight-semibold);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-normal);
+  border: none;
+  cursor: pointer;
+}
+
+.btn-primary:hover {
+  background: var(--commons-primary-dark);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-medium);
+}
+
+.btn-secondary {
+  background: white;
+  color: var(--commons-primary);
+  padding: 12px 24px;
+  border-radius: var(--radius-lg);
+  font-weight: var(--font-weight-semibold);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all var(--transition-normal);
+  border: 2px solid var(--commons-primary);
+  cursor: pointer;
+}
+
+.btn-secondary:hover {
+  background: var(--commons-primary-light);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-medium);
+}
+
+/* カード */
+.card {
+  background: white;
+  border-radius: var(--radius-xl);
+  padding: var(--spacing-lg);
+  box-shadow: var(--shadow-soft);
+  transition: all var(--transition-normal);
+}
+
+.card-hover {
+  background: white;
+  border-radius: var(--radius-xl);
+  padding: var(--spacing-lg);
+  box-shadow: var(--shadow-soft);
+  transition: all var(--transition-normal);
+}
+
+.card-hover:hover {
+  box-shadow: var(--shadow-medium);
+  transform: translateY(-4px);
+}
+
+.card-interactive {
+  background: white;
+  border-radius: var(--radius-xl);
+  padding: var(--spacing-lg);
+  box-shadow: var(--shadow-soft);
+  transition: all var(--transition-normal);
+  cursor: pointer;
+}
+
+.card-interactive:hover {
+  box-shadow: var(--shadow-large);
+  transform: translateY(-4px);
+  border-color: var(--commons-primary);
+}
+
+/* バッジ */
+.badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: var(--radius-full);
+  font-size: var(--font-size-xsmall);
+  font-weight: var(--font-weight-semibold);
+}
+
+.badge-primary {
+  background: var(--commons-primary);
+  color: white;
+}
+
+.badge-accent {
+  background: var(--commons-accent-yellow);
+  color: var(--commons-text-primary);
+}
+
+/* コンテナ */
+.container-custom {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 2rem;
+}
+
+.section-spacing {
+  padding: 4rem 0;
+}
+
+/* アニメーション */
+.fade-in {
+  animation: fadeIn 0.8s ease;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
