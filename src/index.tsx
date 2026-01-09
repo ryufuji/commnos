@@ -34,6 +34,7 @@ import notifications from './routes/notifications' // Phase 5 - 通知機能
 import chat from './routes/chat' // Phase 6 - チャット機能
 import { coupons } from './routes/coupons' // クーポン管理
 import postAccess from './routes/post-access' // 投稿アクセス制御管理
+import surveys from './routes/surveys' // アンケート機能
 
 const app = new Hono<AppContext>()
 
@@ -106,6 +107,9 @@ app.route('/api/notifications', notifications)
 
 // チャットルート（Phase 6）
 app.route('/api/chat', chat)
+
+// アンケートルート
+app.route('/api/surveys', surveys)
 
 // --------------------------------------------
 // ルーティングロジック
