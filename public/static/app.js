@@ -477,3 +477,63 @@ debugLog('DEBUG', 'Debug logging system initialized', {
   version: '1.0.0',
   timestamp: new Date().toISOString()
 });
+
+// ============================================
+// デザイン診断機能（URLパラメータで自動実行）
+// ============================================
+window.addEventListener('DOMContentLoaded', () => {
+  const urlParams = new URLSearchParams(window.location.search);
+  
+  // ?debug=design が付いている場合、診断スクリプトを読み込む
+  if (urlParams.get('debug') === 'design') {
+    console.log('%c🔍 デザイン診断モード起動', 'color: #FDB714; font-size: 16px; font-weight: bold;');
+    const script = document.createElement('script');
+    script.src = '/static/debug-design.js';
+    script.onload = () => {
+      console.log('✅ 診断スクリプト読み込み完了');
+    };
+    script.onerror = () => {
+      console.error('❌ 診断スクリプトの読み込みに失敗しました');
+    };
+    document.head.appendChild(script);
+  }
+  
+  // デザイン簡易チェック（常に実行）
+  if (DEBUG) {
+    setTimeout(() => {
+      const checks = {
+        'commons-theme.css': false,
+        'commons-components.css': false,
+        'tailwindcss': false,
+        'data-theme': document.documentElement.getAttribute('data-theme'),
+        'CSS変数': getComputedStyle(document.documentElement).getPropertyValue('--commons-primary').trim()
+      };
+      
+      // CSSファイルチェック
+      Array.from(document.styleSheets).forEach(sheet => {
+        if (sheet.href) {
+          if (sheet.href.includes('commons-theme.css')) checks['commons-theme.css'] = true;
+          if (sheet.href.includes('commons-components.css')) checks['commons-components.css'] = true;
+          if (sheet.href.includes('tailwindcss')) checks['tailwindcss'] = true;
+        }
+      });
+      
+      console.group('🎨 デザインシステム簡易チェック');
+      console.log('commons-theme.css:', checks['commons-theme.css'] ? '✅' : '❌');
+      console.log('commons-components.css:', checks['commons-components.css'] ? '✅' : '❌');
+      console.log('Tailwind CSS:', checks['tailwindcss'] ? '✅' : '❌');
+      console.log('data-theme:', checks['data-theme'] === 'light' ? '✅' : `❌ (${checks['data-theme']})`);
+      console.log('CSS変数:', checks['CSS変数'] ? `✅ (${checks['CSS変数']})` : '❌');
+      
+      // 問題があれば警告
+      if (!checks['commons-theme.css'] || !checks['CSS変数']) {
+        console.warn('%c⚠️ デザインシステムに問題があります', 'color: #FDB714; font-weight: bold;');
+        console.log('%c詳細診断: URLに ?debug=design を追加してください', 'color: #00BCD4;');
+        console.log('例: ' + window.location.pathname + '?debug=design');
+      } else {
+        console.log('✅ デザインシステム正常');
+      }
+      console.groupEnd();
+    }, 500); // DOMとCSSの読み込み完了を待つ
+  }
+});
