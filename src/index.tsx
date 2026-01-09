@@ -3566,6 +3566,573 @@ app.get('/surveys', (c) => {
   `)
 })
 
+// --------------------------------------------
+// アンケート作成・編集ページ
+// --------------------------------------------
+
+app.get('/surveys/edit', (c) => {
+  return c.html(`
+    <!DOCTYPE html>
+    <html lang="ja" data-theme="light">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>アンケート編集 - Commons</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <script src="/static/tailwind-config.js"></script>
+        <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+        <link href="/static/commons-theme.css" rel="stylesheet">
+        <link href="/static/commons-components.css" rel="stylesheet">
+    </head>
+    <body class="bg-gray-50">
+        <!-- ヘッダー -->
+        <header class="bg-white shadow-sm sticky top-0 z-50">
+            <div class="container mx-auto px-4 py-4">
+                <div class="flex items-center justify-between">
+                    <h1 class="text-2xl font-bold text-gray-900">
+                        <i class="fas fa-poll mr-2 text-accent-600"></i>
+                        <span id="pageTitle">アンケート作成</span>
+                    </h1>
+                    <div class="flex gap-2">
+                        <button onclick="saveSurvey()" class="btn-primary" id="saveBtn">
+                            <i class="fas fa-save mr-2"></i>保存
+                        </button>
+                        <a href="/surveys" class="btn-secondary">
+                            <i class="fas fa-times mr-2"></i>キャンセル
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- メインコンテンツ -->
+        <main class="container mx-auto px-4 py-8 max-w-4xl">
+            <!-- 基本情報 -->
+            <div class="card p-6 mb-6">
+                <h2 class="text-xl font-bold text-gray-900 mb-4">
+                    <i class="fas fa-info-circle mr-2 text-primary-600"></i>
+                    基本情報
+                </h2>
+                
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            タイトル <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" id="surveyTitle" class="input-field" placeholder="例: このコミュニティをどこで知りましたか？" required>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            説明文
+                        </label>
+                        <textarea id="surveyDescription" class="input-field" rows="3" placeholder="例: ご入会前に簡単なアンケートにご協力ください"></textarea>
+                    </div>
+
+                    <div>
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" id="surveyActive" class="w-4 h-4 text-primary-600 rounded" checked>
+                            <span class="text-sm font-medium text-gray-700">このアンケートを有効にする</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 質問一覧 -->
+            <div class="card p-6 mb-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h2 class="text-xl font-bold text-gray-900">
+                        <i class="fas fa-list mr-2 text-primary-600"></i>
+                        質問一覧
+                    </h2>
+                    <button onclick="openQuestionModal()" class="btn-primary">
+                        <i class="fas fa-plus mr-2"></i>質問を追加
+                    </button>
+                </div>
+
+                <div id="questionsList" class="space-y-4">
+                    <div class="text-center py-8 text-gray-500">
+                        <i class="fas fa-question-circle text-4xl mb-2"></i>
+                        <p>質問が追加されていません</p>
+                        <button onclick="openQuestionModal()" class="btn-secondary mt-4">
+                            <i class="fas fa-plus mr-2"></i>最初の質問を追加
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- 質問追加/編集モーダル -->
+        <div id="questionModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div class="bg-white rounded-lg shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                <div class="p-6 border-b border-gray-200 sticky top-0 bg-white">
+                    <div class="flex justify-between items-center">
+                        <h2 class="text-2xl font-bold text-gray-900">
+                            <i class="fas fa-question-circle mr-2 text-primary-600"></i>
+                            <span id="modalTitle">質問を追加</span>
+                        </h2>
+                        <button onclick="closeQuestionModal()" class="text-gray-500 hover:text-gray-700">
+                            <i class="fas fa-times text-xl"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="p-6 space-y-6">
+                    <!-- 質問タイプ -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-3">
+                            質問タイプ <span class="text-red-500">*</span>
+                        </label>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <label class="flex items-center p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition">
+                                <input type="radio" name="questionType" value="text" class="w-4 h-4 text-primary-600">
+                                <span class="ml-3">
+                                    <i class="fas fa-font mr-2 text-primary-600"></i>
+                                    短文テキスト
+                                </span>
+                            </label>
+                            <label class="flex items-center p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition">
+                                <input type="radio" name="questionType" value="textarea" class="w-4 h-4 text-primary-600">
+                                <span class="ml-3">
+                                    <i class="fas fa-align-left mr-2 text-primary-600"></i>
+                                    長文テキスト
+                                </span>
+                            </label>
+                            <label class="flex items-center p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition">
+                                <input type="radio" name="questionType" value="radio" class="w-4 h-4 text-primary-600" checked>
+                                <span class="ml-3">
+                                    <i class="fas fa-dot-circle mr-2 text-primary-600"></i>
+                                    単一選択
+                                </span>
+                            </label>
+                            <label class="flex items-center p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition">
+                                <input type="radio" name="questionType" value="checkbox" class="w-4 h-4 text-primary-600">
+                                <span class="ml-3">
+                                    <i class="fas fa-check-square mr-2 text-primary-600"></i>
+                                    複数選択
+                                </span>
+                            </label>
+                            <label class="flex items-center p-4 border-2 border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition col-span-full">
+                                <input type="radio" name="questionType" value="scale" class="w-4 h-4 text-primary-600">
+                                <span class="ml-3">
+                                    <i class="fas fa-star-half-alt mr-2 text-primary-600"></i>
+                                    評価スケール
+                                </span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- 質問文 -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            質問文 <span class="text-red-500">*</span>
+                        </label>
+                        <textarea id="questionText" class="input-field" rows="3" placeholder="例: このコミュニティをどこで知りましたか？" required></textarea>
+                    </div>
+
+                    <!-- 選択肢（radio/checkbox用） -->
+                    <div id="optionsSection" class="hidden">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            選択肢 <span class="text-red-500">*</span>
+                        </label>
+                        <div id="optionsList" class="space-y-2 mb-3"></div>
+                        <button onclick="addOption()" class="btn-secondary w-full">
+                            <i class="fas fa-plus mr-2"></i>選択肢を追加
+                        </button>
+                    </div>
+
+                    <!-- スケール設定（scale用） -->
+                    <div id="scaleSection" class="hidden">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            スケール設定
+                        </label>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs text-gray-600 mb-1">最小値</label>
+                                <input type="number" id="scaleMin" class="input-field" value="1" min="0">
+                            </div>
+                            <div>
+                                <label class="block text-xs text-gray-600 mb-1">最大値</label>
+                                <input type="number" id="scaleMax" class="input-field" value="5" min="1">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 必須設定 -->
+                    <div>
+                        <label class="flex items-center gap-2 cursor-pointer">
+                            <input type="checkbox" id="questionRequired" class="w-4 h-4 text-primary-600 rounded">
+                            <span class="text-sm font-medium text-gray-700">この質問を必須にする</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="p-6 border-t border-gray-200 flex justify-end gap-2">
+                    <button onclick="closeQuestionModal()" class="btn-secondary">
+                        キャンセル
+                    </button>
+                    <button onclick="saveQuestion()" class="btn-primary">
+                        <i class="fas fa-check mr-2"></i>保存
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+        <script src="/static/app.js"></script>
+        <script>
+            let tenantId = null
+            let surveyId = null
+            let surveyType = null
+            let questions = []
+            let currentQuestion = null
+            let editingIndex = -1
+
+            // URLパラメータ取得
+            const urlParams = new URLSearchParams(window.location.search)
+            surveyId = urlParams.get('id')
+            surveyType = urlParams.get('type') || 'join'
+
+            // 質問タイプ変更時
+            document.addEventListener('DOMContentLoaded', () => {
+                const typeRadios = document.querySelectorAll('input[name="questionType"]')
+                typeRadios.forEach(radio => {
+                    radio.addEventListener('change', (e) => {
+                        updateQuestionTypeUI(e.target.value)
+                    })
+                })
+
+                // 初期化
+                init()
+            })
+
+            async function init() {
+                // 認証チェック
+                const token = getToken()
+                if (!token) {
+                    window.location.href = '/login'
+                    return
+                }
+
+                const membership = JSON.parse(localStorage.getItem('membership') || '{}')
+                tenantId = membership.tenant_id
+
+                if (!tenantId) {
+                    showToast('テナント情報が見つかりません', 'error')
+                    setTimeout(() => window.location.href = '/dashboard', 2000)
+                    return
+                }
+
+                // 編集モードの場合、既存データを読み込む
+                if (surveyId) {
+                    await loadSurvey()
+                }
+            }
+
+            // 既存アンケート読み込み
+            async function loadSurvey() {
+                try {
+                    const response = await axios.get(\`/api/surveys/\${surveyId}\`)
+                    
+                    if (response.data.success) {
+                        const survey = response.data.survey
+                        
+                        document.getElementById('pageTitle').textContent = 'アンケート編集'
+                        document.getElementById('surveyTitle').value = survey.title
+                        document.getElementById('surveyDescription').value = survey.description || ''
+                        document.getElementById('surveyActive').checked = survey.is_active
+                        
+                        surveyType = survey.type
+                        questions = survey.questions || []
+                        
+                        renderQuestions()
+                    }
+                } catch (error) {
+                    console.error('Error loading survey:', error)
+                    showToast('アンケートの読み込みに失敗しました', 'error')
+                }
+            }
+
+            // 質問一覧レンダリング
+            function renderQuestions() {
+                const container = document.getElementById('questionsList')
+                
+                if (questions.length === 0) {
+                    container.innerHTML = \`
+                        <div class="text-center py-8 text-gray-500">
+                            <i class="fas fa-question-circle text-4xl mb-2"></i>
+                            <p>質問が追加されていません</p>
+                            <button onclick="openQuestionModal()" class="btn-secondary mt-4">
+                                <i class="fas fa-plus mr-2"></i>最初の質問を追加
+                            </button>
+                        </div>
+                    \`
+                    return
+                }
+
+                container.innerHTML = questions.map((q, index) => {
+                    const typeLabels = {
+                        text: '短文テキスト',
+                        textarea: '長文テキスト',
+                        radio: '単一選択',
+                        checkbox: '複数選択',
+                        scale: '評価スケール'
+                    }
+
+                    let optionsHtml = ''
+                    if (q.question_type === 'radio' || q.question_type === 'checkbox') {
+                        optionsHtml = \`
+                            <div class="mt-2 text-sm text-gray-600">
+                                選択肢: \${q.options.join(', ')}
+                            </div>
+                        \`
+                    } else if (q.question_type === 'scale') {
+                        optionsHtml = \`
+                            <div class="mt-2 text-sm text-gray-600">
+                                スケール: \${q.scale_min} 〜 \${q.scale_max}
+                            </div>
+                        \`
+                    }
+
+                    return \`
+                        <div class="card p-4 hover:shadow-md transition">
+                            <div class="flex items-start justify-between">
+                                <div class="flex-1">
+                                    <div class="flex items-center gap-2 mb-2">
+                                        <span class="text-lg font-bold text-gray-700">質問 \${index + 1}</span>
+                                        <span class="badge badge-secondary">\${typeLabels[q.question_type]}</span>
+                                        \${q.is_required ? '<span class="badge badge-danger">必須</span>' : ''}
+                                    </div>
+                                    <p class="text-gray-900 mb-1">\${q.question_text}</p>
+                                    \${optionsHtml}
+                                </div>
+                                <div class="flex gap-2 ml-4">
+                                    <button onclick="moveQuestion(\${index}, -1)" class="text-gray-500 hover:text-gray-700" \${index === 0 ? 'disabled' : ''}>
+                                        <i class="fas fa-chevron-up"></i>
+                                    </button>
+                                    <button onclick="moveQuestion(\${index}, 1)" class="text-gray-500 hover:text-gray-700" \${index === questions.length - 1 ? 'disabled' : ''}>
+                                        <i class="fas fa-chevron-down"></i>
+                                    </button>
+                                    <button onclick="editQuestion(\${index})" class="text-blue-600 hover:text-blue-700">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button onclick="deleteQuestion(\${index})" class="text-red-600 hover:text-red-700">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    \`
+                }).join('')
+            }
+
+            // 質問タイプUIの更新
+            function updateQuestionTypeUI(type) {
+                const optionsSection = document.getElementById('optionsSection')
+                const scaleSection = document.getElementById('scaleSection')
+
+                if (type === 'radio' || type === 'checkbox') {
+                    optionsSection.classList.remove('hidden')
+                    scaleSection.classList.add('hidden')
+                    if (document.getElementById('optionsList').children.length === 0) {
+                        addOption()
+                        addOption()
+                    }
+                } else if (type === 'scale') {
+                    optionsSection.classList.add('hidden')
+                    scaleSection.classList.remove('hidden')
+                } else {
+                    optionsSection.classList.add('hidden')
+                    scaleSection.classList.add('hidden')
+                }
+            }
+
+            // 質問モーダルを開く
+            function openQuestionModal(index = -1) {
+                editingIndex = index
+                const modal = document.getElementById('questionModal')
+                
+                if (index >= 0) {
+                    // 編集モード
+                    const q = questions[index]
+                    document.getElementById('modalTitle').textContent = '質問を編集'
+                    document.getElementById('questionText').value = q.question_text
+                    document.querySelector(\`input[name="questionType"][value="\${q.question_type}"]\`).checked = true
+                    document.getElementById('questionRequired').checked = q.is_required
+
+                    updateQuestionTypeUI(q.question_type)
+
+                    if (q.question_type === 'radio' || q.question_type === 'checkbox') {
+                        document.getElementById('optionsList').innerHTML = ''
+                        q.options.forEach(opt => addOption(opt))
+                    } else if (q.question_type === 'scale') {
+                        document.getElementById('scaleMin').value = q.scale_min
+                        document.getElementById('scaleMax').value = q.scale_max
+                    }
+                } else {
+                    // 新規作成モード
+                    document.getElementById('modalTitle').textContent = '質問を追加'
+                    document.getElementById('questionText').value = ''
+                    document.querySelector('input[name="questionType"][value="radio"]').checked = true
+                    document.getElementById('questionRequired').checked = false
+                    document.getElementById('optionsList').innerHTML = ''
+                    addOption()
+                    addOption()
+                    updateQuestionTypeUI('radio')
+                }
+
+                modal.classList.remove('hidden')
+            }
+
+            // 質問モーダルを閉じる
+            function closeQuestionModal() {
+                document.getElementById('questionModal').classList.add('hidden')
+            }
+
+            // 選択肢を追加
+            function addOption(value = '') {
+                const container = document.getElementById('optionsList')
+                const index = container.children.length
+                const optionHtml = \`
+                    <div class="flex gap-2" data-option-index="\${index}">
+                        <input type="text" class="input-field flex-1" placeholder="選択肢 \${index + 1}" value="\${value}">
+                        <button onclick="removeOption(this)" class="btn-danger">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                \`
+                container.insertAdjacentHTML('beforeend', optionHtml)
+            }
+
+            // 選択肢を削除
+            function removeOption(btn) {
+                btn.parentElement.remove()
+            }
+
+            // 質問を保存
+            function saveQuestion() {
+                const type = document.querySelector('input[name="questionType"]:checked').value
+                const text = document.getElementById('questionText').value.trim()
+                const isRequired = document.getElementById('questionRequired').checked
+
+                if (!text) {
+                    showToast('質問文を入力してください', 'error')
+                    return
+                }
+
+                const question = {
+                    question_type: type,
+                    question_text: text,
+                    is_required: isRequired,
+                    display_order: editingIndex >= 0 ? questions[editingIndex].display_order : questions.length
+                }
+
+                if (type === 'radio' || type === 'checkbox') {
+                    const optionInputs = document.querySelectorAll('#optionsList input')
+                    const options = Array.from(optionInputs).map(input => input.value.trim()).filter(v => v)
+                    
+                    if (options.length < 2) {
+                        showToast('選択肢は2つ以上必要です', 'error')
+                        return
+                    }
+                    
+                    question.options = options
+                } else if (type === 'scale') {
+                    question.scale_min = parseInt(document.getElementById('scaleMin').value)
+                    question.scale_max = parseInt(document.getElementById('scaleMax').value)
+                }
+
+                if (editingIndex >= 0) {
+                    questions[editingIndex] = question
+                } else {
+                    questions.push(question)
+                }
+
+                renderQuestions()
+                closeQuestionModal()
+                showToast('質問を追加しました', 'success')
+            }
+
+            // 質問を編集
+            function editQuestion(index) {
+                openQuestionModal(index)
+            }
+
+            // 質問を削除
+            function deleteQuestion(index) {
+                if (!confirm('この質問を削除してもよろしいですか？')) {
+                    return
+                }
+                questions.splice(index, 1)
+                renderQuestions()
+                showToast('質問を削除しました', 'success')
+            }
+
+            // 質問を移動
+            function moveQuestion(index, direction) {
+                const newIndex = index + direction
+                if (newIndex < 0 || newIndex >= questions.length) {
+                    return
+                }
+                
+                [questions[index], questions[newIndex]] = [questions[newIndex], questions[index]]
+                renderQuestions()
+            }
+
+            // アンケートを保存
+            async function saveSurvey() {
+                const title = document.getElementById('surveyTitle').value.trim()
+                const description = document.getElementById('surveyDescription').value.trim()
+                const isActive = document.getElementById('surveyActive').checked
+
+                if (!title) {
+                    showToast('タイトルを入力してください', 'error')
+                    return
+                }
+
+                if (questions.length === 0) {
+                    showToast('質問を1つ以上追加してください', 'error')
+                    return
+                }
+
+                const saveBtn = document.getElementById('saveBtn')
+                saveBtn.disabled = true
+                saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>保存中...'
+
+                try {
+                    const data = {
+                        tenant_id: tenantId,
+                        type: surveyType,
+                        title,
+                        description,
+                        is_active: isActive,
+                        questions: questions.map((q, i) => ({ ...q, display_order: i }))
+                    }
+
+                    let response
+                    if (surveyId) {
+                        response = await axios.put(\`/api/surveys/\${surveyId}\`, data)
+                    } else {
+                        response = await axios.post('/api/surveys', data)
+                    }
+
+                    if (response.data.success) {
+                        showToast('アンケートを保存しました', 'success')
+                        setTimeout(() => window.location.href = '/surveys', 1500)
+                    }
+                } catch (error) {
+                    console.error('Error saving survey:', error)
+                    showToast('保存に失敗しました', 'error')
+                    saveBtn.disabled = false
+                    saveBtn.innerHTML = '<i class="fas fa-save mr-2"></i>保存'
+                }
+            }
+        </script>
+    </body>
+    </html>
+  `)
+})
+
 app.get('/health', (c) => {
   return c.json({ status: 'ok', timestamp: new Date().toISOString() })
 })
