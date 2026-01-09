@@ -1649,6 +1649,14 @@ app.get('/dashboard', (c) => {
                             <p class="text-sm text-secondary-600">投稿の作成・編集・削除</p>
                         </a>
 
+                        <a href="/surveys" class="card-interactive p-6 text-center">
+                            <div class="text-4xl mb-3 text-accent-500">
+                                <i class="fas fa-poll"></i>
+                            </div>
+                            <h3 class="font-bold text-gray-900 mb-2">アンケート管理</h3>
+                            <p class="text-sm text-secondary-600">入会・退会時のアンケート設定</p>
+                        </a>
+
                         <a href="/profile" class="card-interactive p-6 text-center">
                             <div class="text-4xl mb-3 text-info-500">
                                 <i class="fas fa-user-edit"></i>
@@ -3288,6 +3296,273 @@ app.get('/va-admin-portal', (c) => {
     </script>
 </body>
 </html>
+  `)
+})
+
+// --------------------------------------------
+// アンケート管理ページ（管理者専用）
+// --------------------------------------------
+
+app.get('/surveys', (c) => {
+  return c.html(`
+    <!DOCTYPE html>
+    <html lang="ja" data-theme="light">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>アンケート管理 - Commons</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <script src="/static/tailwind-config.js"></script>
+        <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+        <link href="/static/commons-theme.css" rel="stylesheet">
+        <link href="/static/commons-components.css" rel="stylesheet">
+    </head>
+    <body class="bg-gray-50">
+        <!-- ヘッダー -->
+        <header class="bg-white shadow-sm sticky top-0 z-50">
+            <div class="container mx-auto px-4 py-4">
+                <div class="flex items-center justify-between">
+                    <h1 class="text-2xl font-bold text-gray-900">
+                        <i class="fas fa-poll mr-2 text-accent-600"></i>
+                        アンケート管理
+                    </h1>
+                    <div class="flex gap-2">
+                        <a href="/dashboard" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition">
+                            <i class="fas fa-arrow-left mr-2"></i>ダッシュボード
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- メインコンテンツ -->
+        <main class="container mx-auto px-4 py-8">
+            <!-- タブ -->
+            <div class="flex gap-2 mb-6 border-b border-gray-200">
+                <button id="joinTab" onclick="switchTab('join')" class="px-6 py-3 font-semibold text-primary-600 border-b-2 border-primary-600 transition">
+                    入会時アンケート
+                </button>
+                <button id="leaveTab" onclick="switchTab('leave')" class="px-6 py-3 font-semibold text-gray-500 hover:text-gray-700 transition">
+                    退会時アンケート
+                </button>
+            </div>
+
+            <!-- 入会時アンケート -->
+            <div id="joinContent" class="space-y-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-xl font-bold text-gray-900">入会時アンケート</h2>
+                    <button onclick="createSurvey('join')" class="btn-primary">
+                        <i class="fas fa-plus mr-2"></i>新規作成
+                    </button>
+                </div>
+                <div id="joinSurveyList" class="space-y-4">
+                    <div class="text-center py-12">
+                        <i class="fas fa-spinner fa-spin text-4xl text-gray-400 mb-4"></i>
+                        <p class="text-gray-500">読み込み中...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 退会時アンケート -->
+            <div id="leaveContent" class="space-y-6 hidden">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-xl font-bold text-gray-900">退会時アンケート</h2>
+                    <button onclick="createSurvey('leave')" class="btn-primary">
+                        <i class="fas fa-plus mr-2"></i>新規作成
+                    </button>
+                </div>
+                <div id="leaveSurveyList" class="space-y-4">
+                    <div class="text-center py-12">
+                        <i class="fas fa-spinner fa-spin text-4xl text-gray-400 mb-4"></i>
+                        <p class="text-gray-500">読み込み中...</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+        <script src="/static/app.js"></script>
+        <script>
+            let currentTab = 'join'
+            let tenantId = null
+            let membership = null
+
+            // タブ切り替え
+            function switchTab(tab) {
+                currentTab = tab
+                
+                // タブのスタイル更新
+                document.getElementById('joinTab').className = tab === 'join' 
+                    ? 'px-6 py-3 font-semibold text-primary-600 border-b-2 border-primary-600 transition'
+                    : 'px-6 py-3 font-semibold text-gray-500 hover:text-gray-700 transition'
+                
+                document.getElementById('leaveTab').className = tab === 'leave'
+                    ? 'px-6 py-3 font-semibold text-primary-600 border-b-2 border-primary-600 transition'
+                    : 'px-6 py-3 font-semibold text-gray-500 hover:text-gray-700 transition'
+                
+                // コンテンツの表示切り替え
+                document.getElementById('joinContent').classList.toggle('hidden', tab !== 'join')
+                document.getElementById('leaveContent').classList.toggle('hidden', tab !== 'leave')
+                
+                // データ再読み込み
+                loadSurveys(tab)
+            }
+
+            // アンケート一覧取得
+            async function loadSurveys(type) {
+                try {
+                    const container = document.getElementById(type + 'SurveyList')
+                    container.innerHTML = '<div class="text-center py-12"><i class="fas fa-spinner fa-spin text-4xl text-gray-400 mb-4"></i><p class="text-gray-500">読み込み中...</p></div>'
+
+                    const response = await axios.get('/api/surveys', {
+                        params: { tenant_id: tenantId, type: type }
+                    })
+
+                    if (response.data.success && response.data.surveys.length > 0) {
+                        renderSurveys(response.data.surveys, type)
+                    } else {
+                        container.innerHTML = \`
+                            <div class="card p-12 text-center">
+                                <i class="fas fa-poll text-6xl text-gray-300 mb-4"></i>
+                                <h3 class="text-xl font-bold text-gray-700 mb-2">\${type === 'join' ? '入会時' : '退会時'}アンケートが未設定です</h3>
+                                <p class="text-gray-500 mb-6">新規作成ボタンからアンケートを作成してください</p>
+                                <button onclick="createSurvey('\${type}')" class="btn-primary">
+                                    <i class="fas fa-plus mr-2"></i>今すぐ作成
+                                </button>
+                            </div>
+                        \`
+                    }
+                } catch (error) {
+                    console.error('Error loading surveys:', error)
+                    showToast('アンケートの取得に失敗しました', 'error')
+                }
+            }
+
+            // アンケート一覧レンダリング
+            function renderSurveys(surveys, type) {
+                const container = document.getElementById(type + 'SurveyList')
+                container.innerHTML = surveys.map(survey => \`
+                    <div class="card p-6">
+                        <div class="flex items-start justify-between mb-4">
+                            <div class="flex-1">
+                                <div class="flex items-center gap-3 mb-2">
+                                    <h3 class="text-xl font-bold text-gray-900">\${survey.title}</h3>
+                                    <span class="badge \${survey.is_active ? 'badge-success' : 'badge-secondary'}">
+                                        <i class="fas fa-\${survey.is_active ? 'check-circle' : 'pause-circle'} mr-1"></i>
+                                        \${survey.is_active ? '有効' : '無効'}
+                                    </span>
+                                </div>
+                                <p class="text-gray-600 mb-3">\${survey.description || '説明なし'}</p>
+                                <div class="flex gap-4 text-sm text-gray-500">
+                                    <span><i class="fas fa-question-circle mr-1"></i>質問数: \${survey.question_count || 0}問</span>
+                                    <span><i class="fas fa-users mr-1"></i>回答数: \${survey.response_count || 0}件</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex gap-2 flex-wrap">
+                            <button onclick="editSurvey(\${survey.id})" class="btn-secondary">
+                                <i class="fas fa-edit mr-1"></i>編集
+                            </button>
+                            <button onclick="viewResults(\${survey.id})" class="btn-secondary">
+                                <i class="fas fa-chart-bar mr-1"></i>結果を見る
+                            </button>
+                            <button onclick="toggleSurvey(\${survey.id}, \${!survey.is_active})" class="btn-secondary">
+                                <i class="fas fa-\${survey.is_active ? 'pause' : 'play'} mr-1"></i>
+                                \${survey.is_active ? '無効化' : '有効化'}
+                            </button>
+                            <button onclick="deleteSurvey(\${survey.id})" class="btn-danger">
+                                <i class="fas fa-trash mr-1"></i>削除
+                            </button>
+                        </div>
+                    </div>
+                \`).join('')
+            }
+
+            // アンケート作成
+            function createSurvey(type) {
+                window.location.href = \`/surveys/edit?type=\${type}\`
+            }
+
+            // アンケート編集
+            function editSurvey(id) {
+                window.location.href = \`/surveys/edit?id=\${id}\`
+            }
+
+            // 結果表示
+            function viewResults(id) {
+                window.location.href = \`/surveys/results?id=\${id}\`
+            }
+
+            // アンケート有効/無効切り替え
+            async function toggleSurvey(id, isActive) {
+                try {
+                    const response = await axios.put(\`/api/surveys/\${id}\`, {
+                        is_active: isActive
+                    })
+
+                    if (response.data.success) {
+                        showToast(\`アンケートを\${isActive ? '有効' : '無効'}にしました\`, 'success')
+                        loadSurveys(currentTab)
+                    }
+                } catch (error) {
+                    console.error('Error toggling survey:', error)
+                    showToast('更新に失敗しました', 'error')
+                }
+            }
+
+            // アンケート削除
+            async function deleteSurvey(id) {
+                if (!confirm('このアンケートを削除してもよろしいですか？\\n回答データも削除されます。')) {
+                    return
+                }
+
+                try {
+                    const response = await axios.delete(\`/api/surveys/\${id}\`)
+
+                    if (response.data.success) {
+                        showToast('アンケートを削除しました', 'success')
+                        loadSurveys(currentTab)
+                    }
+                } catch (error) {
+                    console.error('Error deleting survey:', error)
+                    showToast('削除に失敗しました', 'error')
+                }
+            }
+
+            // 初期化
+            document.addEventListener('DOMContentLoaded', async () => {
+                // 認証チェック
+                const token = getToken()
+                if (!token) {
+                    window.location.href = '/login'
+                    return
+                }
+
+                // ユーザー情報とメンバーシップを取得
+                const user = JSON.parse(localStorage.getItem('user') || '{}')
+                membership = JSON.parse(localStorage.getItem('membership') || '{}')
+
+                if (!membership.tenant_id) {
+                    showToast('テナント情報が見つかりません', 'error')
+                    setTimeout(() => window.location.href = '/dashboard', 2000)
+                    return
+                }
+
+                tenantId = membership.tenant_id
+
+                // 管理者権限チェック
+                if (membership.role !== 'owner' && membership.role !== 'admin') {
+                    showToast('アンケート管理は管理者のみアクセスできます', 'error')
+                    setTimeout(() => window.location.href = '/dashboard', 2000)
+                    return
+                }
+
+                // アンケート一覧読み込み
+                loadSurveys('join')
+            })
+        </script>
+    </body>
+    </html>
   `)
 })
 
