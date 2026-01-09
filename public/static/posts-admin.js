@@ -338,9 +338,32 @@ async function editPost(postId) {
     if (editStatusEl) editStatusEl.value = post.status || 'draft'
     if (editVisibilityEl) editVisibilityEl.value = post.visibility || 'public'
     
+    // scheduled_atの処理
+    const editScheduledFields = document.getElementById('editScheduledFields')
+    const editScheduledDateEl = document.getElementById('editScheduledDate')
+    const editScheduledTimeEl = document.getElementById('editScheduledTime')
+    
+    // statusがscheduledの場合、日時フィールドを表示して値をセット
+    if (post.status === 'scheduled' && post.scheduled_at) {
+        const scheduledDate = new Date(post.scheduled_at)
+        const year = scheduledDate.getFullYear()
+        const month = String(scheduledDate.getMonth() + 1).padStart(2, '0')
+        const day = String(scheduledDate.getDate()).padStart(2, '0')
+        const hours = String(scheduledDate.getHours()).padStart(2, '0')
+        const minutes = String(scheduledDate.getMinutes()).padStart(2, '0')
+        
+        if (editScheduledDateEl) editScheduledDateEl.value = year + '-' + month + '-' + day
+        if (editScheduledTimeEl) editScheduledTimeEl.value = hours + ':' + minutes
+        if (editScheduledFields) editScheduledFields.style.display = 'block'
+    } else {
+        if (editScheduledFields) editScheduledFields.style.display = 'none'
+    }
+    
     console.log('Form values after setting:')
     console.log('editTitle.value:', editTitleEl?.value)
     console.log('editContent.value:', editContentEl?.value)
+    console.log('editStatus.value:', editStatusEl?.value)
+    console.log('scheduled_at:', post.scheduled_at)
 
     // 現在のメディア情報を表示（削除ボタン付き）
     let mediaInfo = '<div class="space-y-2">'
@@ -443,6 +466,22 @@ async function savePost() {
             visibility: document.getElementById('editVisibility').value,
             thumbnail_url: thumbnailUrl,
             video_url: videoUrl
+        }
+
+        // scheduled_atの処理
+        const statusValue = document.getElementById('editStatus').value
+        if (statusValue === 'scheduled') {
+            const scheduledDate = document.getElementById('editScheduledDate').value
+            const scheduledTime = document.getElementById('editScheduledTime').value
+            
+            if (scheduledDate && scheduledTime) {
+                data.scheduled_at = scheduledDate + 'T' + scheduledTime + ':00.000Z'
+            } else {
+                showToast('予約投稿には日時の指定が必要です', 'error')
+                return
+            }
+        } else {
+            data.scheduled_at = null
         }
 
         const response = await axios.put('/api/admin/posts/' + postId, data, {
@@ -603,6 +642,57 @@ if (document.readyState === 'loading') {
         console.log('DOMContentLoaded fired!')
         initPostsAdmin()
         
+        // 編集モーダルのステータス変更イベント
+        const editStatusEl = document.getElementById('editStatus')
+        const editScheduledDateField = document.getElementById('editScheduledDateTimeField')
+        const editScheduledDateEl = document.getElementById('editScheduledDate')
+        const editScheduledTimeEl = document.getElementById('editScheduledTime')
+        
+        if (editStatusEl && editScheduledDateField) {
+            editStatusEl.addEventListener('change', function() {
+                if (this.value === 'scheduled') {
+                    editScheduledDateField.style.display = 'block'
+                    // 現在時刻より未来の時刻を最小値に設定
+                    const now = new Date()
+                    const year = now.getFullYear()
+                    const month = String(now.getMonth() + 1).padStart(2, '0')
+                    const day = String(now.getDate()).padStart(2, '0')
+                    const hours = String(now.getHours()).padStart(2, '0')
+                    const minutes = String(now.getMinutes()).padStart(2, '0')
+                    
+                    if (editScheduledDateEl) editScheduledDateEl.min = year + '-' + month + '-' + day
+                    
+                    // 今日が選択されている場合、時刻の最小値を現在時刻に設定
+                    if (editScheduledDateEl && editScheduledDateEl.value === year + '-' + month + '-' + day) {
+                        if (editScheduledTimeEl) editScheduledTimeEl.min = hours + ':' + minutes
+                    } else {
+                        if (editScheduledTimeEl) editScheduledTimeEl.min = ''
+                    }
+                } else {
+                    editScheduledDateField.style.display = 'none'
+                }
+            })
+            
+            // 日付変更時に時刻の最小値を更新
+            if (editScheduledDateEl) {
+                editScheduledDateEl.addEventListener('change', function() {
+                    const now = new Date()
+                    const year = now.getFullYear()
+                    const month = String(now.getMonth() + 1).padStart(2, '0')
+                    const day = String(now.getDate()).padStart(2, '0')
+                    const hours = String(now.getHours()).padStart(2, '0')
+                    const minutes = String(now.getMinutes()).padStart(2, '0')
+                    const today = year + '-' + month + '-' + day
+                    
+                    if (this.value === today && editScheduledTimeEl) {
+                        editScheduledTimeEl.min = hours + ':' + minutes
+                    } else if (editScheduledTimeEl) {
+                        editScheduledTimeEl.min = ''
+                    }
+                })
+            }
+        }
+        
         // 編集モーダルの画像選択
         const editSelectThumbnailBtn = document.getElementById('editSelectThumbnailBtn')
         const editThumbnail = document.getElementById('editThumbnail')
@@ -684,6 +774,39 @@ if (document.readyState === 'loading') {
                 editVideo.value = ''
                 editVideoPreview.classList.add('hidden')
                 editRemoveVideoBtn.classList.add('hidden')
+            })
+        }
+
+        // 編集モーダルのステータス変更で予約フィールドの表示/非表示
+        const editStatusField = document.getElementById('editStatus')
+        if (editStatusField) {
+            editStatusField.addEventListener('change', function() {
+                const scheduledFields = document.getElementById('editScheduledFields')
+                if (scheduledFields) {
+                    scheduledFields.style.display = this.value === 'scheduled' ? 'block' : 'none'
+                }
+            })
+        }
+
+        // 編集モーダルの予約日時の過去チェック
+        const editScheduledDate = document.getElementById('editScheduledDate')
+        const editScheduledTime = document.getElementById('editScheduledTime')
+        
+        if (editScheduledDate) {
+            const now = new Date()
+            const today = now.toISOString().split('T')[0]
+            editScheduledDate.setAttribute('min', today)
+            
+            editScheduledDate.addEventListener('change', function() {
+                if (this.value === today && editScheduledTime) {
+                    const currentTime = now.toTimeString().slice(0, 5)
+                    editScheduledTime.setAttribute('min', currentTime)
+                    if (editScheduledTime.value && editScheduledTime.value < currentTime) {
+                        editScheduledTime.value = currentTime
+                    }
+                } else if (editScheduledTime) {
+                    editScheduledTime.removeAttribute('min')
+                }
             })
         }
     })

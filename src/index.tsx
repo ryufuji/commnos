@@ -2514,6 +2514,7 @@ app.get('/posts-admin', (c) => {
                             <label class="block text-sm font-medium text-gray-700 mb-2">公開ステータス</label>
                             <select id="editStatus" class="w-full px-4 py-2 border border-gray-300 rounded-lg">
                                 <option value="published">公開</option>
+                                <option value="scheduled">予約投稿</option>
                                 <option value="draft">下書き</option>
                             </select>
                         </div>
@@ -2524,6 +2525,37 @@ app.get('/posts-admin', (c) => {
                                 <option value="members_only">会員限定</option>
                             </select>
                         </div>
+                    </div>
+
+                    <!-- 予約投稿日時 -->
+                    <div id="editScheduledDateTimeField" style="display: none;">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            公開日時 <span class="text-red-500">*</span>
+                        </label>
+                        <div class="grid md:grid-cols-2 gap-4">
+                            <div>
+                                <label for="editScheduledDate" class="block text-sm text-gray-600 mb-1">日付</label>
+                                <input 
+                                    type="date" 
+                                    id="editScheduledDate" 
+                                    name="editScheduledDate"
+                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                                >
+                            </div>
+                            <div>
+                                <label for="editScheduledTime" class="block text-sm text-gray-600 mb-1">時刻</label>
+                                <input 
+                                    type="time" 
+                                    id="editScheduledTime" 
+                                    name="editScheduledTime"
+                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                                >
+                            </div>
+                        </div>
+                        <p class="text-sm text-gray-500 mt-2">
+                            <i class="fas fa-info-circle mr-1"></i>
+                            過去の日時は選択できません。指定した日時になると自動的に公開されます。
+                        </p>
                     </div>
 
                     <!-- 現在のメディア情報 -->

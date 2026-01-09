@@ -115,13 +115,14 @@ adminPosts.put('/:id', async (c) => {
     }
 
     const postId = parseInt(c.req.param('id'))
-    const { title, content, status, thumbnail_url, video_url, visibility } = await c.req.json<{
+    const { title, content, status, thumbnail_url, video_url, visibility, scheduled_at } = await c.req.json<{
       title?: string
       content?: string
-      status?: 'draft' | 'published'
+      status?: 'draft' | 'published' | 'scheduled'
       thumbnail_url?: string | null
       video_url?: string | null
       visibility?: 'public' | 'members_only'
+      scheduled_at?: string | null
     }>()
 
     // 投稿存在確認
@@ -157,6 +158,10 @@ adminPosts.put('/:id', async (c) => {
         updates.push('published_at = ?')
         values.push(new Date().toISOString())
       }
+    }
+    if (scheduled_at !== undefined) {
+      updates.push('scheduled_at = ?')
+      values.push(scheduled_at)
     }
     if (thumbnail_url !== undefined) {
       updates.push('thumbnail_url = ?')
