@@ -51,55 +51,302 @@ tenantPublic.get('/login', async (c) => {
         <title>ログイン - ${tenant.name}</title>
         <script src="https://cdn.tailwindcss.com"></script>
         <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+        <link href="/static/commons-theme.css" rel="stylesheet">
+        <link href="/static/commons-components.css" rel="stylesheet">
         <style>
-            .gradient-bg {
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            .auth-container {
+                min-height: 100vh;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                position: relative;
+                overflow: hidden;
+                background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
             }
-            .input-focus:focus {
-                border-color: #667eea;
-                box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+            
+            .auth-card {
+                background: white;
+                border-radius: 24px;
+                box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+                padding: 48px;
+                max-width: 480px;
+                width: 100%;
+                margin: 24px;
+                position: relative;
+                z-index: 10;
+                animation: fadeInUp 0.6s ease-out;
+            }
+            
+            @keyframes fadeInUp {
+                from {
+                    opacity: 0;
+                    transform: translateY(30px);
+                }
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+            
+            .auth-header {
+                text-align: center;
+                margin-bottom: 32px;
+            }
+            
+            .auth-logo {
+                width: 80px;
+                height: 80px;
+                margin: 0 auto 24px;
+                background: var(--commons-primary);
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 36px;
+                color: white;
+                box-shadow: 0 8px 24px rgba(0, 188, 212, 0.3);
+            }
+            
+            .auth-title {
+                font-size: 32px;
+                font-weight: 700;
+                color: var(--commons-text-primary);
+                margin-bottom: 8px;
+            }
+            
+            .auth-subtitle {
+                font-size: 16px;
+                color: var(--commons-text-secondary);
+            }
+            
+            .form-group {
+                margin-bottom: 24px;
+            }
+            
+            .form-label {
+                display: block;
+                font-size: 14px;
+                font-weight: 600;
+                color: var(--commons-text-primary);
+                margin-bottom: 8px;
+            }
+            
+            .form-input {
+                width: 100%;
+                padding: 14px 16px;
+                border: 2px solid var(--commons-border-light);
+                border-radius: 12px;
+                font-size: 16px;
+                transition: all 0.3s ease;
+                background: white;
+            }
+            
+            .form-input:focus {
+                outline: none;
+                border-color: var(--commons-primary);
+                box-shadow: 0 0 0 4px rgba(0, 188, 212, 0.1);
+            }
+            
+            .btn-primary {
+                width: 100%;
+                padding: 16px;
+                background: var(--commons-primary);
+                color: white;
+                border: none;
+                border-radius: 12px;
+                font-size: 16px;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                box-shadow: 0 4px 12px rgba(0, 188, 212, 0.3);
+            }
+            
+            .btn-primary:hover {
+                background: #00a5bb;
+                transform: translateY(-2px);
+                box-shadow: 0 6px 16px rgba(0, 188, 212, 0.4);
+            }
+            
+            .btn-primary:disabled {
+                opacity: 0.6;
+                cursor: not-allowed;
+                transform: none;
+            }
+            
+            .btn-secondary {
+                width: 100%;
+                padding: 16px;
+                background: white;
+                color: var(--commons-primary);
+                border: 2px solid var(--commons-primary);
+                border-radius: 12px;
+                font-size: 16px;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                text-decoration: none;
+                display: inline-block;
+                text-align: center;
+            }
+            
+            .btn-secondary:hover {
+                background: var(--commons-bg-secondary);
+            }
+            
+            .divider {
+                position: relative;
+                text-align: center;
+                margin: 32px 0;
+            }
+            
+            .divider::before {
+                content: '';
+                position: absolute;
+                top: 50%;
+                left: 0;
+                right: 0;
+                height: 1px;
+                background: var(--commons-border-light);
+            }
+            
+            .divider span {
+                position: relative;
+                background: white;
+                padding: 0 16px;
+                color: var(--commons-text-secondary);
+                font-size: 14px;
+            }
+            
+            .checkbox-wrapper {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                margin-bottom: 24px;
+            }
+            
+            .checkbox-label {
+                display: flex;
+                align-items: center;
+                font-size: 14px;
+                color: var(--commons-text-secondary);
+            }
+            
+            .checkbox-label input {
+                margin-right: 8px;
+            }
+            
+            .link {
+                color: var(--commons-primary);
+                text-decoration: none;
+                font-size: 14px;
+                transition: color 0.3s ease;
+            }
+            
+            .link:hover {
+                color: #00a5bb;
+            }
+            
+            .back-link {
+                text-align: center;
+                margin-top: 24px;
+            }
+            
+            /* Background shapes */
+            .bg-shape {
+                position: absolute;
+                border-radius: 50%;
+                opacity: 0.15;
+                z-index: 1;
+                animation: float 20s infinite ease-in-out;
+            }
+            
+            .bg-shape-1 {
+                width: 400px;
+                height: 400px;
+                background: var(--commons-accent-purple);
+                top: -100px;
+                left: -100px;
+            }
+            
+            .bg-shape-2 {
+                width: 300px;
+                height: 300px;
+                background: var(--commons-accent-terracotta);
+                bottom: -80px;
+                left: -80px;
+                animation-delay: -5s;
+            }
+            
+            .bg-shape-3 {
+                width: 350px;
+                height: 350px;
+                background: var(--commons-accent-cyan);
+                top: -120px;
+                right: -120px;
+                animation-delay: -10s;
+            }
+            
+            .bg-shape-4 {
+                width: 280px;
+                height: 280px;
+                background: var(--commons-accent-lime);
+                bottom: -100px;
+                right: -100px;
+                animation-delay: -15s;
+            }
+            
+            @keyframes float {
+                0%, 100% {
+                    transform: translate(0, 0) scale(1);
+                }
+                25% {
+                    transform: translate(10px, -10px) scale(1.05);
+                }
+                50% {
+                    transform: translate(-10px, 10px) scale(0.95);
+                }
+                75% {
+                    transform: translate(10px, 10px) scale(1.02);
+                }
+            }
+            
+            @media (max-width: 768px) {
+                .auth-card {
+                    padding: 32px 24px;
+                }
+                
+                .auth-title {
+                    font-size: 28px;
+                }
+                
+                .bg-shape {
+                    display: none;
+                }
             }
         </style>
     </head>
-    <body class="bg-gray-50">
-        <!-- Header -->
-        <header class="gradient-bg text-white shadow-lg">
-            <div class="container mx-auto px-4 py-4">
-                <div class="flex items-center justify-between">
-                    <a href="/home?subdomain=${subdomain}" class="text-2xl font-bold hover:opacity-80 transition">
-                        <i class="fas fa-users mr-2"></i>
-                        ${tenant.name}
-                    </a>
-                    <nav class="hidden md:flex space-x-6">
-                        <a href="/home?subdomain=${subdomain}" class="hover:opacity-80 transition">
-                            <i class="fas fa-home mr-1"></i> ホーム
-                        </a>
-                        <a href="/register?subdomain=${subdomain}" class="hover:opacity-80 transition">
-                            <i class="fas fa-user-plus mr-1"></i> 新規登録
-                        </a>
-                    </nav>
-                </div>
-            </div>
-        </header>
-
-        <!-- Main Content -->
-        <main class="container mx-auto px-4 py-12">
-            <div class="max-w-md mx-auto">
-                <!-- Login Card -->
-                <div class="bg-white rounded-lg shadow-xl p-8">
-                    <div class="text-center mb-8">
-                        <div class="inline-flex items-center justify-center w-16 h-16 rounded-full gradient-bg text-white mb-4">
-                            <i class="fas fa-sign-in-alt text-2xl"></i>
+    <body>
+        <div class="auth-container">
+            <!-- Background shapes -->
+            <div class="bg-shape bg-shape-1"></div>
+            <div class="bg-shape bg-shape-2"></div>
+            <div class="bg-shape bg-shape-3"></div>
+            <div class="bg-shape bg-shape-4"></div>
+            
+            <!-- Login Card -->
+            <div class="auth-card">
+                    <div class="auth-header">
+                        <div class="auth-logo">
+                            <i class="fas fa-sign-in-alt"></i>
                         </div>
-                        <h1 class="text-3xl font-bold text-gray-800 mb-2">ログイン</h1>
-                        <p class="text-gray-600">${tenant.name}へようこそ</p>
+                        <h1 class="auth-title">ログイン</h1>
+                        <p class="auth-subtitle">${tenant.name}へようこそ</p>
                     </div>
 
                     <!-- Login Form -->
-                    <form id="loginForm" class="space-y-6" onsubmit="return false;">
-                        <!-- Email -->
-                        <div>
-                            <label for="email" class="block text-sm font-medium text-gray-700 mb-2">
+                    <form id="loginForm" onsubmit="return false;">
+                        <div class="form-group">
+                            <label for="email" class="form-label">
                                 <i class="fas fa-envelope mr-1"></i> メールアドレス
                             </label>
                             <input
@@ -107,14 +354,13 @@ tenantPublic.get('/login', async (c) => {
                                 id="email"
                                 name="email"
                                 required
-                                class="input-focus w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none transition"
+                                class="form-input"
                                 placeholder="your@email.com"
                             />
                         </div>
 
-                        <!-- Password -->
-                        <div>
-                            <label for="password" class="block text="sm font-medium text-gray-700 mb-2">
+                        <div class="form-group">
+                            <label for="password" class="form-label">
                                 <i class="fas fa-lock mr-1"></i> パスワード
                             </label>
                             <input
@@ -123,65 +369,51 @@ tenantPublic.get('/login', async (c) => {
                                 name="password"
                                 required
                                 minlength="8"
-                                class="input-focus w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none transition"
+                                class="form-input"
                                 placeholder="••••••••"
                             />
                         </div>
 
-                        <!-- Remember Me -->
-                        <div class="flex items-center justify-between">
-                            <label class="flex items-center">
-                                <input type="checkbox" id="remember" name="remember" class="rounded text-purple-600 mr-2">
-                                <span class="text-sm text-gray-600">ログイン状態を保持</span>
+                        <div class="checkbox-wrapper">
+                            <label class="checkbox-label">
+                                <input type="checkbox" id="remember" name="remember">
+                                <span>ログイン状態を保持</span>
                             </label>
-                            <a href="/forgot-password" class="text-sm text-purple-600 hover:text-purple-700">
+                            <a href="/forgot-password" class="link">
                                 パスワードを忘れた場合
                             </a>
                         </div>
 
-                        <!-- Submit Button -->
                         <button
                             type="submit"
                             id="loginBtn"
-                            class="w-full gradient-bg text-white py-3 rounded-lg font-semibold hover:opacity-90 transition transform hover:scale-105"
+                            class="btn-primary"
                         >
                             <i class="fas fa-sign-in-alt mr-2"></i>
                             ログイン
                         </button>
                     </form>
 
-                    <!-- Divider -->
-                    <div class="relative my-8">
-                        <div class="absolute inset-0 flex items-center">
-                            <div class="w-full border-t border-gray-300"></div>
-                        </div>
-                        <div class="relative flex justify-center text-sm">
-                            <span class="px-4 bg-white text-gray-500">または</span>
-                        </div>
+                    <div class="divider">
+                        <span>または</span>
                     </div>
 
-                    <!-- Register Link -->
-                    <div class="text-center">
-                        <p class="text-gray-600 mb-4">まだアカウントをお持ちでない方</p>
-                        <a
-                            href="/register?subdomain=${subdomain}"
-                            class="inline-block w-full border-2 border-purple-600 text-purple-600 py-3 rounded-lg font-semibold hover:bg-purple-50 transition"
-                        >
+                    <div style="text-align: center; margin-bottom: 16px;">
+                        <p style="color: var(--commons-text-secondary); margin-bottom: 16px;">まだアカウントをお持ちでない方</p>
+                        <a href="/register?subdomain=${subdomain}" class="btn-secondary">
                             <i class="fas fa-user-plus mr-2"></i>
                             新規登録
                         </a>
                     </div>
+                    
+                    <div class="back-link">
+                        <a href="/home?subdomain=${subdomain}" class="link">
+                            <i class="fas fa-arrow-left mr-1"></i>
+                            ホームに戻る
+                        </a>
+                    </div>
                 </div>
-
-                <!-- Back to Home -->
-                <div class="text-center mt-6">
-                    <a href="/home?subdomain=${subdomain}" class="text-gray-600 hover:text-gray-800">
-                        <i class="fas fa-arrow-left mr-2"></i>
-                        ホームに戻る
-                    </a>
-                </div>
-            </div>
-        </main>
+        </div>
 
         <!-- Toast Container -->
         <div id="toast" class="fixed top-4 right-4 z-50 hidden">
@@ -399,27 +631,265 @@ tenantPublic.get('/register', async (c) => {
     <title>会員登録 - ${tenantName}</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
-    <link href="/static/styles.css" rel="stylesheet">
+    <link href="/static/commons-theme.css" rel="stylesheet">
+    <link href="/static/commons-components.css" rel="stylesheet">
+    <style>
+        .auth-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+        }
+        
+        .auth-card {
+            background: white;
+            border-radius: 24px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+            padding: 48px;
+            max-width: 520px;
+            width: 100%;
+            margin: 24px;
+            position: relative;
+            z-index: 10;
+            animation: fadeInUp 0.6s ease-out;
+        }
+        
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .auth-header {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+        
+        .auth-logo {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 24px;
+            background: var(--commons-primary);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 36px;
+            color: white;
+            box-shadow: 0 8px 24px rgba(0, 188, 212, 0.3);
+        }
+        
+        .auth-title {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--commons-text-primary);
+            margin-bottom: 8px;
+        }
+        
+        .auth-subtitle {
+            font-size: 16px;
+            color: var(--commons-text-secondary);
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-label {
+            display: block;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--commons-text-primary);
+            margin-bottom: 8px;
+        }
+        
+        .form-input {
+            width: 100%;
+            padding: 14px 16px;
+            border: 2px solid var(--commons-border-light);
+            border-radius: 12px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            background: white;
+        }
+        
+        .form-input:focus {
+            outline: none;
+            border-color: var(--commons-primary);
+            box-shadow: 0 0 0 4px rgba(0, 188, 212, 0.1);
+        }
+        
+        .btn-primary {
+            width: 100%;
+            padding: 16px;
+            background: var(--commons-primary);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(0, 188, 212, 0.3);
+            margin-top: 24px;
+        }
+        
+        .btn-primary:hover {
+            background: #00a5bb;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0, 188, 212, 0.4);
+        }
+        
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .divider {
+            position: relative;
+            text-align: center;
+            margin: 24px 0;
+        }
+        
+        .divider::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: var(--commons-border-light);
+        }
+        
+        .divider span {
+            position: relative;
+            background: white;
+            padding: 0 16px;
+            color: var(--commons-text-secondary);
+            font-size: 14px;
+        }
+        
+        .link {
+            color: var(--commons-primary);
+            text-decoration: none;
+            font-size: 14px;
+            transition: color 0.3s ease;
+        }
+        
+        .link:hover {
+            color: #00a5bb;
+        }
+        
+        .back-link {
+            text-align: center;
+            margin-top: 24px;
+        }
+        
+        /* Background shapes */
+        .bg-shape {
+            position: absolute;
+            border-radius: 50%;
+            opacity: 0.15;
+            z-index: 1;
+            animation: float 20s infinite ease-in-out;
+        }
+        
+        .bg-shape-1 {
+            width: 400px;
+            height: 400px;
+            background: var(--commons-accent-purple);
+            top: -100px;
+            left: -100px;
+        }
+        
+        .bg-shape-2 {
+            width: 300px;
+            height: 300px;
+            background: var(--commons-accent-terracotta);
+            bottom: -80px;
+            left: -80px;
+            animation-delay: -5s;
+        }
+        
+        .bg-shape-3 {
+            width: 350px;
+            height: 350px;
+            background: var(--commons-accent-cyan);
+            top: -120px;
+            right: -120px;
+            animation-delay: -10s;
+        }
+        
+        .bg-shape-4 {
+            width: 280px;
+            height: 280px;
+            background: var(--commons-accent-lime);
+            bottom: -100px;
+            right: -100px;
+            animation-delay: -15s;
+        }
+        
+        @keyframes float {
+            0%, 100% {
+                transform: translate(0, 0) scale(1);
+            }
+            25% {
+                transform: translate(10px, -10px) scale(1.05);
+            }
+            50% {
+                transform: translate(-10px, 10px) scale(0.95);
+            }
+            75% {
+                transform: translate(10px, 10px) scale(1.02);
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .auth-card {
+                padding: 32px 24px;
+            }
+            
+            .auth-title {
+                font-size: 28px;
+            }
+            
+            .bg-shape {
+                display: none;
+            }
+        }
+    </style>
 </head>
-<body class="bg-gradient-to-br from-blue-50 to-purple-50 min-h-screen flex items-center justify-center p-4">
-    <div class="max-w-md w-full">
-        <!-- ロゴ・タイトル -->
-        <div class="text-center mb-8">
-            <a href="/tenant/home?subdomain=${subdomain}" class="inline-block mb-4">
-                <h1 class="text-3xl font-bold text-gray-800">${tenantName}</h1>
-                ${tenantSubtitle ? `<p class="text-gray-600">${tenantSubtitle}</p>` : ''}
-            </a>
-            <h2 class="text-2xl font-bold text-gray-800 mt-4">会員登録</h2>
-            <p class="text-gray-600 mt-2">コミュニティに参加しましょう</p>
-        </div>
+<body>
+    <div class="auth-container">
+        <!-- Background shapes -->
+        <div class="bg-shape bg-shape-1"></div>
+        <div class="bg-shape bg-shape-2"></div>
+        <div class="bg-shape bg-shape-3"></div>
+        <div class="bg-shape bg-shape-4"></div>
+        
+        <!-- Register Card -->
+        <div class="auth-card">
+            <div class="auth-header">
+                <div class="auth-logo">
+                    <i class="fas fa-user-plus"></i>
+                </div>
+                <h1 class="auth-title">会員登録</h1>
+                <p class="auth-subtitle">${tenantName}に参加しましょう</p>
+            </div>
 
-        <!-- 登録フォーム -->
-        <div class="bg-white rounded-lg shadow-xl p-8">
-            <form id="registerForm" class="space-y-6">
-                <!-- ニックネーム -->
-                <div>
-                    <label for="nickname" class="block text-sm font-medium text-gray-700 mb-2">
-                        ニックネーム <span class="text-red-500">*</span>
+            <form id="registerForm">
+                <div class="form-group">
+                    <label for="nickname" class="form-label">
+                        <i class="fas fa-user mr-1"></i> ニックネーム <span style="color: #ef4444;">*</span>
                     </label>
                     <input 
                         type="text" 
@@ -427,30 +897,28 @@ tenantPublic.get('/register', async (c) => {
                         name="nickname" 
                         required
                         maxlength="50"
-                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        class="form-input"
                         placeholder="山田太郎"
                     >
                 </div>
 
-                <!-- メールアドレス -->
-                <div>
-                    <label for="email" class="block text-sm font-medium text-gray-700 mb-2">
-                        メールアドレス <span class="text-red-500">*</span>
+                <div class="form-group">
+                    <label for="email" class="form-label">
+                        <i class="fas fa-envelope mr-1"></i> メールアドレス <span style="color: #ef4444;">*</span>
                     </label>
                     <input 
                         type="email" 
                         id="email" 
                         name="email" 
                         required
-                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        class="form-input"
                         placeholder="your@example.com"
                     >
                 </div>
 
-                <!-- パスワード -->
-                <div>
-                    <label for="password" class="block text-sm font-medium text-gray-700 mb-2">
-                        パスワード <span class="text-red-500">*</span>
+                <div class="form-group">
+                    <label for="password" class="form-label">
+                        <i class="fas fa-lock mr-1"></i> パスワード <span style="color: #ef4444;">*</span>
                     </label>
                     <input 
                         type="password" 
@@ -458,16 +926,15 @@ tenantPublic.get('/register', async (c) => {
                         name="password" 
                         required
                         minlength="8"
-                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        class="form-input"
                         placeholder="••••••••"
                     >
-                    <p class="text-sm text-gray-500 mt-1">8文字以上</p>
+                    <p style="font-size: 12px; color: var(--commons-text-secondary); margin-top: 4px;">8文字以上</p>
                 </div>
 
-                <!-- パスワード確認 -->
-                <div>
-                    <label for="passwordConfirm" class="block text-sm font-medium text-gray-700 mb-2">
-                        パスワード（確認） <span class="text-red-500">*</span>
+                <div class="form-group">
+                    <label for="passwordConfirm" class="form-label">
+                        <i class="fas fa-lock mr-1"></i> パスワード（確認） <span style="color: #ef4444;">*</span>
                     </label>
                     <input 
                         type="password" 
@@ -475,59 +942,59 @@ tenantPublic.get('/register', async (c) => {
                         name="passwordConfirm" 
                         required
                         minlength="8"
-                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        class="form-input"
                         placeholder="••••••••"
                     >
                 </div>
 
-                <!-- 自己紹介（任意） -->
-                <div>
-                    <label for="bio" class="block text-sm font-medium text-gray-700 mb-2">
-                        自己紹介（任意）
+                <div class="form-group">
+                    <label for="bio" class="form-label">
+                        <i class="fas fa-comment mr-1"></i> 自己紹介（任意）
                     </label>
                     <textarea 
                         id="bio" 
                         name="bio"
                         rows="3"
                         maxlength="500"
-                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        class="form-input"
+                        style="resize: vertical;"
                         placeholder="簡単な自己紹介をお願いします"
                     ></textarea>
-                    <p class="text-sm text-gray-500 mt-1">最大500文字</p>
+                    <p style="font-size: 12px; color: var(--commons-text-secondary); margin-top: 4px;">最大500文字</p>
                 </div>
 
-                <!-- 送信ボタン -->
                 <button 
                     type="submit" 
                     id="submitBtn"
-                    class="w-full px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg transition-colors"
+                    class="btn-primary"
                 >
                     <i class="fas fa-user-plus mr-2"></i>会員申請を送信
                 </button>
             </form>
 
-            <!-- ログインリンク -->
-            <div class="mt-6 text-center">
-                <p class="text-gray-600">
-                    すでにアカウントをお持ちですか？
-                    <a href="/login?subdomain=${subdomain}" class="text-blue-600 hover:text-blue-700 font-semibold">
-                        ログイン
-                    </a>
-                </p>
+            <div class="divider">
+                <span>または</span>
             </div>
 
-            <!-- ホームに戻る -->
-            <div class="mt-4 text-center">
-                <a href="/tenant/home?subdomain=${subdomain}" class="text-gray-500 hover:text-gray-700">
-                    <i class="fas fa-arrow-left mr-2"></i>ホームに戻る
+            <div style="text-align: center; margin-bottom: 16px;">
+                <p style="color: var(--commons-text-secondary); margin-bottom: 8px;">
+                    すでにアカウントをお持ちですか？
+                </p>
+                <a href="/login?subdomain=${subdomain}" class="link" style="font-weight: 600; font-size: 16px;">
+                    ログイン
                 </a>
             </div>
-        </div>
 
-        <!-- 注意事項 -->
-        <div class="mt-6 text-center text-sm text-gray-600">
-            <p>会員申請後、管理者の承認をお待ちください。</p>
-            <p>承認されるとメールでお知らせします。</p>
+            <div class="back-link">
+                <a href="/tenant/home?subdomain=${subdomain}" class="link">
+                    <i class="fas fa-arrow-left mr-1"></i>ホームに戻る
+                </a>
+            </div>
+            
+            <div style="margin-top: 24px; padding-top: 24px; border-top: 1px solid var(--commons-border-light); text-align: center;">
+                <p style="font-size: 13px; color: var(--commons-text-secondary); margin-bottom: 4px;">会員申請後、管理者の承認をお待ちください。</p>
+                <p style="font-size: 13px; color: var(--commons-text-secondary);">承認されるとメールでお知らせします。</p>
+            </div>
         </div>
     </div>
 
