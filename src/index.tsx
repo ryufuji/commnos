@@ -611,7 +611,6 @@ app.get('/register', (c) => {
                     communityName: formData.get('communityName'),
                     subtitle: formData.get('subtitle') || undefined,
                     isPublic: parseInt(formData.get('isPublic') || '1')
-                    // theme はデフォルトで 'modern-business' を使用（データベースのデフォルト値）
                 }
                 
                 try {

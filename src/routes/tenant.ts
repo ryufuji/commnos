@@ -449,7 +449,7 @@ tenant.get('/join', tenantMiddleware, async (c) => {
 
   return c.html(`
     <!DOCTYPE html>
-    <html lang="ja" data-theme="modern-business">
+    <html lang="ja" data-theme="light">
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
