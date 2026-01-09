@@ -1,0 +1,463 @@
+/* ========================================
+   Commons グローバルコンポーネント CSS
+   全ページ共通のヘッダー、フッター、ナビゲーション
+======================================== */
+
+/* ========================================
+   共通ヘッダー
+======================================== */
+
+.commons-header {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  animation: slideDown 0.5s ease;
+}
+
+.commons-header-inner {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 1.5rem 2rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.commons-logo {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 24px;
+  background: var(--commons-primary);
+  color: white;
+  border-radius: var(--radius-full);
+  font-size: 18px;
+  font-weight: var(--font-weight-bold);
+  text-decoration: none;
+  transition: all var(--transition-normal);
+}
+
+.commons-logo:hover {
+  background: var(--commons-primary-dark);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-medium);
+}
+
+.commons-nav {
+  display: flex;
+  gap: 2.5rem;
+  align-items: center;
+}
+
+.commons-nav-link {
+  color: var(--commons-text-secondary);
+  font-size: var(--font-size-small);
+  font-weight: var(--font-weight-medium);
+  text-decoration: none;
+  transition: color var(--transition-fast);
+  position: relative;
+  padding-bottom: 4px;
+}
+
+.commons-nav-link::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background: var(--commons-primary);
+  transition: width var(--transition-normal);
+}
+
+.commons-nav-link:hover,
+.commons-nav-link.active {
+  color: var(--commons-primary);
+}
+
+.commons-nav-link:hover::after,
+.commons-nav-link.active::after {
+  width: 100%;
+}
+
+.commons-header-actions {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+}
+
+.commons-user-menu {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 16px;
+  background: var(--commons-bg-light);
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition: all var(--transition-normal);
+}
+
+.commons-user-menu:hover {
+  background: var(--commons-bg-gray);
+  transform: translateY(-2px);
+}
+
+.commons-user-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--commons-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 14px;
+  font-weight: var(--font-weight-semibold);
+}
+
+/* ハンバーガーメニュー（モバイル） */
+.commons-mobile-menu-btn {
+  display: none;
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: var(--commons-text-primary);
+  cursor: pointer;
+  padding: 8px;
+}
+
+.commons-mobile-menu {
+  display: none;
+  position: fixed;
+  top: 0;
+  right: -100%;
+  width: 280px;
+  height: 100vh;
+  background: white;
+  box-shadow: var(--shadow-strong);
+  padding: 2rem;
+  transition: right var(--transition-normal);
+  z-index: 200;
+}
+
+.commons-mobile-menu.open {
+  right: 0;
+}
+
+.commons-mobile-menu-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 199;
+}
+
+.commons-mobile-menu-overlay.open {
+  display: block;
+}
+
+.commons-mobile-menu-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--commons-border-light);
+}
+
+.commons-mobile-menu-close {
+  background: none;
+  border: none;
+  font-size: 24px;
+  color: var(--commons-text-primary);
+  cursor: pointer;
+}
+
+.commons-mobile-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.commons-mobile-nav-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: var(--commons-text-primary);
+  font-size: var(--font-size-regular);
+  font-weight: var(--font-weight-medium);
+  text-decoration: none;
+  padding: 12px;
+  border-radius: var(--radius-md);
+  transition: all var(--transition-fast);
+}
+
+.commons-mobile-nav-link:hover,
+.commons-mobile-nav-link.active {
+  background: var(--commons-primary-light);
+  color: var(--commons-primary);
+}
+
+/* ========================================
+   共通フッター
+======================================== */
+
+.commons-footer {
+  background: linear-gradient(135deg, var(--commons-primary), var(--commons-primary-dark));
+  color: white;
+  padding: 3rem 2rem 2rem;
+  margin-top: auto;
+}
+
+.commons-footer-inner {
+  max-width: 1280px;
+  margin: 0 auto;
+}
+
+.commons-footer-content {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 3rem;
+  margin-bottom: 2rem;
+}
+
+.commons-footer-section h3 {
+  font-size: var(--font-size-medium);
+  font-weight: var(--font-weight-bold);
+  margin-bottom: 1rem;
+}
+
+.commons-footer-links {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.commons-footer-link {
+  color: rgba(255, 255, 255, 0.8);
+  font-size: var(--font-size-small);
+  text-decoration: none;
+  transition: color var(--transition-fast);
+}
+
+.commons-footer-link:hover {
+  color: white;
+}
+
+.commons-footer-bottom {
+  padding-top: 2rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.commons-footer-copyright {
+  font-size: var(--font-size-small);
+  opacity: 0.8;
+}
+
+.commons-footer-social {
+  display: flex;
+  gap: 1rem;
+}
+
+.commons-footer-social-link {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  text-decoration: none;
+  transition: all var(--transition-fast);
+}
+
+.commons-footer-social-link:hover {
+  background: rgba(255, 255, 255, 0.3);
+  transform: translateY(-2px);
+}
+
+/* ========================================
+   共通ボタン
+======================================== */
+
+.btn-commons-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 32px;
+  background: var(--commons-primary);
+  color: white;
+  border: none;
+  border-radius: var(--radius-lg);
+  font-size: var(--font-size-regular);
+  font-weight: var(--font-weight-semibold);
+  text-decoration: none;
+  cursor: pointer;
+  transition: all var(--transition-normal);
+}
+
+.btn-commons-primary:hover {
+  background: var(--commons-primary-dark);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-medium);
+}
+
+.btn-commons-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 32px;
+  background: transparent;
+  color: var(--commons-primary);
+  border: 2px solid var(--commons-primary);
+  border-radius: var(--radius-lg);
+  font-size: var(--font-size-regular);
+  font-weight: var(--font-weight-semibold);
+  text-decoration: none;
+  cursor: pointer;
+  transition: all var(--transition-normal);
+}
+
+.btn-commons-secondary:hover {
+  background: var(--commons-primary);
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-medium);
+}
+
+.btn-commons-ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 32px;
+  background: transparent;
+  color: var(--commons-text-secondary);
+  border: none;
+  border-radius: var(--radius-lg);
+  font-size: var(--font-size-regular);
+  font-weight: var(--font-weight-medium);
+  text-decoration: none;
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.btn-commons-ghost:hover {
+  background: var(--commons-bg-light);
+  color: var(--commons-text-primary);
+}
+
+/* ========================================
+   共通カード
+======================================== */
+
+.commons-card {
+  background: white;
+  border-radius: var(--radius-xl);
+  padding: var(--spacing-lg);
+  box-shadow: var(--shadow-soft);
+  transition: all var(--transition-normal);
+}
+
+.commons-card:hover {
+  box-shadow: var(--shadow-medium);
+  transform: translateY(-4px);
+}
+
+.commons-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--spacing-md);
+}
+
+.commons-card-title {
+  font-size: var(--font-size-large);
+  font-weight: var(--font-weight-bold);
+  color: var(--commons-text-primary);
+}
+
+.commons-card-body {
+  color: var(--commons-text-secondary);
+  line-height: var(--line-height-relaxed);
+}
+
+/* ========================================
+   ページコンテナ
+======================================== */
+
+.commons-page-container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--commons-bg-white);
+}
+
+.commons-main-content {
+  flex: 1;
+  max-width: 1280px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+.commons-page-header {
+  margin-bottom: var(--spacing-xl);
+}
+
+.commons-page-title {
+  font-size: var(--font-size-xlarge);
+  font-weight: var(--font-weight-bold);
+  color: var(--commons-text-primary);
+  margin-bottom: var(--spacing-sm);
+}
+
+.commons-page-description {
+  font-size: var(--font-size-regular);
+  color: var(--commons-text-secondary);
+  line-height: var(--line-height-relaxed);
+}
+
+/* ========================================
+   レスポンシブ
+======================================== */
+
+@media (max-width: 768px) {
+  .commons-nav {
+    display: none;
+  }
+  
+  .commons-mobile-menu-btn {
+    display: block;
+  }
+  
+  .commons-mobile-menu {
+    display: block;
+  }
+  
+  .commons-header-inner {
+    padding: 1rem;
+  }
+  
+  .commons-footer-content {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+  }
+  
+  .commons-footer-bottom {
+    flex-direction: column;
+    text-align: center;
+  }
+  
+  .commons-main-content {
+    padding: 1rem;
+  }
+}
