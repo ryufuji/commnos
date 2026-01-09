@@ -627,3 +627,35 @@ echo "YOUR_RESEND_API_KEY" | npx wrangler pages secret put RESEND_API_KEY --proj
 **最終更新**: 2025-12-26  
 **バージョン**: Phase 2 完了（会員管理・コメント・メール通知・デザイン洗練・レスポンシブ対応）  
 **次のステップ**: Phase 3（R2バケット・高度な機能）
+
+## 予約投稿機能
+
+### 概要
+管理者が投稿を指定した日時に自動的に公開できる予約投稿機能を実装しました。
+
+### Cronワーカーのデプロイ
+
+⚠️ **重要**: Cloudflare Pagesは Cron Triggers をサポートしていないため、予約投稿の自動公開には**別のWorkerを手動でデプロイする必要があります**。
+
+```bash
+# Cronワーカーをデプロイ
+npx wrangler deploy --config wrangler-cron.jsonc
+
+# デプロイ後、Cloudflare Dashboardで確認
+# https://dash.cloudflare.com/
+# Workers & Pages > commons-webapp-cron > Settings > Triggers
+```
+
+### ログの確認
+```bash
+# Cronワーカーのログを確認
+npx wrangler tail commons-webapp-cron
+```
+
+### 詳細ドキュメント
+- `docs/SCHEDULED_POSTS.md` - 予約投稿機能の詳細仕様
+
+---
+
+**最終更新**: 2026-01-09
+**バージョン**: Phase 4（予約投稿機能）
