@@ -2006,10 +2006,10 @@ tenantPublic.get('/posts/new', async (c) => {
                     <p class="text-sm text-gray-500 mt-1">最大10,000文字</p>
                 </div>
 
-                <!-- 公開範囲 (管理者のみ) -->
+                <!-- 公開範囲 -->
                 <div id="visibilityField" style="display: none;">
                     <label class="block text-sm font-medium text-gray-700 mb-2">
-                        公開範囲 <span class="text-xs text-gray-500">(管理者のみ設定可能)</span>
+                        公開範囲
                     </label>
                     <div class="space-y-2">
                         <label class="flex items-center p-3 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition">
@@ -2241,14 +2241,6 @@ tenantPublic.get('/posts/new', async (c) => {
                 }
                 console.log('Membership:', membership)
                 
-                // 管理者権限チェック
-                const isAdmin = membership.role === 'owner' || membership.role === 'admin'
-                if (!isAdmin) {
-                    alert('投稿作成は管理者のみ可能です')
-                    window.location.href = '/tenant/home?subdomain=${subdomain}'
-                    return
-                }
-                
                 // Check if user belongs to this tenant
                 if (user.tenantId !== ${tenant.id}) {
                     alert('このコミュニティの会員ではありません')
@@ -2268,11 +2260,8 @@ tenantPublic.get('/posts/new', async (c) => {
                     return
                 }
                 
-                // 管理者の場合は公開範囲フィールドを表示
-                const isAdmin = membership.role === 'owner' || membership.role === 'admin'
-                if (isAdmin) {
-                    document.getElementById('visibilityField').style.display = 'block'
-                }
+                // 公開範囲フィールドを表示（全会員が利用可能）
+                document.getElementById('visibilityField').style.display = 'block'
                 
                 // ナビゲーションを更新（ログイン済みユーザー向け）
                 updateNavigation(membership)
