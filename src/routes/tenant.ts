@@ -49,7 +49,6 @@ tenant.get('/', tenantMiddleware, async (c) => {
 
   const posts = postsResult.results || []
 
-  // テーマカラーの設定
   return c.html(`
     <!DOCTYPE html>
     <html lang="ja">
@@ -60,15 +59,13 @@ tenant.get('/', tenantMiddleware, async (c) => {
         <script src="https://cdn.tailwindcss.com"></script>
         <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
         <link href="/static/styles.css" rel="stylesheet">
+        <link href="/static/commons-theme.css" rel="stylesheet">
+        <link href="/static/commons-components.css" rel="stylesheet">
         <style>
-            :root {
-                --primary-color: ${theme.primary};
-                --secondary-color: ${theme.secondary};
-            }
-            .theme-bg-primary { background-color: var(--primary-color); }
-            .theme-bg-secondary { background-color: var(--secondary-color); }
-            .theme-text-primary { color: var(--primary-color); }
-            .theme-border-primary { border-color: var(--primary-color); }
+            .theme-bg-primary { background-color: var(--commons-primary); }
+            .theme-bg-secondary { background-color: var(--commons-accent-yellow); }
+            .theme-text-primary { color: var(--commons-primary); }
+            .theme-border-primary { border-color: var(--commons-primary); }
         </style>
     </head>
     <body class="bg-gray-50">
