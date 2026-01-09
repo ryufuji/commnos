@@ -7883,4 +7883,230 @@ tenantPublic.get('/member-plans', async (c) => {
   `)
 })
 
+// ============================================
+// プラン選択ページ - プレミアムデザイン版
+// Vivoo風のビジュアルデザインを適用
+// ============================================
+tenantPublic.get('/member-plans-premium', async (c) => {
+  const subdomain = c.req.query('subdomain')
+  
+  if (!subdomain) {
+    return c.html(`
+      <!DOCTYPE html>
+      <html lang="ja">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>プラン選択 - Commons</title>
+      </head>
+      <body>
+        <p>サブドメインを指定してください: /tenant/member-plans-premium?subdomain=your-subdomain</p>
+      </body>
+      </html>
+    `)
+  }
+
+  return c.html(`
+    <!DOCTYPE html>
+    <html lang="ja">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>プラン選択 - Commons</title>
+      <script src="https://cdn.tailwindcss.com"></script>
+      <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+      <link href="/static/commons-theme.css" rel="stylesheet">
+      <link href="/static/plan-selection.css" rel="stylesheet">
+    </head>
+    <body class="bg-white overflow-x-hidden">
+      
+      <!-- 背景装飾要素（有機的シェイプ） -->
+      <div class="fixed inset-0 pointer-events-none overflow-hidden" style="z-index: 0;">
+        <div class="organic-shape shape-purple"></div>
+        <div class="organic-shape shape-terracotta"></div>
+        <div class="organic-shape shape-cyan"></div>
+        <div class="organic-shape shape-lime"></div>
+      </div>
+
+      <!-- メインコンテンツ -->
+      <div class="relative" style="z-index: 10;">
+        
+        <!-- ヘッダー -->
+        <header class="header-container">
+          <div class="max-w-7xl mx-auto px-8 py-6 flex justify-between items-center">
+            <!-- ロゴ -->
+            <a href="/tenant/home?subdomain=${subdomain}" class="commons-logo">
+              <i class="fas fa-users"></i>
+              <span>Commons</span>
+            </a>
+            
+            <!-- ナビゲーション -->
+            <nav class="header-nav">
+              <a href="/tenant/home?subdomain=${subdomain}">ホーム</a>
+              <a href="/tenant/posts?subdomain=${subdomain}">投稿</a>
+              <a href="/tenant/members?subdomain=${subdomain}">メンバー</a>
+              <a href="/tenant/member-plans-premium?subdomain=${subdomain}" class="active">プラン</a>
+            </nav>
+            
+            <!-- CTAボタン -->
+            <button onclick="scrollToPlans()" class="cta-button">
+              <i class="fas fa-crown"></i>
+              <span>プランを選ぶ</span>
+            </button>
+          </div>
+        </header>
+
+        <!-- ヒーローセクション -->
+        <section class="hero-section">
+          <div class="max-w-7xl mx-auto px-8 py-20">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+              
+              <!-- 左側：キャッチコピー -->
+              <div class="hero-content fade-in-left">
+                <h1 class="hero-headline">
+                  あなたに合った<br>
+                  プランで、<br>
+                  もっと楽しく。
+                </h1>
+                <div class="hero-divider"></div>
+                <p class="hero-subheadline">
+                  プランによって楽しめるコンテンツが変わります
+                </p>
+                <p class="hero-description">
+                  無料から始めて、必要に応じてアップグレード。<br>
+                  あなたのペースで、コミュニティを楽しもう。
+                </p>
+              </div>
+
+              <!-- 右側：ビジュアル -->
+              <div class="hero-visual fade-in-right">
+                <!-- メインシェイプ（黄色の有機的図形） -->
+                <div class="main-shape">
+                  <div class="shape-overlay-text">
+                    Choose<br>
+                    Your<br>
+                    Perfect Plan
+                  </div>
+                  
+                  <!-- イラスト: 会員キャラクター -->
+                  <div class="character character-1">
+                    <i class="fas fa-user-circle"></i>
+                  </div>
+                  <div class="character character-2">
+                    <i class="fas fa-crown"></i>
+                  </div>
+                  <div class="character character-3">
+                    <i class="fas fa-star"></i>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </section>
+
+        <!-- プラン一覧セクション -->
+        <section class="plans-section" id="plans-section">
+          <div class="max-w-7xl mx-auto px-8 py-20">
+            
+            <!-- セクションタイトル -->
+            <div class="text-center mb-16 fade-in-up">
+              <h2 class="section-title">プランを選択</h2>
+              <p class="section-description">
+                全てのプランで基本機能が使えます。上位プランでより多くのコンテンツにアクセスできます。
+              </p>
+            </div>
+
+            <!-- プランカードグリッド -->
+            <div id="plans-grid" class="plans-grid">
+              <div style="text-align: center; padding: 40px; color: var(--commons-text-tertiary);">
+                <i class="fas fa-spinner fa-spin" style="font-size: 32px; margin-bottom: 16px;"></i>
+                <p>プランを読み込み中...</p>
+              </div>
+            </div>
+
+            <!-- 現在のプラン表示 -->
+            <div id="current-plan-banner" class="current-plan-banner" style="display: none;">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-4">
+                  <i class="fas fa-info-circle" style="font-size: 24px;"></i>
+                  <div>
+                    <p style="font-weight: 600;">現在のプラン</p>
+                    <p id="current-plan-name" style="font-size: 14px; opacity: 0.9;"></p>
+                  </div>
+                </div>
+                <button onclick="showUpgradeOptions()" class="upgrade-button">
+                  <i class="fas fa-arrow-up"></i>
+                  アップグレード
+                </button>
+              </div>
+            </div>
+
+          </div>
+        </section>
+
+        <!-- 機能比較セクション -->
+        <section class="comparison-section">
+          <div class="max-w-7xl mx-auto px-8 py-20">
+            <div class="text-center mb-16 fade-in-up">
+              <h2 class="section-title">プラン比較</h2>
+              <p class="section-description">
+                各プランで利用できる機能を比較してください
+              </p>
+            </div>
+
+            <!-- 比較テーブル -->
+            <div class="comparison-table-container">
+              <table class="comparison-table" id="comparison-table">
+                <tr>
+                  <td colspan="4" style="text-align: center; padding: 40px; color: var(--commons-text-tertiary);">
+                    <i class="fas fa-spinner fa-spin" style="font-size: 24px;"></i>
+                    <p style="margin-top: 12px;">比較表を読み込み中...</p>
+                  </td>
+                </tr>
+              </table>
+            </div>
+          </div>
+        </section>
+
+      </div>
+
+      <!-- プラン確認モーダル -->
+      <div id="plan-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h3 class="modal-title">プランを確認</h3>
+            <button onclick="closePlanModal()" class="modal-close">
+              <i class="fas fa-times"></i>
+            </button>
+          </div>
+          <div class="modal-body">
+            <div id="modal-plan-details">
+              <!-- JavaScript で動的に生成 -->
+            </div>
+          </div>
+          <div class="modal-footer">
+            <button onclick="closePlanModal()" class="btn-secondary">
+              キャンセル
+            </button>
+            <button onclick="confirmPlanSelection()" class="btn-primary">
+              <i class="fas fa-check"></i>
+              このプランを選択
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- JavaScript -->
+      <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+      <script>
+        const subdomain = '${subdomain}'
+      </script>
+      <script src="/static/plan-selection.js"></script>
+
+    </body>
+    </html>
+  `)
+})
+
 export default tenantPublic

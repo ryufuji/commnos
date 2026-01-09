@@ -33,6 +33,7 @@ import likes from './routes/likes' // Phase 4 - いいね機能
 import notifications from './routes/notifications' // Phase 5 - 通知機能
 import chat from './routes/chat' // Phase 6 - チャット機能
 import { coupons } from './routes/coupons' // クーポン管理
+import postAccess from './routes/post-access' // 投稿アクセス制御管理
 
 const app = new Hono<AppContext>()
 
@@ -60,6 +61,7 @@ app.route('/api/profile', profile)
 
 // 投稿ルート（Week 7-8）
 app.route('/api/posts', posts)
+app.route('/api/posts', postAccess) // 投稿アクセス制御管理
 
 // Stripe決済ルート（Week 9-10）
 app.route('/api/stripe', stripe)

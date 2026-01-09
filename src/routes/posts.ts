@@ -7,6 +7,7 @@ import { marked } from 'marked'
 import type { AppContext } from '../types'
 import { authMiddleware, roleMiddleware, tenantMiddleware } from '../middleware/auth'
 import { createNotification } from './notifications'
+import { checkPostAccess, filterContent, logPostAccess, getRequiredPlan } from '../middleware/plan-access'
 
 const posts = new Hono<AppContext>()
 
@@ -86,7 +87,7 @@ posts.get('/my-posts', authMiddleware, async (c) => {
 
 /**
  * GET /api/posts/:id
- * 投稿詳細取得
+ * 投稿詳細取得（プランアクセス制御対応）
  */
 posts.get('/:id', tenantMiddleware, async (c) => {
   const postId = parseInt(c.req.param('id'))
@@ -111,21 +112,53 @@ posts.get('/:id', tenantMiddleware, async (c) => {
       return c.json({ success: false, error: 'Post not found' }, 404)
     }
 
-    // 閲覧数を増加
-    await db
-      .prepare('UPDATE posts SET view_count = view_count + 1 WHERE id = ?')
-      .bind(postId)
-      .run()
+    // アクセス権限チェック
+    const accessCheck = await checkPostAccess(c, postId)
+    
+    // アクセスログ記録
+    await logPostAccess(c, postId, accessCheck)
+
+    // 閲覧数を増加（アクセス許可がある場合のみ）
+    if (accessCheck.canAccess) {
+      await db
+        .prepare('UPDATE posts SET view_count = view_count + 1 WHERE id = ?')
+        .bind(postId)
+        .run()
+    }
+
+    // コンテンツフィルタリング
+    const { content: filteredContent, isFiltered } = filterContent(post.content || '', accessCheck)
 
     // Markdown を HTML に変換
-    const contentHtml = marked(post.content || '')
+    const contentHtml = marked(filteredContent)
+
+    // アクセス制限情報を追加
+    const responseData: any = {
+      ...post,
+      content: filteredContent,
+      content_html: contentHtml,
+      access_info: {
+        can_access: accessCheck.canAccess,
+        is_filtered: isFiltered,
+        is_members_only: accessCheck.isMembersOnly,
+        is_premium_content: accessCheck.isPremiumContent,
+        user_plan_level: accessCheck.userPlanLevel,
+        required_plan_level: accessCheck.requiredPlanLevel,
+        message: accessCheck.message
+      }
+    }
+
+    // アクセスできない場合、必要なプラン情報を追加
+    if (!accessCheck.canAccess && accessCheck.requiredPlanLevel > 0) {
+      const requiredPlan = await getRequiredPlan(c, accessCheck.requiredPlanLevel)
+      if (requiredPlan) {
+        responseData.access_info.required_plan = requiredPlan
+      }
+    }
 
     return c.json({
       success: true,
-      post: {
-        ...post,
-        content_html: contentHtml
-      }
+      post: responseData
     })
   } catch (error) {
     console.error('[Get Post Error]', error)
