@@ -23,8 +23,9 @@ tenant.get('/', tenantMiddleware, async (c) => {
   // テナント情報取得
   const tenantResult = await globalQuery<any>(
     db,
-    `SELECT t.* 
+    `SELECT t.*, tc.theme_preset 
      FROM tenants t
+     LEFT JOIN tenant_customization tc ON t.id = tc.tenant_id
      WHERE t.id = ?`,
     [tenantId]
   )
@@ -50,6 +51,15 @@ tenant.get('/', tenantMiddleware, async (c) => {
   const posts = postsResult.results || []
 
   // テーマカラーの設定
+  const themeColors = {
+    'modern-business': { primary: '#1e3a8a', secondary: '#3b82f6' },
+    'wellness-nature': { primary: '#065f46', secondary: '#10b981' },
+    'creative-studio': { primary: '#7c2d12', secondary: '#f97316' },
+    'tech-innovation': { primary: '#0c4a6e', secondary: '#06b6d4' }
+  }
+
+  const theme = themeColors[tenantData.theme_preset as keyof typeof themeColors] || themeColors['modern-business']
+
   return c.html(`
     <!DOCTYPE html>
     <html lang="ja">
@@ -438,8 +448,9 @@ tenant.get('/join', tenantMiddleware, async (c) => {
   // テナント情報取得
   const tenantResult = await globalQuery<any>(
     db,
-    `SELECT t.* 
+    `SELECT t.*, tc.theme_preset 
      FROM tenants t
+     LEFT JOIN tenant_customization tc ON t.id = tc.tenant_id
      WHERE t.id = ?`,
     [tenantId]
   )
@@ -664,8 +675,9 @@ tenant.get('/posts/:id', tenantMiddleware, async (c) => {
   // テナント情報取得
   const tenantResult = await globalQuery<any>(
     db,
-    `SELECT t.* 
+    `SELECT t.*, tc.theme_preset 
      FROM tenants t
+     LEFT JOIN tenant_customization tc ON t.id = tc.tenant_id
      WHERE t.id = ?`,
     [tenantId]
   )
@@ -694,7 +706,7 @@ tenant.get('/posts/:id', tenantMiddleware, async (c) => {
 
   return c.html(`
     <!DOCTYPE html>
-    <html lang="ja" data-theme="light">
+    <html lang="ja" data-theme="${tenantData.theme_preset || 'modern-business'}">
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">

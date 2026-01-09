@@ -614,11 +614,17 @@ tenantPublic.get('/register', async (c) => {
 </html>`)
   }
   
+  // テーマ設定を取得
+  const customization = await DB.prepare(
+    'SELECT theme_preset FROM tenant_customization WHERE tenant_id = ?'
+  ).bind(tenant.id).first()
+  const theme = customization?.theme_preset || 'modern-business'
+  
   const tenantName = String(tenant.name || '')
   const tenantSubtitle = String(tenant.subtitle || '')
   
   return c.html(`<!DOCTYPE html>
-<html lang="ja" data-theme="light">
+<html lang="ja" data-theme="${theme}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -1149,6 +1155,13 @@ tenantPublic.get('/home', async (c) => {
 </html>`)
   }
   
+  // テーマ情報を取得
+  const customization = await DB.prepare(
+    'SELECT * FROM tenant_customization WHERE tenant_id = ?'
+  ).bind(tenant.id).first()
+  
+  const theme = customization?.theme_preset || 'modern-business'
+  
   // 最新投稿を取得
   const postsResult = await DB.prepare(`
     SELECT p.*, u.nickname as author_name
@@ -1248,7 +1261,7 @@ tenantPublic.get('/home', async (c) => {
   }
   
   return c.html(`<!DOCTYPE html>
-<html lang="ja" data-theme="light">
+<html lang="ja" data-theme="${theme}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -1751,9 +1764,15 @@ tenantPublic.get('/posts/new', async (c) => {
 </html>`)
   }
   
+  // テーマ設定を取得
+  const customization = await DB.prepare(
+    'SELECT theme_preset FROM tenant_customization WHERE tenant_id = ?'
+  ).bind(tenant.id).first()
+  const theme = customization?.theme_preset || 'modern-business'
+  
   // クライアントサイドで管理者判定を行う（JavaScriptでAPIから取得）
   return c.html(`<!DOCTYPE html>
-<html lang="ja" data-theme="light">
+<html lang="ja" data-theme="${theme}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -3591,6 +3610,12 @@ tenantPublic.get('/posts/:id', async (c) => {
 </html>`)
   }
   
+  // テーマ設定を取得
+  const customization = await DB.prepare(
+    'SELECT theme_preset FROM tenant_customization WHERE tenant_id = ?'
+  ).bind(tenant.id).first()
+  const theme = customization?.theme_preset || 'modern-business'
+  
   // 投稿を取得
   const post = await DB.prepare(`
     SELECT p.*, u.nickname as author_name, u.avatar_url as author_avatar
@@ -3601,7 +3626,7 @@ tenantPublic.get('/posts/:id', async (c) => {
   
   if (!post) {
     return c.html(`<!DOCTYPE html>
-<html lang="ja" data-theme="light">
+<html lang="ja" data-theme="${theme}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -3656,7 +3681,7 @@ tenantPublic.get('/posts/:id', async (c) => {
   })
   
   return c.html(`<!DOCTYPE html>
-<html lang="ja" data-theme="light">
+<html lang="ja" data-theme="${theme}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -4081,6 +4106,12 @@ tenantPublic.get('/members', async (c) => {
 </html>`)
   }
   
+  // テーマ設定を取得
+  const customization = await DB.prepare(
+    'SELECT theme_preset FROM tenant_customization WHERE tenant_id = ?'
+  ).bind(tenant.id).first()
+  const theme = customization?.theme_preset || 'modern-business'
+  
   // 検索パラメータ
   const searchQuery = c.req.query('search') || ''
   const searchRole = c.req.query('role') || ''
@@ -4264,7 +4295,7 @@ tenantPublic.get('/members', async (c) => {
   }
   
   return c.html(`<!DOCTYPE html>
-<html lang="ja" data-theme="light">
+<html lang="ja" data-theme="${theme}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -5552,6 +5583,12 @@ tenantPublic.get('/liked-posts', async (c) => {
     `)
   }
 
+  // テーマの取得
+  const themeResult = await DB.prepare(`
+    SELECT theme_preset FROM tenant_customization WHERE tenant_id = ?
+  `).bind(tenant.id).first()
+  const theme = themeResult?.theme_preset || 'modern-business'
+
   // ページネーション設定
   const page = Number(c.req.query('page')) || 1
   const perPage = 12
@@ -5650,7 +5687,7 @@ tenantPublic.get('/liked-posts', async (c) => {
 
   return c.html(`
 <!DOCTYPE html>
-<html lang="ja" data-theme="light">
+<html lang="ja" data-theme="${theme}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">

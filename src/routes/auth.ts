@@ -121,13 +121,7 @@ auth.post('/register', async (c) => {
       .bind(tenantId, user.id, 'owner', '0', 'active')
       .run()
 
-    // 4. テナントカスタマイズ設定
-    await db
-      .prepare('INSERT INTO tenant_customization (tenant_id, theme_preset) VALUES (?, ?)')
-      .bind(tenantId, theme || 'modern-business')
-      .run()
-
-    // 5. テナント機能設定（Free プラン）
+    // 4. テナント機能設定（Free プラン）
     await db
       .prepare(`
         INSERT INTO tenant_features (tenant_id, max_members, max_storage_gb, max_posts_per_month)

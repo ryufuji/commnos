@@ -55,12 +55,13 @@ export interface TenantMembership {
   expires_at: string | null
 }
 
-export interface TenantCustomization {
-  id: number
-  tenant_id: number
-  theme_preset: 'modern-business' | 'wellness-nature' | 'creative-studio' | 'tech-innovation'
-  updated_at: string
-}
+// Deprecated: Theme customization removed in favor of unified Vivoo-inspired design
+// export interface TenantCustomization {
+//   id: number
+//   tenant_id: number
+//   theme_preset: 'modern-business' | 'wellness-nature' | 'creative-studio' | 'tech-innovation'
+//   updated_at: string
+// }
 
 export interface TenantFeatures {
   id: number
