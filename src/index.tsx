@@ -662,9 +662,19 @@ app.get('/plans', (c) => {
                     <h1 class="text-4xl font-bold text-gray-900 mt-6 mb-3">
                         あなたに最適なプランを選択
                     </h1>
-                    <p class="text-lg text-secondary-600">
+                    <p class="text-lg text-secondary-600 mb-6">
                         いつでもプランの変更が可能です
                     </p>
+                    
+                    <!-- 月払い/年払い切り替え -->
+                    <div class="flex items-center justify-center gap-3 mt-6">
+                        <span id="monthlyLabel" class="text-lg font-semibold text-primary-600">月払い</span>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="billingToggle" class="sr-only peer">
+                            <div class="w-14 h-7 bg-gray-300 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[4px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-primary-600"></div>
+                        </label>
+                        <span id="yearlyLabel" class="text-lg font-semibold text-gray-500">年払い<span class="ml-2 text-sm text-success-600 font-bold">2ヶ月分お得</span></span>
+                    </div>
                 </div>
 
                 <!-- プラン比較 -->
@@ -717,10 +727,10 @@ app.get('/plans', (c) => {
                         <div class="text-center mb-6">
                             <h3 class="text-2xl font-bold text-gray-900 mb-2">Starter</h3>
                             <div class="mt-4">
-                                <span class="text-5xl font-bold text-primary-600">¥980</span>
-                                <span class="text-secondary-600 ml-2">/月</span>
+                                <span class="text-5xl font-bold text-primary-600 plan-price" data-monthly="980" data-yearly="9800">¥980</span>
+                                <span class="text-secondary-600 ml-2 plan-interval">/月</span>
                             </div>
-                            <p class="text-secondary-600 mt-2">中小規模コミュニティ向け</p>
+                            <p class="text-secondary-600 mt-2 plan-description" data-monthly="中小規模コミュニティ向け" data-yearly="年間¥11,760 → ¥9,800（2ヶ月分お得）">中小規模コミュニティ向け</p>
                         </div>
 
                         <ul class="space-y-4 mb-8">
@@ -757,10 +767,10 @@ app.get('/plans', (c) => {
                         <div class="text-center mb-6">
                             <h3 class="text-2xl font-bold text-gray-900 mb-2">Pro</h3>
                             <div class="mt-4">
-                                <span class="text-5xl font-bold text-primary-600">¥4,980</span>
-                                <span class="text-secondary-600 ml-2">/月</span>
+                                <span class="text-5xl font-bold text-primary-600 plan-price" data-monthly="4980" data-yearly="49800">¥4,980</span>
+                                <span class="text-secondary-600 ml-2 plan-interval">/月</span>
                             </div>
-                            <p class="text-secondary-600 mt-2">大規模コミュニティ向け</p>
+                            <p class="text-secondary-600 mt-2 plan-description" data-monthly="大規模コミュニティ向け" data-yearly="年間¥59,760 → ¥49,800（2ヶ月分お得）">大規模コミュニティ向け</p>
                         </div>
 
                         <ul class="space-y-4 mb-8">
@@ -848,6 +858,54 @@ app.get('/plans', (c) => {
 
         <script src="/static/app.js"></script>
         <script>
+            // 月払い/年払い切り替え処理
+            let currentInterval = 'month'; // デフォルトは月払い
+            
+            document.addEventListener('DOMContentLoaded', function() {
+                const toggle = document.getElementById('billingToggle');
+                const monthlyLabel = document.getElementById('monthlyLabel');
+                const yearlyLabel = document.getElementById('yearlyLabel');
+                const priceElements = document.querySelectorAll('.plan-price');
+                const intervalElements = document.querySelectorAll('.plan-interval');
+                const descriptionElements = document.querySelectorAll('.plan-description');
+                
+                if (toggle) {
+                    toggle.addEventListener('change', function() {
+                        currentInterval = this.checked ? 'year' : 'month';
+                        
+                        // ラベルのスタイル切り替え
+                        if (this.checked) {
+                            monthlyLabel.classList.remove('text-primary-600');
+                            monthlyLabel.classList.add('text-gray-500');
+                            yearlyLabel.classList.remove('text-gray-500');
+                            yearlyLabel.classList.add('text-primary-600');
+                        } else {
+                            monthlyLabel.classList.remove('text-gray-500');
+                            monthlyLabel.classList.add('text-primary-600');
+                            yearlyLabel.classList.remove('text-primary-600');
+                            yearlyLabel.classList.add('text-gray-500');
+                        }
+                        
+                        // 価格表示の切り替え
+                        priceElements.forEach(el => {
+                            const price = this.checked ? el.getAttribute('data-yearly') : el.getAttribute('data-monthly');
+                            el.textContent = '¥' + parseInt(price).toLocaleString();
+                        });
+                        
+                        // 期間表示の切り替え
+                        intervalElements.forEach(el => {
+                            el.textContent = this.checked ? '/年' : '/月';
+                        });
+                        
+                        // 説明文の切り替え
+                        descriptionElements.forEach(el => {
+                            const desc = this.checked ? el.getAttribute('data-yearly') : el.getAttribute('data-monthly');
+                            el.textContent = desc;
+                        });
+                    });
+                }
+            });
+
             async function handleCheckout(plan) {
                 try {
                     showLoading(event.target)
@@ -857,7 +915,10 @@ app.get('/plans', (c) => {
                         headers: {
                             'Content-Type': 'application/json'
                         },
-                        body: JSON.stringify({ plan })
+                        body: JSON.stringify({ 
+                            plan: plan,
+                            interval: currentInterval  // 選択された期間を送信
+                        })
                     })
 
                     const data = await response.json()

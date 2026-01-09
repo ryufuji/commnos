@@ -163,15 +163,21 @@ async function handleSubscriptionCreated(
 
   // 有効期限を設定
   const currentPeriodEnd = new Date(subscription.current_period_end * 1000).toISOString()
+  
+  // billing_intervalを取得（デフォルトはmonth）
+  const billingInterval = subscription.items.data[0]?.price?.recurring?.interval || 'month'
 
   try {
     await DB.prepare(`
       UPDATE tenant_memberships
-      SET expires_at = ?, updated_at = CURRENT_TIMESTAMP
+      SET 
+        expires_at = ?,
+        billing_interval = ?,
+        updated_at = CURRENT_TIMESTAMP
       WHERE user_id = ? AND tenant_id = ?
-    `).bind(currentPeriodEnd, metadata.user_id, metadata.tenant_id).run()
+    `).bind(currentPeriodEnd, billingInterval, metadata.user_id, metadata.tenant_id).run()
 
-    console.log(`[Stripe Webhook] Set expiration for user ${metadata.user_id} to ${currentPeriodEnd}`)
+    console.log(`[Stripe Webhook] Set expiration for user ${metadata.user_id} to ${currentPeriodEnd}, interval: ${billingInterval}`)
   } catch (error) {
     console.error('[Stripe Webhook] Error setting expiration:', error)
   }
@@ -194,6 +200,7 @@ async function handleSubscriptionUpdated(
 
   const currentPeriodEnd = new Date(subscription.current_period_end * 1000).toISOString()
   const status = subscription.status === 'active' ? 'active' : 'inactive'
+  const billingInterval = subscription.items.data[0]?.price?.recurring?.interval || 'month'
 
   try {
     await DB.prepare(`
@@ -201,11 +208,12 @@ async function handleSubscriptionUpdated(
       SET 
         expires_at = ?,
         status = ?,
+        billing_interval = ?,
         updated_at = CURRENT_TIMESTAMP
       WHERE user_id = ? AND tenant_id = ?
-    `).bind(currentPeriodEnd, status, metadata.user_id, metadata.tenant_id).run()
+    `).bind(currentPeriodEnd, status, billingInterval, metadata.user_id, metadata.tenant_id).run()
 
-    console.log(`[Stripe Webhook] Updated subscription for user ${metadata.user_id}, status: ${status}`)
+    console.log(`[Stripe Webhook] Updated subscription for user ${metadata.user_id}, status: ${status}, interval: ${billingInterval}`)
   } catch (error) {
     console.error('[Stripe Webhook] Error updating subscription:', error)
   }

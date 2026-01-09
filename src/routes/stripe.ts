@@ -8,11 +8,16 @@ const app = new Hono()
 // --------------------------------------------
 app.post('/checkout', async (c) => {
   try {
-    const { plan, tenantId } = await c.req.json()
+    const { plan, tenantId, interval } = await c.req.json()
 
     // プランの検証
     if (!['starter', 'pro'].includes(plan)) {
       return c.json({ error: '無効なプランです' }, 400)
+    }
+
+    // 期間の検証
+    if (!['month', 'year'].includes(interval)) {
+      return c.json({ error: '無効な期間です' }, 400)
     }
 
     // テナントIDの検証
@@ -36,10 +41,18 @@ app.post('/checkout', async (c) => {
       return c.json({ error: 'テナントが見つかりません' }, 404)
     }
 
-    // 価格IDの取得
-    const priceId = plan === 'starter' 
-      ? env.STRIPE_PRICE_STARTER 
-      : env.STRIPE_PRICE_PRO
+    // 価格IDの取得（月払い/年払いに応じて）
+    let priceId: string | undefined
+    
+    if (interval === 'month') {
+      priceId = plan === 'starter' 
+        ? env.STRIPE_PRICE_STARTER 
+        : env.STRIPE_PRICE_PRO
+    } else {
+      priceId = plan === 'starter' 
+        ? env.STRIPE_PRICE_STARTER_YEARLY 
+        : env.STRIPE_PRICE_PRO_YEARLY
+    }
 
     if (!priceId) {
       return c.json({ error: 'プラン設定が見つかりません' }, 500)
@@ -67,6 +80,7 @@ app.post('/checkout', async (c) => {
       allow_promotion_codes: true,
       metadata: {
         plan: plan,
+        interval: interval,
         tenant_id: tenantId.toString()
       },
       // 請求情報の収集
