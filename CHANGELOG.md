@@ -1,5 +1,31 @@
 # Changelog
 
+## 2026-01-09 - テーマ管理UI完全削除
+
+### 修正 🔧
+- **フロントエンドからテーマ管理機能を削除**
+  - `public/static/app.js` からテーマ管理関数削除
+    - `setTheme()`, `loadTheme()`, `switchTheme()`, `getThemeName()` 削除
+    - 約90行のコード削減
+  
+- **tenant.ts のテーマ参照を修正**
+  - 動的なtheme変数参照を削除
+  - Vivoo風デザインの固定カラーに置き換え
+  - commons-theme.css / commons-components.css を読み込み
+  - theme-bg-primary等のクラスをVivoo変数にマッピング
+
+### 影響
+- ✅ ダッシュボードからテーマ選択UIが完全削除
+- ✅ ユーザーはテーマを変更できなくなる（統一デザイン）
+- ✅ すべてのページでVivoo風デザインに統一
+
+### デプロイ
+- 本番: https://commons-webapp.pages.dev
+- 最新: https://7c131cf6.commons-webapp.pages.dev
+- コミット: f0eb4c3
+
+---
+
 ## 2026-01-09 - テーマ設定削除と統一デザインへの移行
 
 ### 大規模リファクタリング 🔄
