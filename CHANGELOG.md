@@ -380,3 +380,49 @@
 - プラン管理画面のUI実装
 - クーポン使用状況のレポート機能
 - Tailwind の本番環境向け最適化（PostCSS/CLI 導入）
+
+## 2026-01-09 - デザインシステム修正
+
+### 🔧 修正 (Fix)
+- **CSSファイル読み込み問題の解決**
+  - src/index.tsx の全ページに commons-theme.css と commons-components.css を追加
+  - 古い /static/styles.css を削除して新しいCSSファイルに置換
+  - data-theme="light" 属性を html タグに統一（bodyタグから移動）
+  - 影響範囲: 11ページ（トップページ、登録、コミュニティ一覧など）
+
+### 🐛 バグ修正
+- **診断ツールの改善**
+  - CORS エラーのハンドリング追加（外部CSSファイル用）
+  - HTMLのlink要素の詳細検査機能を追加
+  - 実際に読み込まれているCSSファイルのリスト表示
+  - より詳細なヒントメッセージの追加
+
+### 📊 診断結果
+**修正前**:
+- ❌ commons-theme.css: 未読込
+- ❌ commons-components.css: 未読込
+- ❌ data-theme: null
+- ❌ CSS変数: 未定義
+
+**修正後**:
+- ✅ commons-theme.css: 読込済
+- ✅ commons-components.css: 読込済
+- ✅ data-theme: light
+- ✅ CSS変数: #00BCD4
+
+### 🚀 デプロイ
+- 本番環境: https://commons-webapp.pages.dev/
+- 最新デプロイ: https://53720635.commons-webapp.pages.dev/
+- GitHub: https://github.com/ryufuji/commnos
+- コミット: deaa3c7
+
+### 📝 ドキュメント
+- `docs/FIX_CSS_LOADING.md` - 修正内容の詳細レポート
+- `docs/DEBUG_DESIGN.md` - 診断手順書
+- `docs/DESIGN_DEBUG_SUMMARY.md` - 診断ツール概要
+
+### 🎯 影響
+- バンドルサイズ: 972.45 kB
+- 変更行数: 40行追加、29行削除
+- 修正ファイル: src/index.tsx
+
