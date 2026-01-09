@@ -20,11 +20,9 @@
       "binding": "R2",
       "bucket_name": "commons-images"
     }
-  ],
+  ]
   
-  // Phase 4: Cron Triggers for scheduled posts
-  // Runs every minute to check for scheduled posts that need to be published
-  "triggers": {
-    "crons": ["* * * * *"]
-  }
+  // Note: Cron triggers are not supported in Cloudflare Pages
+  // Scheduled posts will need to be handled via a separate Worker
+  // or use Cloudflare Workers Cron Triggers
 }

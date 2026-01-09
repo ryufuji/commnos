@@ -3198,15 +3198,4 @@ app.get('/health', (c) => {
   return c.json({ status: 'ok', timestamp: new Date().toISOString() })
 })
 
-// ============================================
-// Cron Triggers
-// ============================================
-import { handleScheduledPosts } from './cron/scheduled-posts'
-
-export default {
-  fetch: app.fetch,
-  scheduled: async (event: any, env: any, ctx: any) => {
-    // 予約投稿の自動公開（1分ごとに実行）
-    await handleScheduledPosts(event, env)
-  }
-}
+export default app
