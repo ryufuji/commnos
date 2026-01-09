@@ -2453,6 +2453,7 @@ app.get('/posts-admin', (c) => {
                         <select id="statusFilter" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
                             <option value="all">すべて</option>
                             <option value="published">公開済み</option>
+                            <option value="scheduled">予約投稿</option>
                             <option value="draft">下書き</option>
                         </select>
                     </div>
@@ -3197,4 +3198,15 @@ app.get('/health', (c) => {
   return c.json({ status: 'ok', timestamp: new Date().toISOString() })
 })
 
-export default app
+// ============================================
+// Cron Triggers
+// ============================================
+import { handleScheduledPosts } from './cron/scheduled-posts'
+
+export default {
+  fetch: app.fetch,
+  scheduled: async (event: any, env: any, ctx: any) => {
+    // 予約投稿の自動公開（1分ごとに実行）
+    await handleScheduledPosts(event, env)
+  }
+}

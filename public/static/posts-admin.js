@@ -107,9 +107,21 @@ function renderPosts(posts) {
     }
     
     container.innerHTML = posts.map(post => {
-        let statusBadge = post.status === 'published'
-            ? '<span class="px-3 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded-full">公開</span>'
-            : '<span class="px-3 py-1 bg-gray-100 text-gray-700 text-xs font-semibold rounded-full">下書き</span>'
+        let statusBadge = ''
+        if (post.status === 'published') {
+            statusBadge = '<span class="px-3 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded-full">公開</span>'
+        } else if (post.status === 'scheduled') {
+            const scheduledDate = post.scheduled_at ? new Date(post.scheduled_at).toLocaleString('ja-JP', { 
+                year: 'numeric', 
+                month: '2-digit', 
+                day: '2-digit', 
+                hour: '2-digit', 
+                minute: '2-digit' 
+            }) : '日時未設定'
+            statusBadge = '<span class="px-3 py-1 bg-yellow-100 text-yellow-700 text-xs font-semibold rounded-full" title="' + scheduledDate + '">予約: ' + scheduledDate + '</span>'
+        } else {
+            statusBadge = '<span class="px-3 py-1 bg-gray-100 text-gray-700 text-xs font-semibold rounded-full">下書き</span>'
+        }
         
         let visibilityBadge = post.visibility === 'public'
             ? '<span class="px-3 py-1 bg-blue-100 text-blue-700 text-xs font-semibold rounded-full">パブリック</span>'

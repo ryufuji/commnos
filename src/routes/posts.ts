@@ -173,15 +173,17 @@ posts.get('/:id', tenantMiddleware, async (c) => {
  * POST /api/posts
  * 投稿作成（認証済みの全会員）
  * Phase 3: 会員全員が投稿できるように変更
+ * Phase 4: 予約投稿機能を追加 (scheduled_at)
  */
 posts.post('/', authMiddleware, async (c) => {
   const userId = c.get('userId')
   const tenantId = c.get('tenantId')
-  const { title, content, category, status, thumbnail_url, video_url, image_urls, visibility } = await c.req.json<{
+  const { title, content, category, status, scheduled_at, thumbnail_url, video_url, image_urls, visibility } = await c.req.json<{
     title: string
     content: string
     category?: string | null
-    status?: 'draft' | 'published'
+    status?: 'draft' | 'published' | 'scheduled'
+    scheduled_at?: string | null
     thumbnail_url?: string | null
     video_url?: string | null
     image_urls?: string[]
@@ -202,6 +204,26 @@ posts.post('/', authMiddleware, async (c) => {
     return c.json({ success: false, message: '本文は10,000文字以内にしてください' }, 400)
   }
 
+  // 予約投稿のバリデーション
+  if (status === 'scheduled') {
+    if (!scheduled_at) {
+      return c.json({ success: false, message: '予約投稿には公開日時を指定してください' }, 400)
+    }
+    
+    const scheduledDateTime = new Date(scheduled_at)
+    const now = new Date()
+    
+    // 過去の日時チェック
+    if (scheduledDateTime <= now) {
+      // 過去の日時の場合、即座に公開する
+      console.log('[Scheduled Post] Scheduled time is in the past, publishing immediately')
+      return c.json({ 
+        success: false, 
+        message: '予約日時は現在より未来の日時を選択してください（過去の日時が指定されました）' 
+      }, 400)
+    }
+  }
+
   try {
     // excerpt を生成（最初の150文字）
     const excerpt = content.substring(0, 150).replace(/[#*`\n]/g, '').trim()
@@ -209,15 +231,16 @@ posts.post('/', authMiddleware, async (c) => {
     const postStatus = status || 'published'
     const publishedAt = postStatus === 'published' ? new Date().toISOString() : null
     const postVisibility = visibility || 'public'
+    const scheduledAtValue = postStatus === 'scheduled' && scheduled_at ? scheduled_at : null
 
     // 投稿作成
     const result = await db
       .prepare(`
         INSERT INTO posts (
           tenant_id, author_id, title, content, excerpt, thumbnail_url, video_url,
-          status, published_at, visibility, view_count, created_at, updated_at
+          status, published_at, scheduled_at, visibility, view_count, created_at, updated_at
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, datetime('now'), datetime('now'))
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0, datetime('now'), datetime('now'))
       `)
       .bind(
         tenantId,
@@ -229,6 +252,7 @@ posts.post('/', authMiddleware, async (c) => {
         video_url || null,
         postStatus,
         publishedAt,
+        scheduledAtValue,
         postVisibility
       )
       .run()
@@ -264,10 +288,14 @@ posts.post('/', authMiddleware, async (c) => {
       .bind(postId)
       .first<any>()
 
+    const message = postStatus === 'draft' ? '下書きを保存しました' : 
+                    postStatus === 'scheduled' ? `予約投稿を設定しました（${scheduled_at}に公開）` : 
+                    '投稿を公開しました'
+
     return c.json({
       success: true,
       post,
-      message: postStatus === 'draft' ? '下書きを保存しました' : '投稿を公開しました'
+      message
     }, 201)
   } catch (error) {
     console.error('[Create Post Error]', error)

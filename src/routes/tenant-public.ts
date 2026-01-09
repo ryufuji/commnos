@@ -2045,27 +2045,79 @@ tenantPublic.get('/posts/new', async (c) => {
                     <label class="block text-sm font-medium text-gray-700 mb-2">
                         公開設定
                     </label>
-                    <div class="space-y-2">
-                        <label class="flex items-center">
+                    <div class="space-y-3">
+                        <label class="flex items-center p-3 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition">
                             <input 
                                 type="radio" 
                                 name="status" 
                                 value="published" 
                                 checked
-                                class="mr-2"
+                                class="mr-3 w-4 h-4 text-primary"
+                                id="statusPublished"
                             >
-                            <span class="text-gray-700">すぐに公開する</span>
+                            <div>
+                                <span class="font-medium text-gray-700">すぐに公開する</span>
+                                <p class="text-sm text-gray-500">投稿後すぐに公開されます</p>
+                            </div>
                         </label>
-                        <label class="flex items-center">
+                        <label class="flex items-center p-3 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition">
+                            <input 
+                                type="radio" 
+                                name="status" 
+                                value="scheduled"
+                                class="mr-3 w-4 h-4 text-primary"
+                                id="statusScheduled"
+                            >
+                            <div>
+                                <span class="font-medium text-gray-700">予約投稿</span>
+                                <p class="text-sm text-gray-500">指定した日時に自動的に公開されます</p>
+                            </div>
+                        </label>
+                        <label class="flex items-center p-3 border border-gray-300 rounded-lg cursor-pointer hover:bg-gray-50 transition">
                             <input 
                                 type="radio" 
                                 name="status" 
                                 value="draft"
-                                class="mr-2"
+                                class="mr-3 w-4 h-4 text-primary"
+                                id="statusDraft"
                             >
-                            <span class="text-gray-700">下書きとして保存</span>
+                            <div>
+                                <span class="font-medium text-gray-700">下書きとして保存</span>
+                                <p class="text-sm text-gray-500">公開せずに保存します</p>
+                            </div>
                         </label>
                     </div>
+                </div>
+
+                <!-- 予約投稿日時 -->
+                <div id="scheduledDateTimeField" style="display: none;">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                        公開日時 <span class="text-red-500">*</span>
+                    </label>
+                    <div class="grid md:grid-cols-2 gap-4">
+                        <div>
+                            <label for="scheduledDate" class="block text-sm text-gray-600 mb-1">日付</label>
+                            <input 
+                                type="date" 
+                                id="scheduledDate" 
+                                name="scheduledDate"
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                            >
+                        </div>
+                        <div>
+                            <label for="scheduledTime" class="block text-sm text-gray-600 mb-1">時刻</label>
+                            <input 
+                                type="time" 
+                                id="scheduledTime" 
+                                name="scheduledTime"
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                            >
+                        </div>
+                    </div>
+                    <p class="text-sm text-gray-500 mt-2">
+                        <i class="fas fa-info-circle mr-1"></i>
+                        過去の日時は選択できません。指定した日時になると自動的に公開されます。
+                    </p>
                 </div>
 
                 <!-- ボタン -->
@@ -2450,6 +2502,57 @@ tenantPublic.get('/posts/new', async (c) => {
         
         // DOMContentLoaded後に実行
         document.addEventListener('DOMContentLoaded', function() {
+            // 予約投稿UI制御
+            const statusRadios = document.querySelectorAll('input[name="status"]')
+            const scheduledField = document.getElementById('scheduledDateTimeField')
+            const scheduledDateInput = document.getElementById('scheduledDate')
+            const scheduledTimeInput = document.getElementById('scheduledTime')
+            
+            // 現在時刻を取得して最小値を設定
+            function updateMinDateTime() {
+                const now = new Date()
+                const year = now.getFullYear()
+                const month = String(now.getMonth() + 1).padStart(2, '0')
+                const day = String(now.getDate()).padStart(2, '0')
+                const hours = String(now.getHours()).padStart(2, '0')
+                const minutes = String(now.getMinutes()).padStart(2, '0')
+                
+                const today = \`\${year}-\${month}-\${day}\`
+                const currentTime = \`\${hours}:\${minutes}\`
+                
+                // 日付の最小値を今日に設定
+                scheduledDateInput.min = today
+                
+                // 今日が選択されている場合、時刻の最小値を現在時刻に設定
+                if (scheduledDateInput.value === today) {
+                    scheduledTimeInput.min = currentTime
+                } else {
+                    scheduledTimeInput.min = ''
+                }
+            }
+            
+            // ステータス変更時の処理
+            statusRadios.forEach(radio => {
+                radio.addEventListener('change', function() {
+                    if (this.value === 'scheduled') {
+                        scheduledField.style.display = 'block'
+                        updateMinDateTime()
+                        scheduledDateInput.required = true
+                        scheduledTimeInput.required = true
+                    } else {
+                        scheduledField.style.display = 'none'
+                        scheduledDateInput.required = false
+                        scheduledTimeInput.required = false
+                    }
+                })
+            })
+            
+            // 日付変更時に時刻の最小値を更新
+            scheduledDateInput?.addEventListener('change', updateMinDateTime)
+            
+            // 初期値設定
+            updateMinDateTime()
+            
             // モバイルメニュー切替
             document.getElementById('mobileMenuBtn')?.addEventListener('click', () => {
                 const menu = document.getElementById('mobileMenu')
@@ -2817,11 +2920,40 @@ tenantPublic.get('/posts/new', async (c) => {
                 
                 // 投稿作成APIリクエスト
                 const visibility = document.querySelector('input[name="visibility"]:checked')?.value || 'public'
+                
+                // 予約投稿の日時を取得
+                let scheduledAt = null
+                if (status === 'scheduled') {
+                    const scheduledDate = document.getElementById('scheduledDate').value
+                    const scheduledTime = document.getElementById('scheduledTime').value
+                    
+                    if (!scheduledDate || !scheduledTime) {
+                        showToast('予約投稿には日付と時刻を入力してください', 'error')
+                        submitBtn.disabled = false
+                        submitBtn.innerHTML = '<i class="fas fa-paper-plane mr-2"></i>投稿する'
+                        return
+                    }
+                    
+                    // ISO 8601形式に変換
+                    scheduledAt = \`\${scheduledDate}T\${scheduledTime}:00\`
+                    
+                    // 過去の日時チェック
+                    const scheduledDateTime = new Date(scheduledAt)
+                    const now = new Date()
+                    if (scheduledDateTime <= now) {
+                        showToast('予約日時は現在より未来の日時を選択してください', 'error')
+                        submitBtn.disabled = false
+                        submitBtn.innerHTML = '<i class="fas fa-paper-plane mr-2"></i>投稿する'
+                        return
+                    }
+                }
+                
                 const postData = {
                     title: title.trim(),
                     content: content.trim(),
                     category: category || null,
                     status: status,
+                    scheduled_at: scheduledAt,
                     thumbnail_url: thumbnailUrl,
                     video_url: videoUrl,
                     image_urls: imageUrls, // 複数画像URL
@@ -2832,6 +2964,7 @@ tenantPublic.get('/posts/new', async (c) => {
                 console.log('Thumbnail URL in post data:', thumbnailUrl)
                 console.log('Video URL in post data:', videoUrl)
                 console.log('Image URLs in post data:', imageUrls)
+                console.log('Scheduled at:', scheduledAt)
                 
                 const response = await apiRequest('/api/posts', {
                     method: 'POST',
@@ -2841,7 +2974,10 @@ tenantPublic.get('/posts/new', async (c) => {
                 console.log('Post creation response:', response)
                 
                 if (response.success) {
-                    showToast(response.message || (status === 'draft' ? '下書きを保存しました' : '投稿を公開しました'), 'success')
+                    const message = status === 'draft' ? '下書きを保存しました' : 
+                                   status === 'scheduled' ? '予約投稿を設定しました' : 
+                                   '投稿を公開しました'
+                    showToast(response.message || message, 'success')
                     setTimeout(() => {
                         window.location.href = '/tenant/posts?subdomain=${subdomain}'
                     }, 1500)

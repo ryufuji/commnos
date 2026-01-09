@@ -20,5 +20,11 @@
       "binding": "R2",
       "bucket_name": "commons-images"
     }
-  ]
+  ],
+  
+  // Phase 4: Cron Triggers for scheduled posts
+  // Runs every minute to check for scheduled posts that need to be published
+  "triggers": {
+    "crons": ["* * * * *"]
+  }
 }
