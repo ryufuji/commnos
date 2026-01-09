@@ -51,14 +51,15 @@ tenant.get('/', tenantMiddleware, async (c) => {
 
   return c.html(`
     <!DOCTYPE html>
-    <html lang="ja">
+    <html lang="ja" data-theme="light">
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>${tenantData.name} - Commons</title>
         <script src="https://cdn.tailwindcss.com"></script>
         <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
-        <link href="/static/styles.css" rel="stylesheet">
+        <link href="/static/commons-theme.css" rel="stylesheet">
+    <link href="/static/commons-components.css" rel="stylesheet">
         <link href="/static/commons-theme.css" rel="stylesheet">
         <link href="/static/commons-components.css" rel="stylesheet">
         <style>
@@ -313,14 +314,15 @@ tenant.get('/join', tenantMiddleware, async (c) => {
 
   return c.html(`
     <!DOCTYPE html>
-    <html lang="ja">
+    <html lang="ja" data-theme="light">
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>会員登録 - ${tenantData.name}</title>
         <script src="https://cdn.tailwindcss.com"></script>
         <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
-        <link href="/static/styles.css" rel="stylesheet">
+        <link href="/static/commons-theme.css" rel="stylesheet">
+    <link href="/static/commons-components.css" rel="stylesheet">
     </head>
     <body class="bg-gray-100">
         <div class="min-h-screen flex items-center justify-center px-4">
@@ -456,7 +458,8 @@ tenant.get('/join', tenantMiddleware, async (c) => {
         <title>会員登録 - ${tenantData.name}</title>
         <script src="https://cdn.tailwindcss.com"></script>
         <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
-        <link href="/static/styles.css" rel="stylesheet">
+        <link href="/static/commons-theme.css" rel="stylesheet">
+    <link href="/static/commons-components.css" rel="stylesheet">
     </head>
     <body class="bg-gradient-to-br from-primary-50 via-white to-secondary-50">
         <!-- ヘッダー -->
@@ -698,7 +701,8 @@ tenant.get('/posts/:id', tenantMiddleware, async (c) => {
         <title>${post.title} - ${tenantData.name}</title>
         <script src="https://cdn.tailwindcss.com"></script>
         <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
-        <link href="/static/styles.css" rel="stylesheet">
+        <link href="/static/commons-theme.css" rel="stylesheet">
+    <link href="/static/commons-components.css" rel="stylesheet">
     </head>
     <body class="bg-gray-50">
         <!-- ヘッダー -->
