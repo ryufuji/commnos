@@ -2241,6 +2241,14 @@ tenantPublic.get('/posts/new', async (c) => {
                 }
                 console.log('Membership:', membership)
                 
+                // 管理者権限チェック（投稿作成は管理者のみ）
+                const isAdmin = membership.role === 'owner' || membership.role === 'admin'
+                if (!isAdmin) {
+                    alert('投稿作成は管理者のみ可能です')
+                    window.location.href = '/tenant/home?subdomain=${subdomain}'
+                    return
+                }
+                
                 // Check if user belongs to this tenant
                 if (user.tenantId !== ${tenant.id}) {
                     alert('このコミュニティの会員ではありません')
@@ -2260,8 +2268,10 @@ tenantPublic.get('/posts/new', async (c) => {
                     return
                 }
                 
-                // 公開範囲フィールドを表示（全会員が利用可能）
-                document.getElementById('visibilityField').style.display = 'block'
+                // 管理者の場合は公開範囲フィールドを表示
+                if (isAdmin) {
+                    document.getElementById('visibilityField').style.display = 'block'
+                }
                 
                 // ナビゲーションを更新（ログイン済みユーザー向け）
                 updateNavigation(membership)
@@ -3174,12 +3184,18 @@ tenantPublic.get('/posts', async (c) => {
 
     <!-- メインコンテンツ -->
     <main class="max-w-7xl mx-auto px-4 py-8">
-        <!-- ページタイトル -->
-        <div class="mb-8">
-            <h2 class="text-3xl md:text-4xl font-bold text-gray-900 mb-2">
-                <i class="fas fa-file-alt mr-2 text-blue-600"></i>投稿一覧
-            </h2>
-            <p class="text-gray-600">全 ${totalPosts} 件の投稿</p>
+        <!-- ページタイトルと投稿作成ボタン -->
+        <div class="mb-8 flex justify-between items-center">
+            <div>
+                <h2 class="text-3xl md:text-4xl font-bold text-gray-900 mb-2">
+                    <i class="fas fa-file-alt mr-2 text-blue-600"></i>投稿一覧
+                </h2>
+                <p class="text-gray-600">全 ${totalPosts} 件の投稿</p>
+            </div>
+            <!-- 投稿作成ボタン（管理者のみ表示） -->
+            <a href="/tenant/posts/new?subdomain=${subdomain}" id="createPostBtn" class="hidden px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg transition shadow-md">
+                <i class="fas fa-plus mr-2"></i>投稿作成
+            </a>
         </div>
 
         <!-- 人気投稿ランキング -->
@@ -3215,6 +3231,30 @@ tenantPublic.get('/posts', async (c) => {
 
     <script src="/static/app.js"></script>
     <script>
+        // 管理者チェック：投稿作成ボタンの表示制御
+        function checkAdminAndShowCreateButton() {
+            const userStr = localStorage.getItem('user')
+            if (!userStr) return
+            
+            try {
+                const user = JSON.parse(userStr)
+                const role = user.role
+                
+                // 管理者（owner または admin）の場合のみボタンを表示
+                if (role === 'owner' || role === 'admin') {
+                    const createBtn = document.getElementById('createPostBtn')
+                    if (createBtn) {
+                        createBtn.classList.remove('hidden')
+                    }
+                }
+            } catch (error) {
+                console.error('Error checking admin role:', error)
+            }
+        }
+        
+        // ページ読み込み時に実行
+        checkAdminAndShowCreateButton()
+        
         // モバイルメニュー切り替え
         const mobileMenuBtn = document.getElementById('mobileMenuBtn')
         const mobileMenu = document.getElementById('mobileMenu')

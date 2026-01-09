@@ -1,6 +1,43 @@
 // 投稿管理ページ専用スクリプト
 console.log('Posts admin script loaded from external file')
 
+// 管理者権限チェック（ページ読み込み時）
+function checkAdminAccess() {
+    const token = getToken()
+    if (!token) {
+        console.warn('No token found, redirecting to home')
+        window.location.href = '/'
+        return false
+    }
+    
+    const userStr = localStorage.getItem('user')
+    if (!userStr) {
+        console.warn('No user found, redirecting to home')
+        window.location.href = '/'
+        return false
+    }
+    
+    const user = JSON.parse(userStr)
+    const role = user.role
+    
+    // 管理者権限チェック
+    if (role !== 'owner' && role !== 'admin') {
+        console.warn('Not admin, redirecting to home')
+        alert('このページは管理者のみアクセスできます')
+        window.location.href = '/'
+        return false
+    }
+    
+    console.log('Admin access granted:', role)
+    return true
+}
+
+// ページ読み込み時に認証チェック
+if (!checkAdminAccess()) {
+    // アクセス権限がない場合は処理を停止
+    throw new Error('Access denied')
+}
+
 let currentPage = 1
 let currentStatus = 'all'
 let currentPost = null
