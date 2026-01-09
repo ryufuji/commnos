@@ -57,6 +57,7 @@ tenant.get('/', tenantMiddleware, async (c) => {
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>${tenantData.name} - Commons</title>
         <script src="https://cdn.tailwindcss.com"></script>
+        <script src="/static/tailwind-config.js"></script>
         <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
         <link href="/static/commons-theme.css" rel="stylesheet">
     <link href="/static/commons-components.css" rel="stylesheet">
@@ -320,6 +321,7 @@ tenant.get('/join', tenantMiddleware, async (c) => {
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>会員登録 - ${tenantData.name}</title>
         <script src="https://cdn.tailwindcss.com"></script>
+        <script src="/static/tailwind-config.js"></script>
         <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
         <link href="/static/commons-theme.css" rel="stylesheet">
     <link href="/static/commons-components.css" rel="stylesheet">
@@ -457,6 +459,7 @@ tenant.get('/join', tenantMiddleware, async (c) => {
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>会員登録 - ${tenantData.name}</title>
         <script src="https://cdn.tailwindcss.com"></script>
+        <script src="/static/tailwind-config.js"></script>
         <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
         <link href="/static/commons-theme.css" rel="stylesheet">
     <link href="/static/commons-components.css" rel="stylesheet">
@@ -700,6 +703,7 @@ tenant.get('/posts/:id', tenantMiddleware, async (c) => {
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>${post.title} - ${tenantData.name}</title>
         <script src="https://cdn.tailwindcss.com"></script>
+        <script src="/static/tailwind-config.js"></script>
         <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
         <link href="/static/commons-theme.css" rel="stylesheet">
     <link href="/static/commons-components.css" rel="stylesheet">

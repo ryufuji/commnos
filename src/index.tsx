@@ -158,6 +158,7 @@ app.get('/', (c) => {
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Commons - あなたのコミュニティプラットフォーム</title>
         <script src="https://cdn.tailwindcss.com"></script>
+        <script src="/static/tailwind-config.js"></script>
         <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
         <link href="/static/commons-theme.css" rel="stylesheet">
         <link href="/static/commons-components.css" rel="stylesheet">
@@ -353,6 +354,7 @@ app.get('/communities', async (c) => {
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>コミュニティ一覧 - Commons</title>
         <script src="https://cdn.tailwindcss.com"></script>
+        <script src="/static/tailwind-config.js"></script>
         <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
         <link href="/static/commons-theme.css" rel="stylesheet">
         <link href="/static/commons-components.css" rel="stylesheet">
@@ -466,6 +468,7 @@ app.get('/register', (c) => {
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>新規登録 - Commons</title>
         <script src="https://cdn.tailwindcss.com"></script>
+        <script src="/static/tailwind-config.js"></script>
         <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
         <link href="/static/commons-theme.css" rel="stylesheet">
         <link href="/static/commons-components.css" rel="stylesheet">
@@ -642,6 +645,7 @@ app.get('/plans', (c) => {
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>料金プラン - Commons</title>
         <script src="https://cdn.tailwindcss.com"></script>
+        <script src="/static/tailwind-config.js"></script>
         <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
         <link href="/static/commons-theme.css" rel="stylesheet">
         <link href="/static/commons-components.css" rel="stylesheet">
@@ -892,6 +896,7 @@ app.get('/success', (c) => {
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>決済完了 - Commons</title>
         <script src="https://cdn.tailwindcss.com"></script>
+        <script src="/static/tailwind-config.js"></script>
         <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
         <link href="/static/commons-theme.css" rel="stylesheet">
         <link href="/static/commons-components.css" rel="stylesheet">
@@ -989,6 +994,7 @@ app.get('/cancel', (c) => {
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>決済キャンセル - Commons</title>
         <script src="https://cdn.tailwindcss.com"></script>
+        <script src="/static/tailwind-config.js"></script>
         <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
         <link href="/static/commons-theme.css" rel="stylesheet">
         <link href="/static/commons-components.css" rel="stylesheet">
@@ -1080,6 +1086,7 @@ app.get('/profile', (c) => {
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>プロフィール - Commons</title>
         <script src="https://cdn.tailwindcss.com"></script>
+        <script src="/static/tailwind-config.js"></script>
         <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
         <link href="/static/commons-theme.css" rel="stylesheet">
         <link href="/static/commons-components.css" rel="stylesheet">
@@ -1461,6 +1468,7 @@ app.get('/dashboard', (c) => {
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>ダッシュボード - Commons</title>
         <script src="https://cdn.tailwindcss.com"></script>
+        <script src="/static/tailwind-config.js"></script>
         <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
         <link href="/static/commons-theme.css" rel="stylesheet">
         <link href="/static/commons-components.css" rel="stylesheet">
@@ -1999,6 +2007,7 @@ app.get('/members', (c) => {
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>会員管理 - Commons</title>
         <script src="https://cdn.tailwindcss.com"></script>
+        <script src="/static/tailwind-config.js"></script>
         <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
         <link href="/static/commons-theme.css" rel="stylesheet">
         <link href="/static/commons-components.css" rel="stylesheet">
@@ -2408,6 +2417,7 @@ app.get('/posts-admin', (c) => {
         <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.tailwindcss.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://cdn.jsdelivr.net https://fonts.googleapis.com; style-src-elem 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://cdn.jsdelivr.net https://fonts.googleapis.com; font-src 'self' https://cdn.jsdelivr.net https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self' https:; frame-src 'self';">
         <title>投稿管理 - Commons</title>
         <script src="https://cdn.tailwindcss.com"></script>
+        <script src="/static/tailwind-config.js"></script>
         <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
         <link href="/static/commons-theme.css" rel="stylesheet">
         <link href="/static/commons-components.css" rel="stylesheet">
@@ -2676,6 +2686,7 @@ app.get('/va-admin-portal/login', (c) => {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Platform Admin Login - VALUE ARCHITECTS</title>
     <script src="https://cdn.tailwindcss.com"></script>
+        <script src="/static/tailwind-config.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
 </head>
 <body class="bg-gradient-to-br from-indigo-600 to-purple-700 min-h-screen flex items-center justify-center">
@@ -2799,6 +2810,7 @@ app.get('/va-admin-portal', (c) => {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Platform Admin - VALUE ARCHITECTS</title>
     <script src="https://cdn.tailwindcss.com"></script>
+        <script src="/static/tailwind-config.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
     <link href="/static/commons-theme.css" rel="stylesheet">
         <link href="/static/commons-components.css" rel="stylesheet">

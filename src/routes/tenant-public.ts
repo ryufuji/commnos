@@ -50,6 +50,7 @@ tenantPublic.get('/login', async (c) => {
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>ログイン - ${tenant.name}</title>
         <script src="https://cdn.tailwindcss.com"></script>
+        <script src="/static/tailwind-config.js"></script>
         <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
         <link href="/static/commons-theme.css" rel="stylesheet">
         <link href="/static/commons-components.css" rel="stylesheet">
@@ -581,6 +582,7 @@ tenantPublic.get('/register', async (c) => {
     <meta charset="UTF-8">
     <title>開発環境 - Commons</title>
     <script src="https://cdn.tailwindcss.com"></script>
+        <script src="/static/tailwind-config.js"></script>
 </head>
 <body class="bg-gray-100 flex items-center justify-center min-h-screen">
     <div class="text-center">
@@ -604,6 +606,7 @@ tenantPublic.get('/register', async (c) => {
     <meta charset="UTF-8">
     <title>コミュニティが見つかりません - Commons</title>
     <script src="https://cdn.tailwindcss.com"></script>
+        <script src="/static/tailwind-config.js"></script>
 </head>
 <body class="bg-gray-100 flex items-center justify-center min-h-screen">
     <div class="text-center">
@@ -624,6 +627,7 @@ tenantPublic.get('/register', async (c) => {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>会員登録 - ${tenantName}</title>
     <script src="https://cdn.tailwindcss.com"></script>
+        <script src="/static/tailwind-config.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
     <link href="/static/commons-theme.css" rel="stylesheet">
     <link href="/static/commons-components.css" rel="stylesheet">
@@ -1074,6 +1078,7 @@ tenantPublic.get('/register/pending', async (c) => {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>承認待ち - Commons</title>
     <script src="https://cdn.tailwindcss.com"></script>
+        <script src="/static/tailwind-config.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
 </head>
 <body class="bg-gradient-to-br from-blue-50 to-purple-50 min-h-screen flex items-center justify-center p-4">
@@ -1115,6 +1120,7 @@ tenantPublic.get('/home', async (c) => {
     <meta charset="UTF-8">
     <title>開発環境 - Commons</title>
     <script src="https://cdn.tailwindcss.com"></script>
+        <script src="/static/tailwind-config.js"></script>
 </head>
 <body class="bg-gray-100 flex items-center justify-center min-h-screen">
     <div class="text-center">
@@ -1138,6 +1144,7 @@ tenantPublic.get('/home', async (c) => {
     <meta charset="UTF-8">
     <title>コミュニティが見つかりません - Commons</title>
     <script src="https://cdn.tailwindcss.com"></script>
+        <script src="/static/tailwind-config.js"></script>
 </head>
 <body class="bg-gray-100 flex items-center justify-center min-h-screen">
     <div class="text-center">
@@ -1254,6 +1261,7 @@ tenantPublic.get('/home', async (c) => {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>${tenantName} - Commons</title>
     <script src="https://cdn.tailwindcss.com"></script>
+        <script src="/static/tailwind-config.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
     <link href="/static/commons-theme.css" rel="stylesheet">
     <link href="/static/commons-components.css" rel="stylesheet">
@@ -1719,6 +1727,7 @@ tenantPublic.get('/posts/new', async (c) => {
     <meta charset="UTF-8">
     <title>開発環境 - Commons</title>
     <script src="https://cdn.tailwindcss.com"></script>
+        <script src="/static/tailwind-config.js"></script>
 </head>
 <body class="bg-gray-100 flex items-center justify-center min-h-screen">
     <div class="text-center">
@@ -1742,6 +1751,7 @@ tenantPublic.get('/posts/new', async (c) => {
     <meta charset="UTF-8">
     <title>コミュニティが見つかりません</title>
     <script src="https://cdn.tailwindcss.com"></script>
+        <script src="/static/tailwind-config.js"></script>
 </head>
 <body class="bg-gray-100 flex items-center justify-center min-h-screen">
     <div class="text-center">
@@ -1760,6 +1770,7 @@ tenantPublic.get('/posts/new', async (c) => {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>投稿作成 - ${tenant.name}</title>
     <script src="https://cdn.tailwindcss.com"></script>
+        <script src="/static/tailwind-config.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
     <link href="/static/commons-theme.css" rel="stylesheet">
     <link href="/static/commons-components.css" rel="stylesheet">
@@ -2863,6 +2874,7 @@ tenantPublic.get('/posts', async (c) => {
     <meta charset="UTF-8">
     <title>開発環境 - Commons</title>
     <script src="https://cdn.tailwindcss.com"></script>
+        <script src="/static/tailwind-config.js"></script>
 </head>
 <body class="bg-gray-100 flex items-center justify-center min-h-screen">
     <div class="text-center">
@@ -2886,6 +2898,7 @@ tenantPublic.get('/posts', async (c) => {
     <meta charset="UTF-8">
     <title>コミュニティが見つかりません - Commons</title>
     <script src="https://cdn.tailwindcss.com"></script>
+        <script src="/static/tailwind-config.js"></script>
 </head>
 <body class="bg-gray-100 flex items-center justify-center min-h-screen">
     <div class="text-center">
@@ -3103,6 +3116,7 @@ tenantPublic.get('/posts', async (c) => {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>投稿一覧 - ${tenantName}</title>
     <script src="https://cdn.tailwindcss.com"></script>
+        <script src="/static/tailwind-config.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
     <link href="/static/commons-theme.css" rel="stylesheet">
     <link href="/static/commons-components.css" rel="stylesheet">
@@ -3285,6 +3299,7 @@ tenantPublic.get('/create-post', async (c) => {
     <meta charset="UTF-8">
     <title>開発環境 - Commons</title>
     <script src="https://cdn.tailwindcss.com"></script>
+        <script src="/static/tailwind-config.js"></script>
 </head>
 <body class="bg-gray-100 flex items-center justify-center min-h-screen">
     <div class="text-center">
@@ -3308,6 +3323,7 @@ tenantPublic.get('/create-post', async (c) => {
     <meta charset="UTF-8">
     <title>コミュニティが見つかりません - Commons</title>
     <script src="https://cdn.tailwindcss.com"></script>
+        <script src="/static/tailwind-config.js"></script>
 </head>
 <body class="bg-gray-100 flex items-center justify-center min-h-screen">
     <div class="text-center">
@@ -3329,6 +3345,7 @@ tenantPublic.get('/create-post', async (c) => {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>投稿作成 - ${tenantName}</title>
     <script src="https://cdn.tailwindcss.com"></script>
+        <script src="/static/tailwind-config.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
     <link href="/static/commons-theme.css" rel="stylesheet">
     <link href="/static/commons-components.css" rel="stylesheet">
@@ -3562,6 +3579,7 @@ tenantPublic.get('/posts/:id', async (c) => {
     <meta charset="UTF-8">
     <title>開発環境 - Commons</title>
     <script src="https://cdn.tailwindcss.com"></script>
+        <script src="/static/tailwind-config.js"></script>
 </head>
 <body class="bg-gray-100 flex items-center justify-center min-h-screen">
     <div class="text-center">
@@ -3585,6 +3603,7 @@ tenantPublic.get('/posts/:id', async (c) => {
     <meta charset="UTF-8">
     <title>コミュニティが見つかりません - Commons</title>
     <script src="https://cdn.tailwindcss.com"></script>
+        <script src="/static/tailwind-config.js"></script>
 </head>
 <body class="bg-gray-100 flex items-center justify-center min-h-screen">
     <div class="text-center">
@@ -3611,6 +3630,7 @@ tenantPublic.get('/posts/:id', async (c) => {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>投稿が見つかりません - ${tenant.name}</title>
     <script src="https://cdn.tailwindcss.com"></script>
+        <script src="/static/tailwind-config.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
     <link href="/static/commons-theme.css" rel="stylesheet">
     <link href="/static/commons-components.css" rel="stylesheet">
@@ -3667,6 +3687,7 @@ tenantPublic.get('/posts/:id', async (c) => {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>${postTitle} - ${tenantName}</title>
     <script src="https://cdn.tailwindcss.com"></script>
+        <script src="/static/tailwind-config.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
     <link href="/static/commons-theme.css" rel="stylesheet">
     <link href="/static/commons-components.css" rel="stylesheet">
@@ -4054,6 +4075,7 @@ tenantPublic.get('/members', async (c) => {
     <meta charset="UTF-8">
     <title>開発環境 - Commons</title>
     <script src="https://cdn.tailwindcss.com"></script>
+        <script src="/static/tailwind-config.js"></script>
 </head>
 <body class="bg-gray-100 flex items-center justify-center min-h-screen">
     <div class="text-center">
@@ -4077,6 +4099,7 @@ tenantPublic.get('/members', async (c) => {
     <meta charset="UTF-8">
     <title>コミュニティが見つかりません - Commons</title>
     <script src="https://cdn.tailwindcss.com"></script>
+        <script src="/static/tailwind-config.js"></script>
 </head>
 <body class="bg-gray-100 flex items-center justify-center min-h-screen">
     <div class="text-center">
@@ -4276,6 +4299,7 @@ tenantPublic.get('/members', async (c) => {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>会員一覧 - ${tenantName}</title>
     <script src="https://cdn.tailwindcss.com"></script>
+        <script src="/static/tailwind-config.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
     <link href="/static/commons-theme.css" rel="stylesheet">
     <link href="/static/commons-components.css" rel="stylesheet">
@@ -4595,6 +4619,7 @@ tenantPublic.get('/notifications', async (c) => {
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
           <title>通知 - ${tenantName}</title>
           <script src="https://cdn.tailwindcss.com"></script>
+        <script src="/static/tailwind-config.js"></script>
           <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
       </head>
       <body class="bg-gray-100">
@@ -4765,7 +4790,8 @@ tenantPublic.get('/members/:memberId', async (c) => {
   
   if (!member) {
     const notFoundHTML = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>会員が見つかりません</title>' +
-      '<script src="https://cdn.tailwindcss.com"></script></head>' +
+      '<script src=\"https://cdn.tailwindcss.com\"></script>' +
+        '<script src=\"/static/tailwind-config.js\"></script></head>' +
       '<body class="bg-gray-50 min-h-screen flex items-center justify-center">' +
       '<div class="text-center"><h1 class="text-4xl font-bold text-gray-800 mb-4">会員が見つかりません</h1>' +
       '<a href="/tenant/members?subdomain=' + subdomain + '" class="text-blue-600 hover:underline">会員一覧に戻る</a>' +
@@ -4855,7 +4881,8 @@ tenantPublic.get('/members/:memberId', async (c) => {
   const html = '<!DOCTYPE html>' +
     '<html lang="ja" data-theme="light"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">' +
     '<title>' + nickname + ' - ' + tenant.name + '</title>' +
-    '<script src="https://cdn.tailwindcss.com"></script>' +
+    '<script src=\"https://cdn.tailwindcss.com\"></script>' +
+        '<script src=\"/static/tailwind-config.js\"></script>' +
     '<link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">' +
     '</head><body class="bg-gray-50 min-h-screen">' +
     '<header class="bg-white shadow-sm sticky top-0 z-50">' +
@@ -4959,6 +4986,7 @@ tenantPublic.get('/mypage', async (c) => {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>マイページ - ${tenant.name}</title>
     <script src="https://cdn.tailwindcss.com"></script>
+        <script src="/static/tailwind-config.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
 </head>
 <body class="bg-gray-50 min-h-screen">
@@ -5306,6 +5334,7 @@ tenantPublic.get('/liked-posts', async (c) => {
     <meta charset="UTF-8">
     <title>Development - Commons</title>
     <script src="https://cdn.tailwindcss.com"></script>
+        <script src="/static/tailwind-config.js"></script>
 </head>
 <body class="bg-gray-100 flex items-center justify-center min-h-screen">
     <div class="text-center">
@@ -5329,6 +5358,7 @@ tenantPublic.get('/liked-posts', async (c) => {
     <meta charset="UTF-8">
     <title>Community not found - Commons</title>
     <script src="https://cdn.tailwindcss.com"></script>
+        <script src="/static/tailwind-config.js"></script>
 </head>
 <body class="bg-gray-100 flex items-center justify-center min-h-screen">
     <div class="text-center">
@@ -5348,6 +5378,7 @@ tenantPublic.get('/liked-posts', async (c) => {
     <meta charset="UTF-8">
     <title>Login Required - Commons</title>
     <script src="https://cdn.tailwindcss.com"></script>
+        <script src="/static/tailwind-config.js"></script>
 </head>
 <body class="bg-gray-50 min-h-screen flex items-center justify-center">
     <div class="text-center">
@@ -5438,6 +5469,7 @@ tenantPublic.get('/liked-posts', async (c) => {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Liked Posts - ${tenantName}</title>
     <script src="https://cdn.tailwindcss.com"></script>
+        <script src="/static/tailwind-config.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
     <link href="/static/commons-theme.css" rel="stylesheet">
     <link href="/static/commons-components.css" rel="stylesheet">
@@ -5542,6 +5574,7 @@ tenantPublic.get('/liked-posts', async (c) => {
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
           <title>コミュニティが見つかりません</title>
           <script src="https://cdn.tailwindcss.com"></script>
+        <script src="/static/tailwind-config.js"></script>
           <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
       </head>
       <body class="bg-gray-50">
@@ -5664,6 +5697,7 @@ tenantPublic.get('/liked-posts', async (c) => {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>いいねした投稿 - ${tenant.name}</title>
     <script src="https://cdn.tailwindcss.com"></script>
+        <script src="/static/tailwind-config.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
     <link href="/static/commons-theme.css" rel="stylesheet">
     <link href="/static/commons-components.css" rel="stylesheet">
@@ -5797,6 +5831,7 @@ tenantPublic.get('/subscription', async (c) => {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>サブスクリプション管理 - ${tenant.name}</title>
     <script src="https://cdn.tailwindcss.com"></script>
+        <script src="/static/tailwind-config.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
 </head>
 <body class="bg-gray-50">
@@ -6165,6 +6200,7 @@ tenantPublic.get('/plans', async (c) => {
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
           <title>プラン管理 - Commons</title>
           <script src="https://cdn.tailwindcss.com"></script>
+        <script src="/static/tailwind-config.js"></script>
       </head>
       <body class="bg-gray-50 p-8">
           <div class="max-w-4xl mx-auto text-center">
@@ -6184,6 +6220,7 @@ tenantPublic.get('/plans', async (c) => {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>プラン管理 - Commons</title>
     <script src="https://cdn.tailwindcss.com"></script>
+        <script src="/static/tailwind-config.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
     <link href="/static/commons-theme.css" rel="stylesheet">
     <link href="/static/commons-components.css" rel="stylesheet">
@@ -6724,6 +6761,7 @@ tenantPublic.get('/chat', async (c) => {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>チャット - ${tenant.name}</title>
     <script src="https://cdn.tailwindcss.com"></script>
+        <script src="/static/tailwind-config.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
     <link href="/static/commons-theme.css" rel="stylesheet">
     <link href="/static/commons-components.css" rel="stylesheet">
@@ -7129,6 +7167,7 @@ tenantPublic.get('/chat/:id', async (c) => {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>チャット - ${tenantName}</title>
     <script src="https://cdn.tailwindcss.com"></script>
+        <script src="/static/tailwind-config.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
     <style>
         :root {
@@ -7684,6 +7723,7 @@ tenantPublic.get('/profile', async (c) => {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>プロフィール - Commons</title>
     <script src="https://cdn.tailwindcss.com"></script>
+        <script src="/static/tailwind-config.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
 </head>
 <body class="bg-gray-50">
@@ -8040,6 +8080,7 @@ tenantPublic.get('/member-plans', async (c) => {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>プラン選択 - ${(tenant as any).name}</title>
     <script src="https://cdn.tailwindcss.com"></script>
+        <script src="/static/tailwind-config.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
     <link href="/static/commons-theme.css" rel="stylesheet">
     <link href="/static/commons-components.css" rel="stylesheet">
@@ -8356,6 +8397,7 @@ tenantPublic.get('/member-plans-premium', async (c) => {
       <meta name="viewport" content="width=device-width, initial-scale=1.0">
       <title>プラン選択 - Commons</title>
       <script src="https://cdn.tailwindcss.com"></script>
+        <script src="/static/tailwind-config.js"></script>
       <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
       <link href="/static/commons-theme.css" rel="stylesheet">
       <link href="/static/plan-selection.css" rel="stylesheet">

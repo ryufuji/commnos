@@ -19,6 +19,7 @@ passwordResetPages.get('/forgot-password', async (c) => {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>パスワードをお忘れですか？ - Commons</title>
     <script src="https://cdn.tailwindcss.com"></script>
+        <script src="/static/tailwind-config.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
     <link href="/static/commons-theme.css" rel="stylesheet">
     <link href="/static/commons-components.css" rel="stylesheet">
@@ -176,6 +177,7 @@ passwordResetPages.get('/reset-password', async (c) => {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>エラー - Commons</title>
     <script src="https://cdn.tailwindcss.com"></script>
+        <script src="/static/tailwind-config.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
 </head>
 <body class="bg-gradient-to-br from-purple-50 to-indigo-100 min-h-screen flex items-center justify-center p-4">
@@ -205,6 +207,7 @@ passwordResetPages.get('/reset-password', async (c) => {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>新しいパスワードを設定 - Commons</title>
     <script src="https://cdn.tailwindcss.com"></script>
+        <script src="/static/tailwind-config.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
     <link href="/static/commons-theme.css" rel="stylesheet">
     <link href="/static/commons-components.css" rel="stylesheet">
