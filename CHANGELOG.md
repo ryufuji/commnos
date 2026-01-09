@@ -1,5 +1,38 @@
 # Changelog
 
+## 2026-01-09 - テーマ設定削除と統一デザインへの移行
+
+### 大規模リファクタリング 🔄
+- **テーマカスタマイズ機能の完全削除**
+  - `tenant_customization` テーブル削除
+  - テーマプリセット機能廃止（modern-business, wellness-nature等）
+  - すべてのページでVivoo風デザインに統一
+  - `data-theme="light"` に標準化
+
+- **影響を受けたファイル**
+  - `src/routes/tenant-public.ts` - テーマクエリ削除
+  - `src/routes/tenant.ts` - テーマカラー定義削除
+  - `src/routes/auth.ts` - テナント作成時のテーマ挿入削除
+  - `src/types/index.ts` - TenantCustomizationインターフェース削除
+  
+- **データベース**
+  - マイグレーション: `0019_remove_theme_customization.sql`
+  - `DROP TABLE tenant_customization`
+
+### メリット
+- ✅ 統一されたブランディング体験
+- ✅ コードの簡素化（約70行削除）
+- ✅ パフォーマンス向上（不要なクエリ削除）
+- ✅ 保守性の向上
+
+### ドキュメント
+- `docs/THEME_REMOVAL.md` - 移行ガイド、影響範囲、ロールバック方法
+
+### デプロイ
+- GitHub: https://github.com/ryufuji/commnos (commit: 1bf8c9a, 2c9aa86)
+
+---
+
 ## 2026-01-09 - 認証ページデザインリニューアル（Vivoo風）
 
 ### 追加・改善
