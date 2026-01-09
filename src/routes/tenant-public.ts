@@ -1651,6 +1651,11 @@ tenantPublic.get('/home', async (c) => {
         
         // 認証状態をチェックしてUIを更新
         function updateAuthUI() {
+            // オーナー/管理者の場合はダッシュボードにリダイレクト（app.jsの共通関数を使用）
+            if (typeof redirectOwnerToDashboard === 'function' && redirectOwnerToDashboard()) {
+                return
+            }
+            
             const token = localStorage.getItem('token')
             const userStr = localStorage.getItem('user')
             const user = userStr ? JSON.parse(userStr) : null

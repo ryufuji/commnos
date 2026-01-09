@@ -22,6 +22,35 @@ function debugLog(category, message, data = null) {
   console.groupEnd();
 }
 
+/**
+ * テナント公開ページでオーナー/管理者をダッシュボードにリダイレクト
+ * テナントホーム、メンバー一覧、投稿一覧などの公開ページで使用
+ */
+function redirectOwnerToDashboard() {
+  const token = localStorage.getItem('token')
+  const userStr = localStorage.getItem('user')
+  
+  if (token && userStr) {
+    try {
+      const user = JSON.parse(userStr)
+      
+      // オーナーまたは管理者の場合はダッシュボードにリダイレクト
+      if (user.role === 'owner' || user.role === 'admin') {
+        debugLog('REDIRECT', 'Owner/Admin accessing public page, redirecting to dashboard', {
+          role: user.role,
+          currentUrl: window.location.href
+        })
+        window.location.href = '/dashboard'
+        return true
+      }
+    } catch (error) {
+      debugLog('ERROR', 'Failed to parse user data for redirect check', error)
+    }
+  }
+  
+  return false
+}
+
 // グローバル状態管理
 const AppState = {
   token: localStorage.getItem('token'),
