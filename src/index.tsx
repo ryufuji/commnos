@@ -152,16 +152,17 @@ app.get('/', (c) => {
 
   return c.html(`
     <!DOCTYPE html>
-    <html lang="ja">
+    <html lang="ja" data-theme="light">
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Commons - あなたのコミュニティプラットフォーム</title>
         <script src="https://cdn.tailwindcss.com"></script>
         <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
-        <link href="/static/styles.css" rel="stylesheet">
+        <link href="/static/commons-theme.css" rel="stylesheet">
+        <link href="/static/commons-components.css" rel="stylesheet">
     </head>
-    <body class="bg-gradient-to-br from-gray-50 to-gray-100" data-theme="light">
+    <body class="bg-gradient-to-br from-gray-50 to-gray-100">
         <div class="min-h-screen flex flex-col">
             <!-- ヘッダー -->
             <header class="bg-white/80 backdrop-blur-sm shadow-sm border-b border-gray-200 sticky top-0 z-10">
@@ -346,16 +347,17 @@ app.get('/communities', async (c) => {
   
   return c.html(`
     <!DOCTYPE html>
-    <html lang="ja">
+    <html lang="ja" data-theme="light">
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>コミュニティ一覧 - Commons</title>
         <script src="https://cdn.tailwindcss.com"></script>
         <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
-        <link href="/static/styles.css" rel="stylesheet">
+        <link href="/static/commons-theme.css" rel="stylesheet">
+        <link href="/static/commons-components.css" rel="stylesheet">
     </head>
-    <body class="bg-gray-50 min-h-screen" data-theme="light">
+    <body class="bg-gray-50 min-h-screen">
         <!-- ヘッダー -->
         <header class="bg-white shadow-sm sticky top-0 z-50">
             <div class="container mx-auto px-4 py-4">
@@ -458,16 +460,17 @@ app.get('/communities', async (c) => {
 app.get('/register', (c) => {
   return c.html(`
     <!DOCTYPE html>
-    <html lang="ja">
+    <html lang="ja" data-theme="light">
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>新規登録 - Commons</title>
         <script src="https://cdn.tailwindcss.com"></script>
         <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
-        <link href="/static/styles.css" rel="stylesheet">
+        <link href="/static/commons-theme.css" rel="stylesheet">
+        <link href="/static/commons-components.css" rel="stylesheet">
     </head>
-    <body class="bg-gradient-to-br from-primary-50 via-white to-secondary-50" data-theme="light">
+    <body class="bg-gradient-to-br from-primary-50 via-white to-secondary-50">
         <div class="min-h-screen flex items-center justify-center px-4 py-12">
             <div class="max-w-md w-full">
                 <!-- ロゴ -->
@@ -633,16 +636,17 @@ app.get('/register', (c) => {
 app.get('/plans', (c) => {
   return c.html(`
     <!DOCTYPE html>
-    <html lang="ja">
+    <html lang="ja" data-theme="light">
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>料金プラン - Commons</title>
         <script src="https://cdn.tailwindcss.com"></script>
         <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
-        <link href="/static/styles.css" rel="stylesheet">
+        <link href="/static/commons-theme.css" rel="stylesheet">
+        <link href="/static/commons-components.css" rel="stylesheet">
     </head>
-    <body class="bg-gradient-to-br from-primary-50 via-white to-secondary-50" data-theme="light">
+    <body class="bg-gradient-to-br from-primary-50 via-white to-secondary-50">
         <div class="min-h-screen py-12 px-4">
             <div class="max-w-7xl mx-auto">
                 <!-- ヘッダー -->
@@ -882,16 +886,17 @@ app.get('/success', (c) => {
 
   return c.html(`
     <!DOCTYPE html>
-    <html lang="ja">
+    <html lang="ja" data-theme="light">
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>決済完了 - Commons</title>
         <script src="https://cdn.tailwindcss.com"></script>
         <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
-        <link href="/static/styles.css" rel="stylesheet">
+        <link href="/static/commons-theme.css" rel="stylesheet">
+        <link href="/static/commons-components.css" rel="stylesheet">
     </head>
-    <body class="bg-gradient-to-br from-success-50 via-white to-primary-50" data-theme="light">
+    <body class="bg-gradient-to-br from-success-50 via-white to-primary-50">
         <div class="min-h-screen flex items-center justify-center px-4 py-12">
             <div class="max-w-2xl w-full">
                 <div class="card p-12 text-center fade-in">
@@ -978,16 +983,17 @@ app.get('/success', (c) => {
 app.get('/cancel', (c) => {
   return c.html(`
     <!DOCTYPE html>
-    <html lang="ja">
+    <html lang="ja" data-theme="light">
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>決済キャンセル - Commons</title>
         <script src="https://cdn.tailwindcss.com"></script>
         <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
-        <link href="/static/styles.css" rel="stylesheet">
+        <link href="/static/commons-theme.css" rel="stylesheet">
+        <link href="/static/commons-components.css" rel="stylesheet">
     </head>
-    <body class="bg-gradient-to-br from-warning-50 via-white to-primary-50" data-theme="light">
+    <body class="bg-gradient-to-br from-warning-50 via-white to-primary-50">
         <div class="min-h-screen flex items-center justify-center px-4 py-12">
             <div class="max-w-2xl w-full">
                 <div class="card p-12 text-center fade-in">
@@ -1068,16 +1074,17 @@ app.get('/cancel', (c) => {
 app.get('/profile', (c) => {
   return c.html(`
     <!DOCTYPE html>
-    <html lang="ja">
+    <html lang="ja" data-theme="light">
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>プロフィール - Commons</title>
         <script src="https://cdn.tailwindcss.com"></script>
         <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
-        <link href="/static/styles.css" rel="stylesheet">
+        <link href="/static/commons-theme.css" rel="stylesheet">
+        <link href="/static/commons-components.css" rel="stylesheet">
     </head>
-    <body class="bg-gray-100" data-theme="light">
+    <body class="bg-gray-100">
         <div class="min-h-screen py-8 px-4">
             <div class="max-w-2xl mx-auto">
                 <!-- ヘッダー -->
@@ -1448,14 +1455,15 @@ app.get('/profile', (c) => {
 app.get('/dashboard', (c) => {
   return c.html(`
     <!DOCTYPE html>
-    <html lang="ja">
+    <html lang="ja" data-theme="light">
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>ダッシュボード - Commons</title>
         <script src="https://cdn.tailwindcss.com"></script>
         <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
-        <link href="/static/styles.css" rel="stylesheet">
+        <link href="/static/commons-theme.css" rel="stylesheet">
+        <link href="/static/commons-components.css" rel="stylesheet">
     </head>
     <body class="bg-gradient-to-br from-gray-50 to-gray-100">
         <div class="min-h-screen">
@@ -1992,7 +2000,8 @@ app.get('/members', (c) => {
         <title>会員管理 - Commons</title>
         <script src="https://cdn.tailwindcss.com"></script>
         <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
-        <link href="/static/styles.css" rel="stylesheet">
+        <link href="/static/commons-theme.css" rel="stylesheet">
+        <link href="/static/commons-components.css" rel="stylesheet">
     </head>
     <body class="bg-gradient-to-br from-gray-50 to-gray-100">
         <div class="min-h-screen">
@@ -2392,7 +2401,7 @@ app.get('/members', (c) => {
 app.get('/posts-admin', (c) => {
   return c.html(`
     <!DOCTYPE html>
-    <html lang="ja">
+    <html lang="ja" data-theme="light">
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -2400,7 +2409,8 @@ app.get('/posts-admin', (c) => {
         <title>投稿管理 - Commons</title>
         <script src="https://cdn.tailwindcss.com"></script>
         <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
-        <link href="/static/styles.css" rel="stylesheet">
+        <link href="/static/commons-theme.css" rel="stylesheet">
+        <link href="/static/commons-components.css" rel="stylesheet">
     </head>
     <body class="bg-gray-50">
         <!-- ヘッダー -->
@@ -2660,7 +2670,7 @@ app.get('/favicon.ico', (c) => {
 app.get('/va-admin-portal/login', (c) => {
   return c.html(`
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="ja" data-theme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -2783,14 +2793,15 @@ app.get('/va-admin-portal/login', (c) => {
 app.get('/va-admin-portal', (c) => {
   return c.html(`
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="ja" data-theme="light">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Platform Admin - VALUE ARCHITECTS</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
-    <link href="/static/styles.css" rel="stylesheet">
+    <link href="/static/commons-theme.css" rel="stylesheet">
+        <link href="/static/commons-components.css" rel="stylesheet">
 </head>
 <body class="bg-gray-50">
     <div class="min-h-screen">
