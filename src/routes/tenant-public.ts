@@ -4925,9 +4925,9 @@ tenantPublic.get('/members/:memberId', async (c) => {
     '<h1 class="text-3xl font-bold" style="color: var(--commons-text-primary);">' + nickname + '</h1>' + roleBadgeHTML + '</div>' +
     '<p class="text-gray-600 mb-6 whitespace-pre-wrap">' + bio + '</p>' +
     '<div class="space-y-2 text-sm text-gray-600">' +
-    (birthday ? '<div class="flex items-center"><i class="fas fa-birthday-cake mr-3 text-pink-500 w-5"></i><span>' + ageText + '</span></div>' : '') +
-    '<div class="flex items-center"><i class="fas fa-user-check mr-3 text-blue-500 w-5"></i><span>' + joinedDate + 'に参加</span></div>' +
-    '<div class="flex items-center"><i class="fas fa-clock mr-3 text-green-500 w-5"></i><span>最終ログイン: ' + lastLoginText + '</span></div>' +
+    (birthday ? '<div class="flex items-center"><i class="fas fa-birthday-cake mr-3 text-pink-500 text-base"></i><span>' + ageText + '</span></div>' : '') +
+    '<div class="flex items-center"><i class="fas fa-user-check mr-3 text-blue-500 text-base"></i><span>' + joinedDate + 'に参加</span></div>' +
+    '<div class="flex items-center"><i class="fas fa-clock mr-3 text-green-500 text-base"></i><span>最終ログイン: ' + lastLoginText + '</span></div>' +
     '</div>' +
     '</div></div></div>' +
     '<div class="mt-8 text-center">' +
