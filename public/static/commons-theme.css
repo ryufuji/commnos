@@ -22,10 +22,11 @@
   --commons-bg-lime: #7ED957;           /* ライム - 装飾4 */
   
   /* テキストカラー（コントラスト強化） */
-  --commons-text-primary: #1a1a1a;      /* メインテキスト（濃く） */
+  --commons-text-primary: #2C2C2C;      /* メインテキスト（本文用） */
   --commons-text-secondary: #555555;    /* サブテキスト（濃く） */
   --commons-text-tertiary: #888888;     /* 補助テキスト（やや濃く） */
   --commons-text-white: #FFFFFF;        /* 白テキスト */
+  --commons-text-heading: #FFFFFF;      /* 見出し用（白） */
   
   /* 背景カラー */
   --commons-bg-white: #FFFFFF;

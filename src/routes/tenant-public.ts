@@ -2184,7 +2184,7 @@ tenantPublic.get('/posts/new', async (c) => {
                         <span id="previewStatus" class="px-3 py-1 rounded-full font-medium"></span>
                         <span id="previewVisibility" class="hidden px-3 py-1 bg-purple-100 text-purple-800 rounded-full font-medium"></span>
                     </div>
-                    <h1 id="previewTitle" class="text-3xl font-bold text-gray-900 mb-4"></h1>
+                    <h1 id="previewTitle" class="text-3xl font-bold mb-4" style="color: var(--commons-text-primary);"></h1>
                 </div>
                 
                 <!-- 投稿本文 -->
@@ -3189,7 +3189,7 @@ tenantPublic.get('/posts', async (c) => {
           <a href="/tenant/posts/${post.id}?subdomain=${subdomain}" class="block">
             ${thumbnailHTML}
             <div class="p-6">
-              <h3 class="text-xl font-bold text-gray-900 mb-3 line-clamp-2 group-hover:style="color: var(--commons-primary)" transition">
+              <h3 class="text-xl font-bold mb-3 line-clamp-2 transition" style="color: var(--commons-text-primary);">
                 ${postTitle}
               </h3>
               <p class="text-gray-600 mb-4 line-clamp-3 text-sm leading-relaxed">
@@ -3202,7 +3202,7 @@ tenantPublic.get('/posts', async (c) => {
                   ${authorName.charAt(0).toUpperCase()}
                 </div>
                 <div>
-                  <div class="font-semibold text-gray-900 text-sm">${authorName}</div>
+                  <div class="font-semibold text-sm" style="color: var(--commons-text-primary);">${authorName}</div>
                   <div class="text-gray-500 text-xs">${timeAgo}</div>
                 </div>
               </div>
@@ -3495,7 +3495,7 @@ tenantPublic.get('/create-post', async (c) => {
     <!-- メインコンテンツ -->
     <main class="max-w-4xl mx-auto px-4 py-8">
         <div class="bg-white rounded-lg shadow-md p-6 md:p-8">
-            <h2 class="text-3xl font-bold text-gray-900 mb-6">
+            <h2 class="text-3xl font-bold mb-6" style="color: var(--commons-text-primary);">
                 <i class="fas fa-pen mr-2 text-blue-600"></i>新規投稿
             </h2>
             
