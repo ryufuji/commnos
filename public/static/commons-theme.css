@@ -135,7 +135,7 @@ h1, h2, h3, h4, h5, h6 {
   font-weight: var(--font-weight-bold);
   line-height: var(--line-height-tight);
   margin-bottom: var(--spacing-sm);
-  color: var(--commons-text-primary);
+  color: inherit; /* 親要素の色を継承 */
 }
 
 h1 { 
