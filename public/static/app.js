@@ -516,7 +516,8 @@ function updateHeaderLoginState() {
           
           // 外側クリックでメニューを閉じる
           document.addEventListener('click', (e) => {
-            if (!document.getElementById('userMenuContainer')?.contains(e.target as Node)) {
+            const container = document.getElementById('userMenuContainer');
+            if (container && !container.contains(e.target)) {
               userMenuDropdown.classList.add('hidden');
             }
           });
