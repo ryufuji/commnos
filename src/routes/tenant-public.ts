@@ -8816,40 +8816,6 @@ tenantPublic.get('/events', async (c) => {
         </div>
     </div>
 
-    <!-- フッター -->
-    <footer class="bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900 text-white py-16 mt-20">
-        <div class="max-w-7xl mx-auto px-4">
-            <div class="text-center mb-8">
-                <div class="w-20 h-20 bg-white/10 backdrop-blur rounded-full mx-auto mb-4 flex items-center justify-center">
-                    <i class="fas fa-users text-4xl"></i>
-                </div>
-                <h2 class="text-3xl font-bold mb-2">${tenantName}</h2>
-                ${tenantSubtitle ? `<p class="text-gray-300 mb-4">${tenantSubtitle}</p>` : ''}
-            </div>
-            
-            <div class="flex justify-center gap-6 mb-8">
-                <a href="/tenant/posts?subdomain=${subdomain}" class="text-gray-300 hover:text-white transition">
-                    <i class="fas fa-newspaper mr-2"></i>投稿
-                </a>
-                <a href="/tenant/events?subdomain=${subdomain}" class="text-gray-300 hover:text-white transition">
-                    <i class="fas fa-calendar-alt mr-2"></i>イベント
-                </a>
-                <a href="/tenant/members?subdomain=${subdomain}" class="text-gray-300 hover:text-white transition">
-                    <i class="fas fa-users mr-2"></i>メンバー
-                </a>
-            </div>
-            
-            <div class="text-center border-t border-white/10 pt-8">
-                <p class="text-gray-400">&copy; ${new Date().getFullYear()} ${tenantName}. All rights reserved.</p>
-                <p class="text-gray-500 mt-2 text-sm flex items-center justify-center gap-2">
-                    <span>Powered by</span>
-                    <span class="font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">Commons</span>
-                </p>
-            </div>
-        </div>
-    </footer>
-
-    <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
     <script src="/static/app.js"></script>
     <script>
         const subdomain = '${subdomain}'
