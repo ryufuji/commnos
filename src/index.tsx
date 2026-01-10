@@ -35,6 +35,7 @@ import chat from './routes/chat' // Phase 6 - チャット機能
 import { coupons } from './routes/coupons' // クーポン管理
 import postAccess from './routes/post-access' // 投稿アクセス制御管理
 import surveys from './routes/surveys' // アンケート機能
+import analytics from './routes/analytics' // 統計ダッシュボード
 
 const app = new Hono<AppContext>()
 
@@ -110,6 +111,9 @@ app.route('/api/chat', chat)
 
 // アンケートルート
 app.route('/api/surveys', surveys)
+
+// 統計ダッシュボードルート
+app.route('/api/analytics', analytics)
 
 // --------------------------------------------
 // ルーティングロジック
@@ -1655,6 +1659,14 @@ app.get('/dashboard', (c) => {
                             </div>
                             <h3 class="font-bold text-gray-900 mb-2">アンケート管理</h3>
                             <p class="text-sm text-secondary-600">入会・退会時のアンケート設定</p>
+                        </a>
+
+                        <a href="/analytics" class="card-interactive p-6 text-center">
+                            <div class="text-4xl mb-3 text-purple-500">
+                                <i class="fas fa-chart-bar"></i>
+                            </div>
+                            <h3 class="font-bold text-gray-900 mb-2">統計ダッシュボード</h3>
+                            <p class="text-sm text-secondary-600">会員・投稿・アンケート分析</p>
                         </a>
 
                         <a href="/profile" class="card-interactive p-6 text-center">
@@ -4127,6 +4139,271 @@ app.get('/surveys/edit', (c) => {
                     saveBtn.innerHTML = '<i class="fas fa-save mr-2"></i>保存'
                 }
             }
+        </script>
+    </body>
+    </html>
+  `)
+})
+
+// ============================================
+// 統計ダッシュボードページ（/analytics）
+// ============================================
+app.get('/analytics', (c) => {
+  return c.html(`
+    <!DOCTYPE html>
+    <html lang="ja" data-theme="light">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>統計ダッシュボード - Commons</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <script src="/static/tailwind-config.js"></script>
+        <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+        <link href="/static/commons-theme.css" rel="stylesheet">
+        <link href="/static/commons-components.css" rel="stylesheet">
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    </head>
+    <body class="bg-gray-50">
+        <div class="min-h-screen flex flex-col">
+            <!-- Header -->
+            <header class="bg-white border-b border-gray-200 sticky top-0 z-40">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-4">
+                            <a href="/dashboard" class="text-gray-600 hover:text-gray-900">
+                                <i class="fas fa-arrow-left"></i>
+                            </a>
+                            <h1 class="text-2xl font-bold text-gray-900">
+                                <i class="fas fa-chart-bar mr-2 text-purple-500"></i>
+                                統計ダッシュボード
+                            </h1>
+                        </div>
+                        <div class="flex items-center space-x-4">
+                            <span id="tenantName" class="text-sm text-gray-600"></span>
+                            <button onclick="logout()" class="btn-outline">
+                                <i class="fas fa-sign-out-alt mr-2"></i>ログアウト
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Main Content -->
+            <main class="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
+                <!-- Loading State -->
+                <div id="loadingState" class="text-center py-12">
+                    <i class="fas fa-spinner fa-spin text-4xl text-purple-500 mb-4"></i>
+                    <p class="text-gray-600">統計データを読み込み中...</p>
+                </div>
+
+                <!-- Content Container -->
+                <div id="contentContainer" class="hidden space-y-8">
+                    <!-- KPI Cards -->
+                    <div>
+                        <h2 class="text-xl font-bold text-gray-900 mb-4">
+                            <i class="fas fa-tachometer-alt mr-2 text-purple-500"></i>
+                            主要指標
+                        </h2>
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                            <!-- Members Card -->
+                            <div class="card p-6">
+                                <div class="flex items-center justify-between mb-3">
+                                    <div class="text-3xl text-primary-500">
+                                        <i class="fas fa-users"></i>
+                                    </div>
+                                    <a href="/analytics/members" class="text-sm text-primary-600 hover:text-primary-700">
+                                        詳細 <i class="fas fa-arrow-right ml-1"></i>
+                                    </a>
+                                </div>
+                                <div class="text-3xl font-bold text-gray-900 mb-1" id="totalMembers">-</div>
+                                <div class="text-sm text-gray-600 mb-2">総会員数</div>
+                                <div class="flex items-center text-xs text-gray-500">
+                                    <span class="text-warning-600 font-semibold mr-1" id="pendingMembers">-</span>
+                                    件の承認待ち
+                                </div>
+                            </div>
+
+                            <!-- Posts Card -->
+                            <div class="card p-6">
+                                <div class="flex items-center justify-between mb-3">
+                                    <div class="text-3xl text-success-500">
+                                        <i class="fas fa-file-alt"></i>
+                                    </div>
+                                    <a href="/analytics/posts" class="text-sm text-success-600 hover:text-success-700">
+                                        詳細 <i class="fas fa-arrow-right ml-1"></i>
+                                    </a>
+                                </div>
+                                <div class="text-3xl font-bold text-gray-900 mb-1" id="publishedPosts">-</div>
+                                <div class="text-sm text-gray-600 mb-2">公開投稿数</div>
+                                <div class="flex items-center text-xs text-gray-500">
+                                    <i class="fas fa-eye mr-1"></i>
+                                    <span id="totalViews">-</span> 総閲覧数
+                                </div>
+                            </div>
+
+                            <!-- Engagement Card -->
+                            <div class="card p-6">
+                                <div class="flex items-center justify-between mb-3">
+                                    <div class="text-3xl text-error-500">
+                                        <i class="fas fa-heart"></i>
+                                    </div>
+                                    <a href="/analytics/posts" class="text-sm text-error-600 hover:text-error-700">
+                                        詳細 <i class="fas fa-arrow-right ml-1"></i>
+                                    </a>
+                                </div>
+                                <div class="text-3xl font-bold text-gray-900 mb-1" id="totalLikes">-</div>
+                                <div class="text-sm text-gray-600 mb-2">総いいね数</div>
+                                <div class="flex items-center text-xs text-gray-500">
+                                    <i class="fas fa-comment mr-1"></i>
+                                    <span id="totalComments">-</span> コメント
+                                </div>
+                            </div>
+
+                            <!-- Surveys Card -->
+                            <div class="card p-6">
+                                <div class="flex items-center justify-between mb-3">
+                                    <div class="text-3xl text-accent-500">
+                                        <i class="fas fa-poll"></i>
+                                    </div>
+                                    <a href="/analytics/surveys" class="text-sm text-accent-600 hover:text-accent-700">
+                                        詳細 <i class="fas fa-arrow-right ml-1"></i>
+                                    </a>
+                                </div>
+                                <div class="text-3xl font-bold text-gray-900 mb-1" id="joinResponses">-</div>
+                                <div class="text-sm text-gray-600 mb-2">入会アンケート回答数</div>
+                                <div class="flex items-center text-xs text-gray-500">
+                                    <span id="leaveResponses">-</span> 退会アンケート回答数
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Navigation Cards -->
+                    <div>
+                        <h2 class="text-xl font-bold text-gray-900 mb-4">
+                            <i class="fas fa-chart-line mr-2 text-purple-500"></i>
+                            詳細分析
+                        </h2>
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            <a href="/analytics/members" class="card-interactive p-6">
+                                <div class="text-4xl mb-3 text-primary-500">
+                                    <i class="fas fa-user-friends"></i>
+                                </div>
+                                <h3 class="font-bold text-gray-900 mb-2">会員分析</h3>
+                                <p class="text-sm text-gray-600">会員数推移、プラン別分布、ロール別内訳</p>
+                            </a>
+
+                            <a href="/analytics/posts" class="card-interactive p-6">
+                                <div class="text-4xl mb-3 text-success-500">
+                                    <i class="fas fa-newspaper"></i>
+                                </div>
+                                <h3 class="font-bold text-gray-900 mb-2">コンテンツ分析</h3>
+                                <p class="text-sm text-gray-600">人気投稿、投稿者別統計、エンゲージメント率</p>
+                            </a>
+
+                            <a href="/analytics/surveys" class="card-interactive p-6">
+                                <div class="text-4xl mb-3 text-accent-500">
+                                    <i class="fas fa-clipboard-list"></i>
+                                </div>
+                                <h3 class="font-bold text-gray-900 mb-2">アンケート分析</h3>
+                                <p class="text-sm text-gray-600">入会・退会時アンケート結果の集計と分析</p>
+                            </a>
+
+                            <a href="/analytics/subscriptions" class="card-interactive p-6">
+                                <div class="text-4xl mb-3 text-purple-500">
+                                    <i class="fas fa-credit-card"></i>
+                                </div>
+                                <h3 class="font-bold text-gray-900 mb-2">収益分析</h3>
+                                <p class="text-sm text-gray-600">サブスクリプション、プラン別収益（オーナーのみ）</p>
+                            </a>
+
+                            <a href="/analytics/engagement" class="card-interactive p-6 opacity-50 pointer-events-none">
+                                <div class="text-4xl mb-3 text-info-500">
+                                    <i class="fas fa-fire"></i>
+                                </div>
+                                <h3 class="font-bold text-gray-900 mb-2">エンゲージメント分析</h3>
+                                <p class="text-sm text-gray-600">DAU/MAU、アクティブ率（近日公開）</p>
+                            </a>
+
+                            <a href="/analytics/storage" class="card-interactive p-6 opacity-50 pointer-events-none">
+                                <div class="text-4xl mb-3 text-warning-500">
+                                    <i class="fas fa-database"></i>
+                                </div>
+                                <h3 class="font-bold text-gray-900 mb-2">ストレージ分析</h3>
+                                <p class="text-sm text-gray-600">使用状況、ファイル別内訳（近日公開）</p>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+        <script src="/static/app.js"></script>
+        <script>
+            let analyticsData = null
+
+            async function loadAnalytics() {
+                try {
+                    const token = localStorage.getItem('token')
+                    if (!token) {
+                        window.location.href = '/login'
+                        return
+                    }
+
+                    axios.defaults.headers.common['Authorization'] = 'Bearer ' + token
+
+                    // 概要統計を取得
+                    const response = await axios.get('/api/analytics/overview')
+                    
+                    if (!response.data.success) {
+                        throw new Error(response.data.message)
+                    }
+
+                    analyticsData = response.data.data
+
+                    // データを表示
+                    displayAnalytics()
+
+                    // ローディングを非表示、コンテンツを表示
+                    document.getElementById('loadingState').classList.add('hidden')
+                    document.getElementById('contentContainer').classList.remove('hidden')
+
+                } catch (error) {
+                    console.error('Analytics error:', error)
+                    if (error.response?.status === 401) {
+                        window.location.href = '/login'
+                    } else if (error.response?.status === 403) {
+                        showToast('統計ダッシュボードへのアクセス権限がありません', 'error')
+                        setTimeout(() => window.location.href = '/dashboard', 2000)
+                    } else {
+                        showToast('統計データの読み込みに失敗しました', 'error')
+                    }
+                }
+            }
+
+            function displayAnalytics() {
+                if (!analyticsData) return
+
+                // 会員統計
+                document.getElementById('totalMembers').textContent = analyticsData.members.total.toLocaleString()
+                document.getElementById('pendingMembers').textContent = analyticsData.members.pending
+
+                // 投稿統計
+                document.getElementById('publishedPosts').textContent = analyticsData.posts.published.toLocaleString()
+                document.getElementById('totalViews').textContent = (analyticsData.posts.total_views || 0).toLocaleString()
+
+                // エンゲージメント統計
+                document.getElementById('totalLikes').textContent = analyticsData.engagement.total_likes.toLocaleString()
+                document.getElementById('totalComments').textContent = analyticsData.engagement.total_comments.toLocaleString()
+
+                // アンケート統計
+                document.getElementById('joinResponses').textContent = analyticsData.surveys.join_responses.toLocaleString()
+                document.getElementById('leaveResponses').textContent = analyticsData.surveys.leave_responses.toLocaleString()
+            }
+
+            // ページ読み込み時に実行
+            document.addEventListener('DOMContentLoaded', loadAnalytics)
         </script>
     </body>
     </html>
