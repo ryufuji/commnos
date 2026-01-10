@@ -4410,6 +4410,80 @@ app.get('/analytics', (c) => {
   `)
 })
 
+// ============================================
+// 統計詳細ページ（準備中）
+// ============================================
+app.get('/analytics/:page', (c) => {
+  const page = c.req.param('page')
+  const pageNames: Record<string, string> = {
+    'members': '会員分析',
+    'posts': 'コンテンツ分析',
+    'surveys': 'アンケート分析',
+    'subscriptions': '収益分析',
+    'engagement': 'エンゲージメント分析',
+    'storage': 'ストレージ分析'
+  }
+  
+  const pageName = pageNames[page] || '詳細分析'
+  
+  return c.html(`
+    <!DOCTYPE html>
+    <html lang="ja" data-theme="light">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>${pageName} - Commons</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <script src="/static/tailwind-config.js"></script>
+        <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+        <link href="/static/commons-theme.css" rel="stylesheet">
+        <link href="/static/commons-components.css" rel="stylesheet">
+    </head>
+    <body class="bg-gray-50">
+        <div class="min-h-screen flex flex-col">
+            <!-- Header -->
+            <header class="bg-white border-b border-gray-200 sticky top-0 z-40">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-4">
+                            <a href="/analytics" class="text-gray-600 hover:text-gray-900">
+                                <i class="fas fa-arrow-left"></i>
+                            </a>
+                            <h1 class="text-2xl font-bold text-gray-900">
+                                <i class="fas fa-chart-bar mr-2 text-purple-500"></i>
+                                ${pageName}
+                            </h1>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Main Content -->
+            <main class="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
+                <div class="text-center py-16">
+                    <div class="text-6xl text-gray-300 mb-6">
+                        <i class="fas fa-tools"></i>
+                    </div>
+                    <h2 class="text-3xl font-bold text-gray-900 mb-4">準備中</h2>
+                    <p class="text-lg text-gray-600 mb-8">
+                        ${pageName}ページは現在開発中です。<br>
+                        近日中に公開予定です。
+                    </p>
+                    <a href="/analytics" class="btn-primary">
+                        <i class="fas fa-arrow-left mr-2"></i>
+                        統計ダッシュボードに戻る
+                    </a>
+                </div>
+            </main>
+        </div>
+
+        <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+        <script src="/static/app.js"></script>
+    </body>
+    </html>
+  `)
+})
+
 app.get('/health', (c) => {
   return c.json({ status: 'ok', timestamp: new Date().toISOString() })
 })

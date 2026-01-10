@@ -188,7 +188,12 @@ analytics.get('/members', async (c) => {
     })
   } catch (error: any) {
     console.error('[Analytics Members Error]', error)
-    return c.json({ success: false, message: error.message }, 500)
+    console.error('[Analytics Members Error Stack]', error.stack)
+    return c.json({ 
+      success: false, 
+      message: error.message || 'Failed to fetch member analytics',
+      error: error.toString()
+    }, 500)
   }
 })
 
@@ -266,7 +271,12 @@ analytics.get('/posts', async (c) => {
     })
   } catch (error: any) {
     console.error('[Analytics Posts Error]', error)
-    return c.json({ success: false, message: error.message }, 500)
+    console.error('[Analytics Posts Error Stack]', error.stack)
+    return c.json({ 
+      success: false, 
+      message: error.message || 'Failed to fetch post analytics',
+      error: error.toString()
+    }, 500)
   }
 })
 
@@ -316,7 +326,12 @@ analytics.get('/surveys', async (c) => {
     })
   } catch (error: any) {
     console.error('[Analytics Surveys Error]', error)
-    return c.json({ success: false, message: error.message }, 500)
+    console.error('[Analytics Surveys Error Stack]', error.stack)
+    return c.json({ 
+      success: false, 
+      message: error.message || 'Failed to fetch survey analytics',
+      error: error.toString()
+    }, 500)
   }
 })
 
@@ -436,7 +451,12 @@ analytics.get('/surveys/:surveyId/questions', async (c) => {
     })
   } catch (error: any) {
     console.error('[Analytics Survey Questions Error]', error)
-    return c.json({ success: false, message: error.message }, 500)
+    console.error('[Analytics Survey Questions Error Stack]', error.stack)
+    return c.json({ 
+      success: false, 
+      message: error.message || 'Failed to fetch survey question analytics',
+      error: error.toString()
+    }, 500)
   }
 })
 
@@ -485,7 +505,12 @@ analytics.get('/subscriptions', async (c) => {
     })
   } catch (error: any) {
     console.error('[Analytics Subscriptions Error]', error)
-    return c.json({ success: false, message: error.message }, 500)
+    console.error('[Analytics Subscriptions Error Stack]', error.stack)
+    return c.json({ 
+      success: false, 
+      message: error.message || 'Failed to fetch subscription analytics',
+      error: error.toString()
+    }, 500)
   }
 })
 
