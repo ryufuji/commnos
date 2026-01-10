@@ -4411,6 +4411,722 @@ app.get('/analytics', (c) => {
 })
 
 // ============================================
+// コンテンツ分析ページ (/analytics/posts)
+// ============================================
+app.get('/analytics/posts', (c) => {
+  return c.html(`
+    <!DOCTYPE html>
+    <html lang="ja" data-theme="light">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>コンテンツ分析 - Commons</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <script src="/static/tailwind-config.js"></script>
+        <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+        <link href="/static/commons-theme.css" rel="stylesheet">
+        <link href="/static/commons-components.css" rel="stylesheet">
+    </head>
+    <body class="bg-gray-50">
+        <div class="min-h-screen flex flex-col">
+            <!-- Header -->
+            <header class="bg-white border-b border-gray-200 sticky top-0 z-40">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-4">
+                            <a href="/analytics" class="text-gray-600 hover:text-gray-900">
+                                <i class="fas fa-arrow-left"></i>
+                            </a>
+                            <h1 class="text-2xl font-bold text-gray-900">
+                                <i class="fas fa-newspaper mr-2 text-success-500"></i>
+                                コンテンツ分析
+                            </h1>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Main Content -->
+            <main class="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
+                <!-- Loading State -->
+                <div id="loadingState" class="text-center py-12">
+                    <i class="fas fa-spinner fa-spin text-4xl text-success-500 mb-4"></i>
+                    <p class="text-gray-600">投稿データを読み込み中...</p>
+                </div>
+
+                <!-- Content Container -->
+                <div id="contentContainer" class="hidden space-y-8">
+                    <!-- Summary Cards -->
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                        <div class="card p-6">
+                            <div class="text-sm text-gray-600 mb-1">公開投稿</div>
+                            <div class="text-3xl font-bold text-success-600" id="publishedPosts">-</div>
+                        </div>
+                        <div class="card p-6">
+                            <div class="text-sm text-gray-600 mb-1">下書き</div>
+                            <div class="text-3xl font-bold text-gray-600" id="draftPosts">-</div>
+                        </div>
+                        <div class="card p-6">
+                            <div class="text-sm text-gray-600 mb-1">予約投稿</div>
+                            <div class="text-3xl font-bold text-warning-600" id="scheduledPosts">-</div>
+                        </div>
+                        <div class="card p-6">
+                            <div class="text-sm text-gray-600 mb-1">総閲覧数</div>
+                            <div class="text-3xl font-bold text-primary-600" id="totalViews">-</div>
+                        </div>
+                    </div>
+
+                    <!-- Top Posts -->
+                    <div class="card p-6">
+                        <h3 class="text-lg font-bold text-gray-900 mb-4">
+                            <i class="fas fa-trophy mr-2 text-warning-500"></i>
+                            人気投稿トップ10
+                        </h3>
+                        <div class="overflow-x-auto">
+                            <table class="min-w-full">
+                                <thead class="bg-gray-50">
+                                    <tr>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">順位</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">タイトル</th>
+                                        <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">著者</th>
+                                        <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">閲覧</th>
+                                        <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">いいね</th>
+                                        <th class="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">コメント</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="topPostsTable" class="bg-white divide-y divide-gray-200">
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Author Stats -->
+                    <div class="card p-6">
+                        <h3 class="text-lg font-bold text-gray-900 mb-4">
+                            <i class="fas fa-user-edit mr-2 text-primary-500"></i>
+                            投稿者別統計
+                        </h3>
+                        <div id="authorStats" class="space-y-3"></div>
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+        <script src="/static/app.js"></script>
+        <script>
+            let postData = null
+
+            async function loadPostAnalytics() {
+                try {
+                    const token = localStorage.getItem('token')
+                    if (!token) {
+                        window.location.href = '/login'
+                        return
+                    }
+
+                    axios.defaults.headers.common['Authorization'] = 'Bearer ' + token
+
+                    const response = await axios.get('/api/analytics/posts')
+                    
+                    if (!response.data.success) {
+                        throw new Error(response.data.message)
+                    }
+
+                    postData = response.data.data
+                    displayPostAnalytics()
+
+                    document.getElementById('loadingState').classList.add('hidden')
+                    document.getElementById('contentContainer').classList.remove('hidden')
+
+                } catch (error) {
+                    console.error('Post analytics error:', error)
+                    if (error.response?.status === 401) {
+                        window.location.href = '/login'
+                    } else {
+                        showToast('投稿データの読み込みに失敗しました', 'error')
+                    }
+                }
+            }
+
+            function displayPostAnalytics() {
+                if (!postData) return
+
+                const basic = postData.basic
+                document.getElementById('publishedPosts').textContent = (basic.published || 0).toLocaleString()
+                document.getElementById('draftPosts').textContent = (basic.draft || 0).toLocaleString()
+                document.getElementById('scheduledPosts').textContent = (basic.scheduled || 0).toLocaleString()
+                document.getElementById('totalViews').textContent = (basic.total_views || 0).toLocaleString()
+
+                // 人気投稿トップ10
+                const topPosts = postData.top_posts || []
+                let tableHtml = ''
+                topPosts.forEach((post, index) => {
+                    const rankClass = index === 0 ? 'text-warning-600 font-bold' : index === 1 ? 'text-gray-500 font-semibold' : index === 2 ? 'text-orange-600 font-semibold' : 'text-gray-400'
+                    tableHtml += \`
+                        <tr>
+                            <td class="px-4 py-3 whitespace-nowrap">
+                                <span class="\${rankClass}">#\${index + 1}</span>
+                            </td>
+                            <td class="px-4 py-3">
+                                <div class="text-sm font-medium text-gray-900 max-w-md truncate">\${escapeHtml(post.title)}</div>
+                            </td>
+                            <td class="px-4 py-3 whitespace-nowrap">
+                                <div class="text-sm text-gray-600">\${post.author_name || '不明'}</div>
+                            </td>
+                            <td class="px-4 py-3 whitespace-nowrap text-right">
+                                <div class="text-sm text-gray-900">\${(post.view_count || 0).toLocaleString()}</div>
+                            </td>
+                            <td class="px-4 py-3 whitespace-nowrap text-right">
+                                <div class="text-sm text-error-600">\${post.like_count || 0}</div>
+                            </td>
+                            <td class="px-4 py-3 whitespace-nowrap text-right">
+                                <div class="text-sm text-primary-600">\${post.comment_count || 0}</div>
+                            </td>
+                        </tr>
+                    \`
+                })
+                document.getElementById('topPostsTable').innerHTML = tableHtml || '<tr><td colspan="6" class="px-4 py-3 text-center text-gray-500">データがありません</td></tr>'
+
+                // 投稿者別統計
+                const authorStats = postData.author_stats || []
+                let authorHtml = ''
+                authorStats.forEach(author => {
+                    const avgViews = author.post_count > 0 ? Math.round(author.total_views / author.post_count) : 0
+                    authorHtml += \`
+                        <div class="flex justify-between items-center p-3 bg-gray-50 rounded-lg">
+                            <div>
+                                <div class="font-semibold text-gray-900">\${author.author_name}</div>
+                                <div class="text-sm text-gray-600">\${author.post_count}件の投稿</div>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-sm text-gray-600">総閲覧: \${author.total_views.toLocaleString()}</div>
+                                <div class="text-sm text-gray-500">平均: \${avgViews.toLocaleString()}</div>
+                            </div>
+                        </div>
+                    \`
+                })
+                document.getElementById('authorStats').innerHTML = authorHtml || '<p class="text-gray-500 text-sm">データがありません</p>'
+            }
+
+            function escapeHtml(text) {
+                const div = document.createElement('div')
+                div.textContent = text
+                return div.innerHTML
+            }
+
+            document.addEventListener('DOMContentLoaded', loadPostAnalytics)
+        </script>
+    </body>
+    </html>
+  `)
+})
+
+// ============================================
+// 会員分析ページ (/analytics/members)
+// ============================================
+app.get('/analytics/members', (c) => {
+  return c.html(`
+    <!DOCTYPE html>
+    <html lang="ja" data-theme="light">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>会員分析 - Commons</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <script src="/static/tailwind-config.js"></script>
+        <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+        <link href="/static/commons-theme.css" rel="stylesheet">
+        <link href="/static/commons-components.css" rel="stylesheet">
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    </head>
+    <body class="bg-gray-50">
+        <div class="min-h-screen flex flex-col">
+            <!-- Header -->
+            <header class="bg-white border-b border-gray-200 sticky top-0 z-40">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-4">
+                            <a href="/analytics" class="text-gray-600 hover:text-gray-900">
+                                <i class="fas fa-arrow-left"></i>
+                            </a>
+                            <h1 class="text-2xl font-bold text-gray-900">
+                                <i class="fas fa-user-friends mr-2 text-primary-500"></i>
+                                会員分析
+                            </h1>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Main Content -->
+            <main class="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
+                <!-- Loading State -->
+                <div id="loadingState" class="text-center py-12">
+                    <i class="fas fa-spinner fa-spin text-4xl text-primary-500 mb-4"></i>
+                    <p class="text-gray-600">会員データを読み込み中...</p>
+                </div>
+
+                <!-- Content Container -->
+                <div id="contentContainer" class="hidden space-y-8">
+                    <!-- Summary Cards -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div class="card p-6">
+                            <div class="text-sm text-gray-600 mb-1">アクティブ会員</div>
+                            <div class="text-3xl font-bold text-primary-600" id="totalActive">-</div>
+                        </div>
+                        <div class="card p-6">
+                            <div class="text-sm text-gray-600 mb-1">承認待ち</div>
+                            <div class="text-3xl font-bold text-warning-600" id="totalPending">-</div>
+                        </div>
+                        <div class="card p-6">
+                            <div class="text-sm text-gray-600 mb-1">退会済み</div>
+                            <div class="text-3xl font-bold text-gray-600" id="totalInactive">-</div>
+                        </div>
+                    </div>
+
+                    <!-- Role Distribution -->
+                    <div class="card p-6">
+                        <h3 class="text-lg font-bold text-gray-900 mb-4">
+                            <i class="fas fa-user-tag mr-2 text-primary-500"></i>
+                            ロール別内訳
+                        </h3>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div class="text-center p-4 bg-gray-50 rounded-lg">
+                                <div class="text-2xl font-bold text-purple-600" id="ownerCount">-</div>
+                                <div class="text-sm text-gray-600">オーナー</div>
+                            </div>
+                            <div class="text-center p-4 bg-gray-50 rounded-lg">
+                                <div class="text-2xl font-bold text-blue-600" id="adminCount">-</div>
+                                <div class="text-sm text-gray-600">管理者</div>
+                            </div>
+                            <div class="text-center p-4 bg-gray-50 rounded-lg">
+                                <div class="text-2xl font-bold text-green-600" id="memberCount">-</div>
+                                <div class="text-sm text-gray-600">一般会員</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Plan Distribution -->
+                    <div class="card p-6">
+                        <h3 class="text-lg font-bold text-gray-900 mb-4">
+                            <i class="fas fa-chart-pie mr-2 text-primary-500"></i>
+                            プラン別分布
+                        </h3>
+                        <div id="planDistribution" class="space-y-3"></div>
+                    </div>
+
+                    <!-- Monthly Trend -->
+                    <div class="card p-6">
+                        <h3 class="text-lg font-bold text-gray-900 mb-4">
+                            <i class="fas fa-chart-line mr-2 text-primary-500"></i>
+                            会員数推移（過去12ヶ月）
+                        </h3>
+                        <div id="monthlyTrend" class="space-y-2"></div>
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+        <script src="/static/app.js"></script>
+        <script>
+            let memberData = null
+
+            async function loadMemberAnalytics() {
+                try {
+                    const token = localStorage.getItem('token')
+                    if (!token) {
+                        window.location.href = '/login'
+                        return
+                    }
+
+                    axios.defaults.headers.common['Authorization'] = 'Bearer ' + token
+
+                    const response = await axios.get('/api/analytics/members')
+                    
+                    if (!response.data.success) {
+                        throw new Error(response.data.message)
+                    }
+
+                    memberData = response.data.data
+                    displayMemberAnalytics()
+
+                    document.getElementById('loadingState').classList.add('hidden')
+                    document.getElementById('contentContainer').classList.remove('hidden')
+
+                } catch (error) {
+                    console.error('Member analytics error:', error)
+                    if (error.response?.status === 401) {
+                        window.location.href = '/login'
+                    } else {
+                        showToast('会員データの読み込みに失敗しました', 'error')
+                    }
+                }
+            }
+
+            function displayMemberAnalytics() {
+                if (!memberData) return
+
+                const basic = memberData.basic
+                document.getElementById('totalActive').textContent = (basic.total_active || 0).toLocaleString()
+                document.getElementById('totalPending').textContent = (basic.total_pending || 0).toLocaleString()
+                document.getElementById('totalInactive').textContent = (basic.total_inactive || 0).toLocaleString()
+                
+                document.getElementById('ownerCount').textContent = (basic.owner_count || 0).toLocaleString()
+                document.getElementById('adminCount').textContent = (basic.admin_count || 0).toLocaleString()
+                document.getElementById('memberCount').textContent = (basic.member_count || 0).toLocaleString()
+
+                // プラン別分布
+                const planDist = memberData.plan_distribution || []
+                let planHtml = ''
+                planDist.forEach(plan => {
+                    const total = planDist.reduce((sum, p) => sum + p.count, 0)
+                    const percentage = total > 0 ? Math.round((plan.count / total) * 100) : 0
+                    planHtml += \`
+                        <div>
+                            <div class="flex justify-between text-sm mb-1">
+                                <span class="text-gray-700">\${plan.plan_name}</span>
+                                <span class="font-semibold text-gray-900">\${plan.count}人 (\${percentage}%)</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-2">
+                                <div class="bg-primary-500 h-2 rounded-full" style="width: \${percentage}%"></div>
+                            </div>
+                        </div>
+                    \`
+                })
+                document.getElementById('planDistribution').innerHTML = planHtml || '<p class="text-gray-500 text-sm">データがありません</p>'
+
+                // 月次推移
+                const monthlyTrend = memberData.monthly_trend || []
+                let trendHtml = ''
+                monthlyTrend.forEach(trend => {
+                    trendHtml += \`
+                        <div class="flex justify-between items-center">
+                            <span class="text-sm text-gray-600">\${trend.month}</span>
+                            <span class="font-semibold text-gray-900">\${trend.count}人</span>
+                        </div>
+                    \`
+                })
+                document.getElementById('monthlyTrend').innerHTML = trendHtml || '<p class="text-gray-500 text-sm">データがありません</p>'
+            }
+
+            document.addEventListener('DOMContentLoaded', loadMemberAnalytics)
+        </script>
+    </body>
+    </html>
+  `)
+})
+
+// ============================================
+// アンケート分析ページ (/analytics/surveys)
+// ============================================
+app.get('/analytics/surveys', (c) => {
+  return c.html(`
+    <!DOCTYPE html>
+    <html lang="ja" data-theme="light">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>アンケート分析 - Commons</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <script src="/static/tailwind-config.js"></script>
+        <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+        <link href="/static/commons-theme.css" rel="stylesheet">
+        <link href="/static/commons-components.css" rel="stylesheet">
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    </head>
+    <body class="bg-gray-50">
+        <div class="min-h-screen flex flex-col">
+            <!-- Header -->
+            <header class="bg-white border-b border-gray-200 sticky top-0 z-40">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-4">
+                            <a href="/analytics" class="text-gray-600 hover:text-gray-900">
+                                <i class="fas fa-arrow-left"></i>
+                            </a>
+                            <h1 class="text-2xl font-bold text-gray-900">
+                                <i class="fas fa-clipboard-list mr-2 text-accent-500"></i>
+                                アンケート分析
+                            </h1>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Main Content -->
+            <main class="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
+                <!-- Loading State -->
+                <div id="loadingState" class="text-center py-12">
+                    <i class="fas fa-spinner fa-spin text-4xl text-accent-500 mb-4"></i>
+                    <p class="text-gray-600">アンケートデータを読み込み中...</p>
+                </div>
+
+                <!-- Content Container -->
+                <div id="contentContainer" class="hidden space-y-8">
+                    <!-- Summary Cards -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Join Survey Card -->
+                        <div class="card p-6">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="text-lg font-bold text-gray-900">
+                                    <i class="fas fa-sign-in-alt mr-2 text-primary-500"></i>
+                                    入会時アンケート
+                                </h3>
+                            </div>
+                            <div id="joinSurveyInfo">
+                                <p class="text-sm text-gray-500">アンケートが設定されていません</p>
+                            </div>
+                        </div>
+
+                        <!-- Leave Survey Card -->
+                        <div class="card p-6">
+                            <div class="flex items-center justify-between mb-4">
+                                <h3 class="text-lg font-bold text-gray-900">
+                                    <i class="fas fa-sign-out-alt mr-2 text-error-500"></i>
+                                    退会時アンケート
+                                </h3>
+                            </div>
+                            <div id="leaveSurveyInfo">
+                                <p class="text-sm text-gray-500">アンケートが設定されていません</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Question Analysis -->
+                    <div id="questionAnalysis"></div>
+                </div>
+            </main>
+        </div>
+
+        <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+        <script src="/static/app.js"></script>
+        <script>
+            let surveyData = null
+            let questionData = null
+
+            async function loadSurveyAnalytics() {
+                try {
+                    const token = localStorage.getItem('token')
+                    if (!token) {
+                        window.location.href = '/login'
+                        return
+                    }
+
+                    axios.defaults.headers.common['Authorization'] = 'Bearer ' + token
+
+                    // アンケート統計を取得
+                    const response = await axios.get('/api/analytics/surveys')
+                    
+                    if (!response.data.success) {
+                        throw new Error(response.data.message)
+                    }
+
+                    surveyData = response.data.data
+
+                    // データを表示
+                    await displaySurveyAnalytics()
+
+                    // ローディングを非表示、コンテンツを表示
+                    document.getElementById('loadingState').classList.add('hidden')
+                    document.getElementById('contentContainer').classList.remove('hidden')
+
+                } catch (error) {
+                    console.error('Survey analytics error:', error)
+                    if (error.response?.status === 401) {
+                        window.location.href = '/login'
+                    } else if (error.response?.status === 403) {
+                        showToast('アンケート分析へのアクセス権限がありません', 'error')
+                        setTimeout(() => window.location.href = '/analytics', 2000)
+                    } else {
+                        showToast('アンケートデータの読み込みに失敗しました', 'error')
+                    }
+                }
+            }
+
+            async function displaySurveyAnalytics() {
+                if (!surveyData) return
+
+                // 入会時アンケート
+                const joinSurvey = surveyData.join_survey
+                if (joinSurvey && joinSurvey.survey_id) {
+                    const responseRate = joinSurvey.total_members > 0 
+                        ? Math.round((joinSurvey.total_responses / joinSurvey.total_members) * 100) 
+                        : 0
+                    
+                    document.getElementById('joinSurveyInfo').innerHTML = \`
+                        <div class="space-y-2">
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-gray-600">アンケート名</span>
+                                <span class="font-semibold text-gray-900">\${joinSurvey.survey_title || '無題'}</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-gray-600">総回答数</span>
+                                <span class="text-2xl font-bold text-primary-600">\${joinSurvey.total_responses}</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-gray-600">回答率</span>
+                                <span class="text-lg font-semibold text-gray-900">\${responseRate}%</span>
+                            </div>
+                            <button onclick="viewSurveyDetails(\${joinSurvey.survey_id}, 'join')" class="btn-primary w-full mt-4">
+                                <i class="fas fa-chart-pie mr-2"></i>詳細を見る
+                            </button>
+                        </div>
+                    \`
+                }
+
+                // 退会時アンケート
+                const leaveSurvey = surveyData.leave_survey
+                if (leaveSurvey && leaveSurvey.survey_id) {
+                    const responseRate = leaveSurvey.total_exits > 0 
+                        ? Math.round((leaveSurvey.total_responses / leaveSurvey.total_exits) * 100) 
+                        : 0
+                    
+                    document.getElementById('leaveSurveyInfo').innerHTML = \`
+                        <div class="space-y-2">
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-gray-600">アンケート名</span>
+                                <span class="font-semibold text-gray-900">\${leaveSurvey.survey_title || '無題'}</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-gray-600">総回答数</span>
+                                <span class="text-2xl font-bold text-error-600">\${leaveSurvey.total_responses}</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-sm text-gray-600">回答率</span>
+                                <span class="text-lg font-semibold text-gray-900">\${responseRate}%</span>
+                            </div>
+                            <button onclick="viewSurveyDetails(\${leaveSurvey.survey_id}, 'leave')" class="btn-primary w-full mt-4">
+                                <i class="fas fa-chart-pie mr-2"></i>詳細を見る
+                            </button>
+                        </div>
+                    \`
+                }
+            }
+
+            async function viewSurveyDetails(surveyId, type) {
+                try {
+                    const response = await axios.get(\`/api/analytics/surveys/\${surveyId}/questions\`)
+                    
+                    if (!response.data.success) {
+                        throw new Error(response.data.message)
+                    }
+
+                    questionData = response.data.data
+                    displayQuestionAnalysis(type)
+
+                } catch (error) {
+                    console.error('Question analytics error:', error)
+                    showToast('質問別統計の読み込みに失敗しました', 'error')
+                }
+            }
+
+            function displayQuestionAnalysis(type) {
+                if (!questionData || !questionData.question_stats) return
+
+                const typeLabel = type === 'join' ? '入会時' : '退会時'
+                const typeColor = type === 'join' ? 'primary' : 'error'
+
+                let html = \`
+                    <div class="card p-6">
+                        <h3 class="text-xl font-bold text-gray-900 mb-6">
+                            <i class="fas fa-question-circle mr-2 text-\${typeColor}-500"></i>
+                            \${typeLabel}アンケート - 質問別分析
+                        </h3>
+                        <div class="space-y-8">
+                \`
+
+                questionData.question_stats.forEach((q, index) => {
+                    html += \`
+                        <div class="border-b border-gray-200 pb-6 last:border-b-0">
+                            <h4 class="font-semibold text-gray-900 mb-4">
+                                Q\${index + 1}. \${q.question_text}
+                            </h4>
+                    \`
+
+                    if (q.question_type === 'text' || q.question_type === 'textarea') {
+                        // テキスト回答
+                        html += \`
+                            <div class="space-y-2">
+                                <p class="text-sm text-gray-600 mb-3">回答一覧（最新10件）</p>
+                        \`
+                        const responses = q.responses.slice(0, 10)
+                        responses.forEach(r => {
+                            html += \`
+                                <div class="bg-gray-50 p-3 rounded">
+                                    <p class="text-sm text-gray-800">\${escapeHtml(r.answer)}</p>
+                                    <p class="text-xs text-gray-500 mt-1">\${r.user_nickname || '匿名'} - \${new Date(r.created_at).toLocaleDateString('ja-JP')}</p>
+                                </div>
+                            \`
+                        })
+                        html += \`</div>\`
+
+                    } else if (q.question_type === 'radio' || q.question_type === 'checkbox') {
+                        // 選択肢集計
+                        html += \`
+                            <div class="space-y-2">
+                                <p class="text-sm text-gray-600 mb-3">回答数: \${q.total_responses}件</p>
+                        \`
+                        q.aggregation.forEach(agg => {
+                            const percentage = agg.percentage
+                            html += \`
+                                <div>
+                                    <div class="flex justify-between text-sm mb-1">
+                                        <span class="text-gray-700">\${escapeHtml(agg.answer)}</span>
+                                        <span class="font-semibold text-gray-900">\${agg.count}件 (\${percentage}%)</span>
+                                    </div>
+                                    <div class="w-full bg-gray-200 rounded-full h-2">
+                                        <div class="bg-\${typeColor}-500 h-2 rounded-full" style="width: \${percentage}%"></div>
+                                    </div>
+                                </div>
+                            \`
+                        })
+                        html += \`</div>\`
+
+                    } else if (q.question_type === 'scale') {
+                        // スケール評価
+                        html += \`
+                            <div class="space-y-3">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-sm text-gray-600">平均スコア</span>
+                                    <span class="text-3xl font-bold text-\${typeColor}-600">\${q.avg_score}</span>
+                                </div>
+                                <div class="flex justify-between text-xs text-gray-500">
+                                    <span>\${q.scale_label_min || ''}</span>
+                                    <span>\${q.scale_label_max || ''}</span>
+                                </div>
+                                <p class="text-sm text-gray-600">回答数: \${q.total_responses}件</p>
+                            </div>
+                        \`
+                    }
+
+                    html += \`</div>\`
+                })
+
+                html += \`
+                        </div>
+                    </div>
+                \`
+
+                document.getElementById('questionAnalysis').innerHTML = html
+            }
+
+            function escapeHtml(text) {
+                const div = document.createElement('div')
+                div.textContent = text
+                return div.innerHTML
+            }
+
+            // ページ読み込み時に実行
+            document.addEventListener('DOMContentLoaded', loadSurveyAnalytics)
+        </script>
+    </body>
+    </html>
+  `)
+})
+
+// ============================================
 // 統計詳細ページ（準備中）
 // ============================================
 app.get('/analytics/:page', (c) => {
