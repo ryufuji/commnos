@@ -566,8 +566,8 @@ shop.post('/products/upload-image', authMiddleware, requireRole('admin'), async 
       }
     })
 
-    // 公開URLを生成
-    const imageUrl = `https://commons-images.ryufuji.com/${fileName}`
+    // 公開URLを生成（R2.dev URL）
+    const imageUrl = `https://pub-64fbf3ed5cbc46f6b5b0cdf7b484ee08.r2.dev/${fileName}`
 
     return c.json({
       success: true,
