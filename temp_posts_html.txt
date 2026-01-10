@@ -1,0 +1,131 @@
+  return c.html(`<!DOCTYPE html>
+<html lang="ja" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>投稿一覧 - \${tenantName}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="/static/commons-theme.css" rel="stylesheet">
+    <link href="/static/commons-components.css" rel="stylesheet">
+</head>
+<body style="background: var(--commons-bg-light);">
+    <!-- ヘッダー -->
+    <header class="commons-header">
+        <div class="commons-header-inner">
+            <a href="/tenant/home?subdomain=\${subdomain}" class="commons-logo">
+                <i class="fas fa-users"></i>
+                <span>\${tenantName}</span>
+            </a>
+            
+            <nav class="commons-nav hidden md:flex">
+                <a href="/tenant/home?subdomain=\${subdomain}" class="commons-nav-link">
+                    <i class="fas fa-home mr-2"></i>ホーム
+                </a>
+                <a href="/tenant/posts?subdomain=\${subdomain}" class="commons-nav-link active">
+                    <i class="fas fa-newspaper mr-2"></i>投稿
+                </a>
+                <a href="/tenant/events?subdomain=\${subdomain}" class="commons-nav-link">
+                    <i class="fas fa-calendar-alt mr-2"></i>イベント
+                </a>
+                <a href="/tenant/members?subdomain=\${subdomain}" class="commons-nav-link">
+                    <i class="fas fa-users mr-2"></i>メンバー
+                </a>
+                <a href="/tenant/shop?subdomain=\${subdomain}" class="commons-nav-link">
+                    <i class="fas fa-shopping-bag mr-2"></i>ショップ
+                </a>
+            </nav>
+            
+            <div class="commons-header-actions">
+                <a href="/tenant/notifications?subdomain=\${subdomain}" class="relative p-2 hover:bg-gray-100 rounded-full transition">
+                    <i class="fas fa-bell text-xl" style="color: var(--commons-text-secondary);"></i>
+                </a>
+                <a href="/login?subdomain=\${subdomain}" class="px-6 py-2 rounded-full font-semibold transition" 
+                   style="background: var(--commons-primary); color: white;">
+                    ログイン
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- ページヘッダー -->
+    <section style="background: linear-gradient(135deg, var(--commons-primary) 0%, var(--commons-primary-dark) 100%); color: white; padding: 64px 24px 48px;">
+        <div style="max-width: 1280px; margin: 0 auto;">
+            <h1 style="font-size: var(--font-size-xlarge); font-weight: var(--font-weight-bold); margin-bottom: 16px;">
+                <i class="fas fa-newspaper" style="margin-right: 16px;"></i>投稿一覧
+            </h1>
+            <p style="font-size: var(--font-size-medium); opacity: 0.9;">\${tenantName}の最新コンテンツ</p>
+            
+            <!-- 統計 -->
+            <div style="display: flex; gap: 32px; margin-top: 32px; flex-wrap: wrap;">
+                <div>
+                    <div style="font-size: 32px; font-weight: var(--font-weight-bold);">\${totalPosts}</div>
+                    <div style="font-size: var(--font-size-small); opacity: 0.9;">総投稿数</div>
+                </div>
+                <div>
+                    <div style="font-size: 32px; font-weight: var(--font-weight-bold);">\${page} / \${totalPages || 1}</div>
+                    <div style="font-size: var(--font-size-small); opacity: 0.9;">ページ</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- メインコンテンツ -->
+    <main style="max-width: 1280px; margin: 0 auto; padding: 64px 24px;">
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 32px; margin-bottom: 64px;">
+            \${postsHTML}
+        </div>
+
+        <!-- ページネーション -->
+        \${paginationHTML}
+    </main>
+
+    <!-- フッター -->
+    <footer style="background: var(--commons-text-primary); color: white; padding: 64px 24px 32px; margin-top: 96px;">
+        <div style="max-width: 1280px; margin: 0 auto; text-align: center;">
+            <h2 style="font-size: var(--font-size-large); font-weight: var(--font-weight-bold); margin-bottom: 16px;">\${tenantName}</h2>
+            <p style="color: rgba(255,255,255,0.5); font-size: var(--font-size-small); margin-top: 32px;">
+                &copy; \${new Date().getFullYear()} \${tenantName}. All rights reserved.
+            </p>
+            <p style="color: rgba(255,255,255,0.3); font-size: var(--font-size-xsmall); margin-top: 8px;">
+                Powered by <span style="color: var(--commons-primary); font-weight: var(--font-weight-bold);">Commons</span>
+            </p>
+        </div>
+    </footer>
+
+    <script src="/static/app.js"></script>
+    <script>
+        // 投稿作成ボタンの表示制御
+        function checkAdminAndShowCreateButton() {
+            const userStr = localStorage.getItem('user')
+            if (!userStr) return
+            
+            try {
+                const user = JSON.parse(userStr)
+                const role = user.role
+                
+                if (role === 'owner' || role === 'admin') {
+                    const createBtn = document.getElementById('createPostBtn')
+                    if (createBtn) {
+                        createBtn.classList.remove('hidden')
+                    }
+                }
+            } catch (error) {
+                console.error('Error checking admin role:', error)
+            }
+        }
+        
+        checkAdminAndShowCreateButton()
+        
+        // 投稿作成ボタンのクリックイベント
+        const createPostBtn = document.getElementById('createPostBtn')
+        if (createPostBtn) {
+            createPostBtn.addEventListener('click', () => {
+                window.location.href = '/posts?subdomain=\${subdomain}'
+            })
+        }
+    </script>
+</body>
+</html>
+  `)
+})
