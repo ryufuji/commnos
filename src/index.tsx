@@ -7555,9 +7555,9 @@ app.get('/shop-settings', (c) => {
                             <button type="button" onclick="location.href='/dashboard'" class="btn-secondary">
                                 キャンセル
                             </button>
-                            <button type="submit" class="btn-primary">
+                            <button type="submit" id="saveLegalInfoBtn" class="btn-primary">
                                 <i class="fas fa-save mr-2"></i>
-                                保存する
+                                <span id="saveLegalInfoText">保存する</span>
                             </button>
                         </div>
                     </form>
@@ -8111,6 +8111,13 @@ app.get('/shop-settings', (c) => {
                     return
                 }
 
+                // ローディング表示開始
+                const saveBtn = document.getElementById('saveLegalInfoBtn')
+                const saveBtnText = document.getElementById('saveLegalInfoText')
+                const originalBtnContent = saveBtnText.innerHTML
+                saveBtn.disabled = true
+                saveBtnText.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>保存中...'
+
                 const data = {
                     business_name: document.getElementById('business_name').value,
                     representative_name: document.getElementById('representative_name').value,
@@ -8132,21 +8139,28 @@ app.get('/shop-settings', (c) => {
 
                 try {
                     const response = await axios.post('/api/shop/legal-info', data, {
-                        headers: { 'Authorization': 'Bearer ' + token }
+                        headers: { 
+                            'Authorization': 'Bearer ' + token,
+                            'Content-Type': 'application/json'
+                        }
                     })
 
                     if (response.data.success) {
-                        showToast(response.data.message, 'success')
+                        showToast(response.data.message || '特定商取引法情報を保存しました', 'success')
                         await loadStatus()
                         await loadLegalInfo()
                     }
                 } catch (error) {
                     console.error('Save error:', error)
                     if (error.response?.data?.missing_fields) {
-                        showToast(\`以下の項目が未入力です: \${error.response.data.missing_fields.join('、')}\`, 'error')
+                        showToast('以下の項目が未入力です: ' + error.response.data.missing_fields.join('、'), 'error')
                     } else {
                         showToast(error.response?.data?.error || '保存に失敗しました', 'error')
                     }
+                } finally {
+                    // ローディング表示終了
+                    saveBtn.disabled = false
+                    saveBtnText.innerHTML = originalBtnContent
                 }
             })
 
