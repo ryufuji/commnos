@@ -515,6 +515,75 @@ shop.get('/products/:id', authMiddleware, async (c) => {
 })
 
 /**
+ * POST /api/shop/products/upload-image
+ * 商品画像アップロード（管理者のみ）
+ */
+shop.post('/products/upload-image', authMiddleware, requireRole('admin'), async (c) => {
+  const tenantId = c.get('tenantId')
+  const r2 = c.env.R2
+
+  try {
+    // FormDataから画像を取得
+    const formData = await c.req.formData()
+    const file = formData.get('image') as File
+
+    if (!file) {
+      return c.json({
+        success: false,
+        error: '画像ファイルが選択されていません'
+      }, 400)
+    }
+
+    // ファイルタイプチェック
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif']
+    if (!allowedTypes.includes(file.type)) {
+      return c.json({
+        success: false,
+        error: '画像ファイルはJPEG、PNG、WebP、GIF形式のみアップロード可能です'
+      }, 400)
+    }
+
+    // ファイルサイズチェック（5MB以下）
+    const maxSize = 5 * 1024 * 1024 // 5MB
+    if (file.size > maxSize) {
+      return c.json({
+        success: false,
+        error: '画像ファイルのサイズは5MB以下にしてください'
+      }, 400)
+    }
+
+    // ファイル名生成（重複を避けるためタイムスタンプとランダム文字列を使用）
+    const timestamp = Date.now()
+    const randomStr = Math.random().toString(36).substring(2, 15)
+    const ext = file.name.split('.').pop() || 'jpg'
+    const fileName = `shop/products/${tenantId}/${timestamp}-${randomStr}.${ext}`
+
+    // R2にアップロード
+    const arrayBuffer = await file.arrayBuffer()
+    await r2.put(fileName, arrayBuffer, {
+      httpMetadata: {
+        contentType: file.type
+      }
+    })
+
+    // 公開URLを生成
+    const imageUrl = `https://commons-images.ryufuji.com/${fileName}`
+
+    return c.json({
+      success: true,
+      image_url: imageUrl,
+      message: '画像をアップロードしました'
+    })
+  } catch (error) {
+    console.error('[Upload Image Error]', error)
+    return c.json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to upload image'
+    }, 500)
+  }
+})
+
+/**
  * POST /api/shop/products
  * 商品作成（管理者のみ）
  */

@@ -7768,12 +7768,36 @@ app.get('/shop-settings', (c) => {
                                     
                                     <div class="md:col-span-2">
                                         <label class="block text-sm font-medium text-gray-700 mb-2">
-                                            画像URL
+                                            商品画像
                                         </label>
-                                        <input type="url" id="productImageUrl"
-                                               class="input-field"
-                                               placeholder="https://example.com/image.jpg">
-                                        <p class="text-xs text-gray-500 mt-1">商品のサムネイル画像URL</p>
+                                        <div class="space-y-3">
+                                            <input type="file" id="productImageFile" accept="image/jpeg,image/jpg,image/png,image/webp,image/gif"
+                                                   class="input-field"
+                                                   onchange="handleImageSelect(event)">
+                                            <p class="text-xs text-gray-500">JPEG、PNG、WebP、GIF形式（最大5MB）</p>
+                                            
+                                            <!-- 画像プレビュー -->
+                                            <div id="imagePreviewContainer" class="hidden">
+                                                <img id="imagePreview" src="" alt="プレビュー" 
+                                                     class="max-w-xs max-h-48 rounded-lg border border-gray-200">
+                                                <button type="button" onclick="clearImage()" 
+                                                        class="text-sm text-red-600 hover:text-red-800 mt-2">
+                                                    <i class="fas fa-times mr-1"></i>
+                                                    画像を削除
+                                                </button>
+                                            </div>
+                                            
+                                            <!-- アップロード中の表示 -->
+                                            <div id="imageUploadProgress" class="hidden">
+                                                <div class="flex items-center text-sm text-gray-600">
+                                                    <i class="fas fa-spinner fa-spin mr-2"></i>
+                                                    アップロード中...
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- 隠しフィールド（アップロード後のURL保存用） -->
+                                            <input type="hidden" id="productImageUrl">
+                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -8540,6 +8564,67 @@ app.get('/shop-settings', (c) => {
                 }
             }
             
+            // 画像選択時の処理
+            function handleImageSelect(event) {
+                const file = event.target.files[0]
+                if (!file) return
+                
+                // プレビュー表示
+                const reader = new FileReader()
+                reader.onload = function(e) {
+                    const preview = document.getElementById('imagePreview')
+                    const container = document.getElementById('imagePreviewContainer')
+                    preview.src = e.target.result
+                    container.classList.remove('hidden')
+                }
+                reader.readAsDataURL(file)
+            }
+            
+            // 画像削除
+            function clearImage() {
+                document.getElementById('productImageFile').value = ''
+                document.getElementById('productImageUrl').value = ''
+                document.getElementById('imagePreviewContainer').classList.add('hidden')
+            }
+            
+            // 画像アップロード
+            async function uploadProductImage() {
+                const fileInput = document.getElementById('productImageFile')
+                const file = fileInput.files[0]
+                
+                if (!file) {
+                    return null // 画像が選択されていない場合はnullを返す
+                }
+                
+                const token = localStorage.getItem('token')
+                const formData = new FormData()
+                formData.append('image', file)
+                
+                // プログレス表示
+                document.getElementById('imageUploadProgress').classList.remove('hidden')
+                
+                try {
+                    const response = await axios.post('/api/shop/products/upload-image', formData, {
+                        headers: {
+                            'Authorization': 'Bearer ' + token,
+                            'Content-Type': 'multipart/form-data'
+                        }
+                    })
+                    
+                    if (response.data.success) {
+                        // アップロード成功したURLを隠しフィールドに保存
+                        document.getElementById('productImageUrl').value = response.data.image_url
+                        return response.data.image_url
+                    }
+                } catch (error) {
+                    console.error('Image upload error:', error)
+                    showToast(error.response?.data?.error || '画像のアップロードに失敗しました', 'error')
+                    return null
+                } finally {
+                    document.getElementById('imageUploadProgress').classList.add('hidden')
+                }
+            }
+            
             function handleStockChange() {
                 const unlimited = document.getElementById('productUnlimitedStock').checked
                 const stockField = document.getElementById('stockQuantityField')
@@ -8586,13 +8671,23 @@ app.get('/shop-settings', (c) => {
                 const productId = document.getElementById('productId').value
                 const type = document.getElementById('productType').value
                 
+                // 画像がある場合は先にアップロード
+                let imageUrl = document.getElementById('productImageUrl').value || null
+                if (document.getElementById('productImageFile').files[0] && !imageUrl) {
+                    imageUrl = await uploadProductImage()
+                    if (!imageUrl) {
+                        // アップロード失敗
+                        return
+                    }
+                }
+                
                 const data = {
                     name: document.getElementById('productName').value,
                     description: document.getElementById('productDescription').value,
                     price: parseFloat(document.getElementById('productPrice').value),
                     category_id: document.getElementById('productCategory').value || null,
                     type: type,
-                    image_url: document.getElementById('productImageUrl').value || null,
+                    image_url: imageUrl,
                     stock_quantity: document.getElementById('productUnlimitedStock').checked ? 0 : parseInt(document.getElementById('productStockQuantity').value) || 0,
                     is_unlimited_stock: document.getElementById('productUnlimitedStock').checked,
                     is_active: document.getElementById('productActive').value === '1',
@@ -8611,7 +8706,7 @@ app.get('/shop-settings', (c) => {
                 try {
                     let response
                     if (productId) {
-                        response = await axios.put(\`/api/shop/products/\${productId}\`, data, {
+                        response = await axios.put('/api/shop/products/' + productId, data, {
                             headers: { 'Authorization': 'Bearer ' + token }
                         })
                     } else {
