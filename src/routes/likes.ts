@@ -75,9 +75,21 @@ likes.post('/posts/:postId', authMiddleware, async (c) => {
     }
   } catch (error) {
     console.error('[Like Post Error]', error)
+    
+    // エラーの詳細をログに出力
+    if (error instanceof Error) {
+      console.error('[Like Post Error Details]', {
+        message: error.message,
+        stack: error.stack,
+        postId,
+        userId,
+        tenantId
+      })
+    }
+    
     return c.json({
       success: false,
-      error: error instanceof Error ? error.message : 'Failed to like post'
+      error: 'いいねの処理中にエラーが発生しました。ログインしているか確認してください。'
     }, 500)
   }
 })
