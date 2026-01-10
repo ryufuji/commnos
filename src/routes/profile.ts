@@ -60,7 +60,7 @@ profile.get('/', authMiddleware, async (c) => {
  */
 profile.put('/', authMiddleware, async (c) => {
   const userId = c.get('userId')
-  const { nickname, bio, birthday } = await c.req.json<{ nickname?: string; bio?: string; birthday?: string }>()
+  const { nickname, email, bio, birthday } = await c.req.json<{ nickname?: string; email?: string; bio?: string; birthday?: string }>()
   const db = c.env.DB
 
   try {
@@ -71,6 +71,24 @@ profile.put('/', authMiddleware, async (c) => {
 
     if (nickname && nickname.length > 50) {
       return c.json({ success: false, error: 'Nickname must be 50 characters or less' }, 400)
+    }
+
+    // メールアドレスのバリデーション
+    if (email) {
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+      if (!emailRegex.test(email)) {
+        return c.json({ success: false, error: 'Invalid email format' }, 400)
+      }
+
+      // メールアドレスの重複チェック（自分以外）
+      const existingUser = await db
+        .prepare('SELECT id FROM users WHERE email = ? AND id != ?')
+        .bind(email, userId)
+        .first()
+
+      if (existingUser) {
+        return c.json({ success: false, error: 'Email is already in use' }, 400)
+      }
     }
 
     if (bio && bio.length > 500) {
@@ -89,6 +107,11 @@ profile.put('/', authMiddleware, async (c) => {
     if (nickname !== undefined) {
       updates.push('nickname = ?')
       values.push(nickname)
+    }
+
+    if (email !== undefined) {
+      updates.push('email = ?')
+      values.push(email)
     }
 
     if (bio !== undefined) {

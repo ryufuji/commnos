@@ -1244,6 +1244,20 @@ app.get('/profile', (c) => {
                                    placeholder="ニックネーム">
                         </div>
 
+                        <!-- メールアドレス -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                <i class="fas fa-envelope mr-1 text-primary-500"></i>
+                                メールアドレス
+                            </label>
+                            <input type="email" id="inputEmail" required
+                                   class="input-field"
+                                   placeholder="your@example.com">
+                            <p class="text-xs text-gray-500 mt-1">
+                                ログイン時に使用するメールアドレスです
+                            </p>
+                        </div>
+
                         <!-- 自己紹介 -->
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">
@@ -1374,6 +1388,7 @@ app.get('/profile', (c) => {
 
                 // 現在の値をフォームに設定
                 document.getElementById('inputNickname').value = currentProfile.nickname
+                document.getElementById('inputEmail').value = currentProfile.email
                 document.getElementById('inputBio').value = currentProfile.bio || ''
                 document.getElementById('inputBirthday').value = currentProfile.birthday || ''
                 
@@ -1469,6 +1484,7 @@ app.get('/profile', (c) => {
                     // プロフィール情報を更新
                     const data = {
                         nickname: document.getElementById('inputNickname').value,
+                        email: document.getElementById('inputEmail').value,
                         bio: document.getElementById('inputBio').value,
                         birthday: document.getElementById('inputBirthday').value || null
                     }
@@ -1485,6 +1501,16 @@ app.get('/profile', (c) => {
                     if (response.success) {
                         currentProfile = response.user
                         displayProfile(response.user)
+                        
+                        // localStorageのユーザー情報も更新
+                        const user = JSON.parse(localStorage.getItem('user') || '{}')
+                        user.nickname = response.user.nickname
+                        user.email = response.user.email
+                        user.bio = response.user.bio
+                        user.birthday = response.user.birthday
+                        user.avatar_url = response.user.avatar_url
+                        localStorage.setItem('user', JSON.stringify(user))
+                        
                         document.getElementById('editForm').classList.add('hidden')
                         document.getElementById('profileCard').classList.remove('hidden')
                         showToast('プロフィールを更新しました', 'success')
