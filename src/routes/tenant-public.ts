@@ -8696,9 +8696,10 @@ tenantPublic.get('/events', async (c) => {
         </div>
     </section>
 
-            <!-- メインコンテンツ -->
-            <div class="lg:col-span-2 space-y-6">
-                ${featuredEvents.length > 0 ? `
+    <!-- メインコンテンツ -->
+    <main style="max-width: 1280px; margin: 0 auto; padding: 48px 24px;">
+        <div class="space-y-6">
+            ${featuredEvents.length > 0 ? `
                 <!-- 注目イベント -->
                 <div class="bg-gradient-to-br from-yellow-50 to-orange-50 rounded-2xl shadow-sm p-6">
                     <h2 class="text-2xl font-bold  mb-4 flex items-center" style="color: var(--commons-text-primary);">
@@ -8751,54 +8752,10 @@ tenantPublic.get('/events', async (c) => {
                         </div>
                     </div>
                 </div>
-            </div>
-
-            <!-- サイドバー -->
-            <div class="lg:col-span-1 space-y-6">
-                <!-- 統計情報 -->
-                <div class="bg-white rounded-2xl shadow-sm p-6">
-                    <h3 class="text-xl font-bold  mb-4" style="color: var(--commons-text-primary);">
-                        <i class="fas fa-chart-bar text-blue-600 mr-2"></i>統計情報
-                    </h3>
-                    <div class="space-y-4">
-                        <div class="text-center p-4 bg-gradient-to-br from-blue-50 to-purple-50 rounded-xl">
-                            <div class="text-3xl font-bold style="color: var(--commons-primary)"" id="totalEvents">${events.length}</div>
-                            <div class="text-gray-600 text-sm mt-1">今後のイベント</div>
-                        </div>
-                        <div class="text-center p-4 bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl">
-                            <div class="text-3xl font-bold text-green-600" id="thisMonthEvents">0</div>
-                            <div class="text-gray-600 text-sm mt-1">今月のイベント</div>
-                        </div>
-                    </div>
-                </div>
-                
-                <!-- イベントタイプ凡例 -->
-                <div class="bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl shadow-sm p-6">
-                    <h3 class="text-lg font-bold  mb-4" style="color: var(--commons-text-primary);">
-                        <i class="fas fa-tags style="color: var(--commons-primary)" mr-2"></i>イベントタイプ
-                    </h3>
-                    <div class="space-y-2 text-sm">
-                        <div class="flex items-center gap-2">
-                            <div class="w-4 h-4 bg-red-500 rounded-full"></div>
-                            <span>ライブ・コンサート</span>
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <div class="w-4 h-4 bg-blue-500 rounded-full"></div>
-                            <span>オンラインイベント</span>
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <div class="w-4 h-4 bg-green-500 rounded-full"></div>
-                            <span>ファンミーティング</span>
-                        </div>
-                        <div class="flex items-center gap-2">
-                            <div class="w-4 h-4 bg-purple-500 rounded-full"></div>
-                            <span>その他</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
         </div>
     </main>
+
+    ${renderCommonFooter(tenantName)}
 
     <!-- イベント詳細モーダル -->
     <div id="eventModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
