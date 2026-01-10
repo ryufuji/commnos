@@ -6855,10 +6855,6 @@ tenantPublic.get('/plans', async (c) => {
                                         <p class="text-xs text-gray-500">メンバー上限</p>
                                         <p class="font-bold">\${plan.member_limit || '無制限'}</p>
                                     </div>
-                                    <div>
-                                        <p class="text-xs text-gray-500">ストレージ</p>
-                                        <p class="font-bold">\${plan.storage_limit ? Math.round(plan.storage_limit / 1024 / 1024 / 1024) + 'GB' : '-'}</p>
-                                    </div>
                                 </div>
                                 
                                 <p class="text-xs text-gray-500">
