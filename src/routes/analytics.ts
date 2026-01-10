@@ -290,38 +290,78 @@ analytics.get('/surveys', async (c) => {
 
   try {
     // 入会時アンケート統計
-    const joinSurveyStats = await DB.prepare(`
-      SELECT 
-        s.id as survey_id,
-        s.title as survey_title,
-        COUNT(DISTINCT sr.user_id) as total_responses,
-        (SELECT COUNT(*) FROM tenant_memberships WHERE tenant_id = ? AND status = 'active') as total_members
-      FROM surveys s
-      LEFT JOIN survey_responses sr ON s.id = sr.survey_id
-      WHERE s.tenant_id = ? AND s.type = 'join' AND s.is_active = 1
-      GROUP BY s.id
-      LIMIT 1
-    `).bind(tenantId, tenantId).first() as any
+    let joinSurveyStats = null
+    try {
+      const joinSurvey = await DB.prepare(`
+        SELECT id, title
+        FROM surveys
+        WHERE tenant_id = ? AND type = 'join' AND is_active = 1
+        LIMIT 1
+      `).bind(tenantId).first() as any
+
+      if (joinSurvey) {
+        const responsesCount = await DB.prepare(`
+          SELECT COUNT(DISTINCT user_id) as count
+          FROM survey_responses
+          WHERE survey_id = ? AND tenant_id = ?
+        `).bind(joinSurvey.id, tenantId).first() as any
+
+        const membersCount = await DB.prepare(`
+          SELECT COUNT(*) as count
+          FROM tenant_memberships
+          WHERE tenant_id = ? AND status = 'active'
+        `).bind(tenantId).first() as any
+
+        joinSurveyStats = {
+          survey_id: joinSurvey.id,
+          survey_title: joinSurvey.title,
+          total_responses: responsesCount?.count || 0,
+          total_members: membersCount?.count || 0
+        }
+      }
+    } catch (err) {
+      console.error('[Join Survey Stats Error]', err)
+    }
 
     // 退会時アンケート統計
-    const leaveSurveyStats = await DB.prepare(`
-      SELECT 
-        s.id as survey_id,
-        s.title as survey_title,
-        COUNT(DISTINCT sr.user_id) as total_responses,
-        (SELECT COUNT(*) FROM tenant_memberships WHERE tenant_id = ? AND status = 'inactive') as total_exits
-      FROM surveys s
-      LEFT JOIN survey_responses sr ON s.id = sr.survey_id
-      WHERE s.tenant_id = ? AND s.type = 'leave' AND s.is_active = 1
-      GROUP BY s.id
-      LIMIT 1
-    `).bind(tenantId, tenantId).first() as any
+    let leaveSurveyStats = null
+    try {
+      const leaveSurvey = await DB.prepare(`
+        SELECT id, title
+        FROM surveys
+        WHERE tenant_id = ? AND type = 'leave' AND is_active = 1
+        LIMIT 1
+      `).bind(tenantId).first() as any
+
+      if (leaveSurvey) {
+        const responsesCount = await DB.prepare(`
+          SELECT COUNT(DISTINCT user_id) as count
+          FROM survey_responses
+          WHERE survey_id = ? AND tenant_id = ?
+        `).bind(leaveSurvey.id, tenantId).first() as any
+
+        const exitsCount = await DB.prepare(`
+          SELECT COUNT(*) as count
+          FROM tenant_memberships
+          WHERE tenant_id = ? AND status = 'inactive'
+        `).bind(tenantId).first() as any
+
+        leaveSurveyStats = {
+          survey_id: leaveSurvey.id,
+          survey_title: leaveSurvey.title,
+          total_responses: responsesCount?.count || 0,
+          total_exits: exitsCount?.count || 0
+        }
+      }
+    } catch (err) {
+      console.error('[Leave Survey Stats Error]', err)
+    }
 
     return c.json({
       success: true,
       data: {
-        join_survey: joinSurveyStats || null,
-        leave_survey: leaveSurveyStats || null
+        join_survey: joinSurveyStats,
+        leave_survey: leaveSurveyStats
       }
     })
   } catch (error: any) {
