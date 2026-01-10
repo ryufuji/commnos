@@ -880,3 +880,306 @@
   }
 }
 
+/* ========================================
+   Phase 2: モバイルファースト強化
+======================================== */
+
+@media (max-width: 768px) {
+  /* === 投稿カード最適化 === */
+  
+  .post-card {
+    margin-bottom: 20px;
+  }
+  
+  .post-card-title {
+    font-size: 20px;
+    line-height: 1.4;
+    margin-bottom: 12px;
+  }
+  
+  .post-card-excerpt {
+    font-size: 16px;
+    line-height: 1.7;
+    margin-bottom: 16px;
+  }
+  
+  .post-card-meta {
+    font-size: 14px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  
+  .post-card-thumbnail {
+    height: 200px;
+    border-radius: var(--radius-md);
+    margin-bottom: 16px;
+  }
+  
+  /* === イベントカード最適化 === */
+  
+  .event-card {
+    padding: 16px;
+  }
+  
+  .event-card-title {
+    font-size: 18px;
+    line-height: 1.4;
+    margin-bottom: 10px;
+  }
+  
+  .event-card-date {
+    font-size: 15px;
+    margin-bottom: 8px;
+  }
+  
+  .event-card-location {
+    font-size: 14px;
+  }
+  
+  /* === メンバーカード最適化 === */
+  
+  .member-card {
+    padding: 16px;
+    text-align: center;
+  }
+  
+  .member-avatar {
+    width: 80px;
+    height: 80px;
+    margin: 0 auto 12px;
+  }
+  
+  .member-name {
+    font-size: 18px;
+    margin-bottom: 6px;
+  }
+  
+  .member-role {
+    font-size: 14px;
+  }
+  
+  /* === モーダル最適化 === */
+  
+  .modal {
+    padding: 0;
+  }
+  
+  .modal-content {
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+  
+  .modal-header {
+    position: sticky;
+    top: 0;
+    background: white;
+    z-index: 10;
+    padding: 16px;
+    border-bottom: 1px solid var(--commons-border-light);
+  }
+  
+  .modal-title {
+    font-size: 20px;
+  }
+  
+  .modal-body {
+    padding: 20px 16px;
+  }
+  
+  .modal-footer {
+    position: sticky;
+    bottom: 0;
+    background: white;
+    padding: 16px;
+    border-top: 1px solid var(--commons-border-light);
+  }
+  
+  /* === フォーム最適化 === */
+  
+  .form-group {
+    margin-bottom: 20px;
+  }
+  
+  .form-label {
+    font-size: 15px;
+    font-weight: var(--font-weight-medium);
+    margin-bottom: 8px;
+    display: block;
+  }
+  
+  .form-input,
+  .form-textarea,
+  .form-select {
+    font-size: 16px;  /* iOSズーム防止 */
+    padding: 14px 16px;
+    border-radius: var(--radius-md);
+  }
+  
+  .form-textarea {
+    min-height: 120px;
+    resize: vertical;
+  }
+  
+  .form-help-text {
+    font-size: 14px;
+    color: var(--commons-text-tertiary);
+    margin-top: 6px;
+  }
+  
+  /* === グリッドレイアウト最適化 === */
+  
+  .grid-2,
+  .grid-3,
+  .grid-4 {
+    grid-template-columns: 1fr;
+    gap: 16px;
+  }
+  
+  /* === ナビゲーション最適化 === */
+  
+  .commons-mobile-nav {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+  }
+  
+  .commons-mobile-nav-link {
+    padding: 16px 20px;
+    font-size: 17px;
+    border-bottom: 1px solid var(--commons-border-light);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  
+  .commons-mobile-nav-link:last-child {
+    border-bottom: none;
+  }
+  
+  .commons-mobile-nav-link.active {
+    background: var(--commons-primary-light);
+    color: var(--commons-primary-dark);
+    font-weight: var(--font-weight-semibold);
+  }
+  
+  /* === タブ最適化 === */
+  
+  .tabs {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  
+  .tabs::-webkit-scrollbar {
+    display: none;
+  }
+  
+  .tab-button {
+    min-width: 100px;
+    padding: 12px 20px;
+    font-size: 16px;
+    white-space: nowrap;
+  }
+  
+  /* === バッジ最適化 === */
+  
+  .badge {
+    font-size: 13px;
+    padding: 4px 10px;
+    border-radius: var(--radius-full);
+  }
+  
+  /* === アクションボタン最適化 === */
+  
+  .action-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    position: sticky;
+    bottom: 0;
+    background: white;
+    padding: 16px;
+    border-top: 1px solid var(--commons-border-light);
+  }
+  
+  .action-button-primary,
+  .action-button-secondary {
+    width: 100%;
+    min-height: 48px;
+    font-size: 17px;
+    font-weight: var(--font-weight-semibold);
+  }
+  
+  /* === ページネーション最適化 === */
+  
+  .pagination {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin: 24px 0;
+  }
+  
+  .pagination-button {
+    min-width: 44px;
+    min-height: 44px;
+    padding: 10px;
+    font-size: 16px;
+    border-radius: var(--radius-md);
+  }
+  
+  /* === 検索バー最適化 === */
+  
+  .search-bar {
+    width: 100%;
+    margin-bottom: 20px;
+  }
+  
+  .search-input {
+    width: 100%;
+    font-size: 16px;
+    padding: 14px 16px 14px 44px;
+    border-radius: var(--radius-full);
+  }
+  
+  /* === トースト最適化 === */
+  
+  .toast {
+    left: 16px;
+    right: 16px;
+    top: 16px;
+    min-width: auto;
+    max-width: none;
+    font-size: 16px;
+  }
+}
+
+/* ========================================
+   タブレット専用最適化（769px〜1023px）
+======================================== */
+
+@media (min-width: 769px) and (max-width: 1023px) {
+  /* グリッドを2カラムに */
+  .grid-3,
+  .grid-4 {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  
+  /* カードサイズ調整 */
+  .post-card-thumbnail {
+    height: 240px;
+  }
+  
+  /* モーダルを中央配置 */
+  .modal-content {
+    width: 90%;
+    max-width: 600px;
+    margin: 5vh auto;
+    border-radius: var(--radius-lg);
+  }
+}
+

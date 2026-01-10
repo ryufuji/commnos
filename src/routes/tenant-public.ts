@@ -3792,56 +3792,7 @@ tenantPublic.get('/posts/:id', async (c) => {
     <link href="/static/commons-components.css" rel="stylesheet">
 </head>
 <body class="bg-gray-50 min-h-screen">
-    <!-- ヘッダー -->
-    <header class="bg-white shadow-sm sticky top-0 z-50">
-        <div class="container mx-auto px-4 py-4">
-            <div class="flex items-center justify-between">
-                <div class="flex items-center space-x-4">
-                    <a href="/tenant/home?subdomain=${subdomain}" class="text-2xl font-bold text-primary">
-                        ${tenantName}
-                    </a>
-                    ${tenantSubtitle ? `<span class="text-gray-500 hidden md:inline">- ${tenantSubtitle}</span>` : ''}
-                </div>
-                
-                <!-- デスクトップナビ -->
-                <nav class="hidden md:flex items-center space-x-6">
-                    <a href="/tenant/home?subdomain=${subdomain}" class="text-gray-600 hover:text-primary transition">
-                        <i class="fas fa-home mr-2"></i>ホーム
-                    </a>
-                    <a href="/tenant/posts?subdomain=${subdomain}" class="text-primary font-semibold">
-                        <i class="fas fa-newspaper mr-2"></i>投稿
-                    </a>
-                    <a href="/tenant/members?subdomain=${subdomain}" class="text-gray-600 hover:text-primary transition">
-                        <i class="fas fa-users mr-2"></i>メンバー
-                    </a>
-                    <a href="/login?subdomain=${subdomain}" class="text-gray-600 hover:text-primary transition">
-                        <i class="fas fa-sign-in-alt mr-2"></i>ログイン
-                    </a>
-                </nav>
-                
-                <!-- モバイルメニューボタン -->
-                <button id="mobileMenuToggle" class="md:hidden text-gray-600 hover:text-primary">
-                    <i class="fas fa-bars text-xl"></i>
-                </button>
-            </div>
-            
-            <!-- モバイルナビ -->
-            <nav id="mobileMenu" class="md:hidden mt-4 pb-4 space-y-2 hidden">
-                <a href="/tenant/home?subdomain=${subdomain}" class="block py-2 text-gray-600 hover:text-primary transition">
-                    <i class="fas fa-home mr-2"></i>ホーム
-                </a>
-                <a href="/tenant/posts?subdomain=${subdomain}" class="block py-2 text-primary font-semibold">
-                    <i class="fas fa-newspaper mr-2"></i>投稿
-                </a>
-                <a href="/tenant/members?subdomain=${subdomain}" class="block py-2 text-gray-600 hover:text-primary transition">
-                    <i class="fas fa-users mr-2"></i>メンバー
-                </a>
-                <a href="/login?subdomain=${subdomain}" class="block py-2 text-gray-600 hover:text-primary transition">
-                    <i class="fas fa-sign-in-alt mr-2"></i>ログイン
-                </a>
-            </nav>
-        </div>
-    </header>
+    ${renderCommonHeader(tenantName, subdomain, 'posts')}
 
     <!-- メインコンテンツ -->
     <main class="container mx-auto px-4 py-8 max-w-4xl">
@@ -4153,6 +4104,8 @@ tenantPublic.get('/posts/:id', async (c) => {
             })
         })
     </script>
+    
+    ${renderCommonFooter(tenantName, subdomain)}
 </body>
 </html>`)
 })
