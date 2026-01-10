@@ -48,10 +48,26 @@ function renderCommonHeader(tenantName: string, subdomain: string, activePage: s
             </nav>
             
             <div class="commons-header-actions">
-                <a href="/tenant/notifications?subdomain=${subdomain}" class="relative p-2 hover:bg-gray-100 rounded-full transition">
-                    <i class="fas fa-bell text-xl" style="color: var(--commons-text-secondary);"></i>
-                    <span id="notificationBadge" class="hidden absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center"></span>
-                </a>
+                <div class="relative" id="notificationMenuContainer">
+                    <button id="notificationBtn" class="relative p-2 hover:bg-gray-100 rounded-full transition">
+                        <i class="fas fa-bell text-xl" style="color: var(--commons-text-secondary);"></i>
+                        <span id="notificationBadge" class="hidden absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center"></span>
+                    </button>
+                    <div id="notificationDropdown" class="hidden absolute right-0 mt-2 w-96 bg-white rounded-lg shadow-xl border border-gray-100 z-50" style="max-height: 500px; overflow-y: auto;">
+                        <div class="p-4 border-b border-gray-100 flex items-center justify-between sticky top-0 bg-white">
+                            <h3 class="font-bold" style="color: var(--commons-text-primary);">
+                                <i class="fas fa-bell mr-2" style="color: var(--commons-primary);"></i>通知
+                            </h3>
+                            <a href="/tenant/notifications?subdomain=${subdomain}" class="text-sm" style="color: var(--commons-primary);">すべて見る</a>
+                        </div>
+                        <div id="notificationList" class="divide-y divide-gray-100">
+                            <div class="p-8 text-center">
+                                <i class="fas fa-spinner fa-spin text-2xl" style="color: var(--commons-text-secondary);"></i>
+                                <p class="mt-2" style="color: var(--commons-text-secondary);">読み込み中...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
                 <button id="commonsMobileMenuBtn" class="commons-mobile-menu-btn md:hidden">
                     <i class="fas fa-bars"></i>
                 </button>

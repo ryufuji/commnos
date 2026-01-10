@@ -425,6 +425,9 @@ window.addEventListener('DOMContentLoaded', () => {
   // ヘッダーのログイン状態を更新
   updateHeaderLoginState();
   
+  // 通知ドロップダウンの初期化
+  initNotificationDropdown();
+  
   // モバイルメニューの初期化
   initMobileMenu();
 });
@@ -585,6 +588,214 @@ function updateHeaderLoginState() {
   } catch (error) {
     debugLog('ERROR', 'Failed to update header login state', error);
   }
+}
+
+// ============================================
+// 通知ドロップダウン管理
+// ============================================
+function initNotificationDropdown() {
+  const notificationBtn = document.getElementById('notificationBtn');
+  const notificationDropdown = document.getElementById('notificationDropdown');
+  const notificationList = document.getElementById('notificationList');
+  const notificationBadge = document.getElementById('notificationBadge');
+
+  if (!notificationBtn || !notificationDropdown) {
+    debugLog('NOTIFICATION', 'Notification elements not found');
+    return;
+  }
+
+  debugLog('NOTIFICATION', 'Notification dropdown initialized');
+
+  // 通知ボタンのクリックイベント
+  notificationBtn.addEventListener('click', async (e) => {
+    e.stopPropagation();
+    
+    const isOpen = !notificationDropdown.classList.contains('hidden');
+    
+    if (isOpen) {
+      // 閉じる
+      notificationDropdown.classList.add('hidden');
+    } else {
+      // 開く
+      notificationDropdown.classList.remove('hidden');
+      
+      // 通知データを読み込み
+      await loadNotifications();
+    }
+  });
+
+  // 外側クリックでメニューを閉じる
+  document.addEventListener('click', (e) => {
+    const container = document.getElementById('notificationMenuContainer');
+    if (container && !container.contains(e.target)) {
+      notificationDropdown.classList.add('hidden');
+    }
+  });
+
+  // 定期的に未読数を更新（30秒ごと）
+  setInterval(async () => {
+    await updateUnreadCount();
+  }, 30000);
+
+  // 初回の未読数を取得
+  updateUnreadCount();
+}
+
+// 通知データを読み込む
+async function loadNotifications() {
+  const notificationList = document.getElementById('notificationList');
+  const token = localStorage.getItem('token');
+
+  if (!token) {
+    notificationList.innerHTML = `
+      <div class="p-8 text-center">
+        <i class="fas fa-sign-in-alt text-2xl mb-2" style="color: var(--commons-text-secondary);"></i>
+        <p style="color: var(--commons-text-secondary);">ログインして通知を確認</p>
+      </div>
+    `;
+    return;
+  }
+
+  try {
+    const urlParams = new URLSearchParams(window.location.search);
+    const subdomain = urlParams.get('subdomain') || 'test';
+
+    const response = await axios.get(`/api/notifications?subdomain=${subdomain}&limit=10`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    const notifications = response.data.notifications || [];
+
+    if (notifications.length === 0) {
+      notificationList.innerHTML = `
+        <div class="p-8 text-center">
+          <i class="fas fa-bell-slash text-2xl mb-2" style="color: var(--commons-text-secondary);"></i>
+          <p style="color: var(--commons-text-secondary);">通知がありません</p>
+        </div>
+      `;
+      return;
+    }
+
+    // 通知リストを生成
+    notificationList.innerHTML = notifications.map(notif => {
+      const isUnread = notif.is_read === 0;
+      const bgClass = isUnread ? 'bg-blue-50' : 'bg-white';
+      const badge = isUnread ? '<span class="inline-block w-2 h-2 bg-blue-500 rounded-full"></span>' : '';
+      
+      const iconMap = {
+        'post_like': 'fas fa-thumbs-up text-blue-500',
+        'comment_like': 'fas fa-thumbs-up text-blue-500',
+        'comment': 'fas fa-comment text-green-500',
+        'mention': 'fas fa-at text-purple-500',
+        'follow': 'fas fa-user-plus text-indigo-500'
+      };
+      const icon = iconMap[notif.type] || 'fas fa-bell text-gray-500';
+      
+      let linkUrl = '#';
+      if (notif.target_type === 'post') {
+        linkUrl = `/tenant/posts/${notif.target_id}?subdomain=${subdomain}`;
+      }
+      
+      const timeAgo = getTimeAgo(notif.created_at);
+      
+      return `
+        <a href="${linkUrl}" class="block hover:bg-gray-50 transition-colors" data-notification-id="${notif.id}">
+          <div class="${bgClass} p-4">
+            <div class="flex items-start gap-3">
+              <div class="flex-shrink-0 w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center">
+                <i class="${icon} text-sm"></i>
+              </div>
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center gap-2 mb-1">
+                  ${badge}
+                  <p class="text-sm font-medium truncate" style="color: var(--commons-text-primary);">${notif.message}</p>
+                </div>
+                <p class="text-xs" style="color: var(--commons-text-secondary);">${timeAgo}</p>
+              </div>
+            </div>
+          </div>
+        </a>
+      `;
+    }).join('');
+
+    // 通知クリック時に既読化
+    document.querySelectorAll('[data-notification-id]').forEach(elem => {
+      elem.addEventListener('click', async (e) => {
+        const notificationId = elem.getAttribute('data-notification-id');
+        if (!notificationId) return;
+        
+        try {
+          await axios.put(`/api/notifications/${notificationId}/read`, {}, {
+            headers: { 'Authorization': `Bearer ${token}` }
+          });
+          
+          // 未読数を更新
+          await updateUnreadCount();
+        } catch (error) {
+          debugLog('ERROR', 'Failed to mark notification as read', error);
+        }
+      });
+    });
+
+  } catch (error) {
+    debugLog('ERROR', 'Failed to load notifications', error);
+    notificationList.innerHTML = `
+      <div class="p-8 text-center">
+        <i class="fas fa-exclamation-triangle text-2xl mb-2 text-red-500"></i>
+        <p style="color: var(--commons-text-secondary);">通知の読み込みに失敗しました</p>
+      </div>
+    `;
+  }
+}
+
+// 未読数を更新
+async function updateUnreadCount() {
+  const token = localStorage.getItem('token');
+  const notificationBadge = document.getElementById('notificationBadge');
+
+  if (!token || !notificationBadge) return;
+
+  try {
+    const urlParams = new URLSearchParams(window.location.search);
+    const subdomain = urlParams.get('subdomain') || 'test';
+
+    const response = await axios.get(`/api/notifications/unread-count?subdomain=${subdomain}`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+
+    const unreadCount = response.data.count || 0;
+
+    if (unreadCount > 0) {
+      notificationBadge.textContent = unreadCount > 99 ? '99+' : unreadCount;
+      notificationBadge.classList.remove('hidden');
+    } else {
+      notificationBadge.classList.add('hidden');
+    }
+
+  } catch (error) {
+    debugLog('ERROR', 'Failed to update unread count', error);
+  }
+}
+
+// 相対時間表示
+function getTimeAgo(dateString) {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffMs = now - date;
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+
+  if (diffMins < 1) return 'たった今';
+  if (diffMins < 60) return `${diffMins}分前`;
+  if (diffHours < 24) return `${diffHours}時間前`;
+  if (diffDays < 7) return `${diffDays}日前`;
+  
+  return date.toLocaleDateString('ja-JP', { month: 'short', day: 'numeric' });
 }
 
 // ============================================
