@@ -1575,9 +1575,12 @@ tenantPublic.get('/home', async (c) => {
                             
                             ${thumbnailUrl ? `
                                 <div style="width: 100%; height: 240px; overflow: hidden;">
-                                    <img src="${thumbnailUrl}" alt="${postTitle}" style="width: 100%; height: 100%; object-fit: cover; transition: transform var(--transition-slow);"
+                                    <img data-src="${thumbnailUrl}" 
+                                         alt="${postTitle}" 
+                                         style="width: 100%; height: 100%; object-fit: cover; transition: transform var(--transition-slow);"
                                          onmouseover="this.style.transform='scale(1.05)'"
-                                         onmouseout="this.style.transform='scale(1)'">
+                                         onmouseout="this.style.transform='scale(1)'"
+                                         loading="lazy">
                                 </div>
                             ` : `
                                 <div style="width: 100%; height: 240px; background: linear-gradient(135deg, var(--commons-bg-cyan) 0%, var(--commons-primary) 100%); display: flex; align-items: center; justify-content: center;">
@@ -3163,7 +3166,10 @@ tenantPublic.get('/posts', async (c) => {
         
         thumbnailHTML = `
           <div class="relative w-full h-72 overflow-hidden rounded-t-2xl">
-            <img src="${thumbnailUrl}" alt="${postTitle}" class="w-full h-full object-cover transform group-hover:scale-105 transition duration-500">
+            <img data-src="${thumbnailUrl}" 
+                 alt="${postTitle}" 
+                 class="w-full h-full object-cover transform group-hover:scale-105 transition duration-500"
+                 loading="lazy">
             ${videoOverlay}
             ${newBadge}
             <div class="absolute bottom-4 left-4 text-white text-sm px-3 py-1 rounded-full" style="background: rgba(0,0,0,0.5); backdrop-filter: blur(8px);">
@@ -4246,7 +4252,10 @@ tenantPublic.get('/members', async (c) => {
                 <!-- アバター -->
                 <div class="mb-4">
                     ${avatarUrl ? `
-                    <img src="${avatarUrl}" alt="${nickname}" class="w-24 h-24 rounded-full object-cover border-4 border-gray-100">
+                    <img data-src="${avatarUrl}" 
+                         alt="${nickname}" 
+                         class="w-24 h-24 rounded-full object-cover border-4 border-gray-100"
+                         loading="lazy">
                     ` : `
                     <div class="w-24 h-24 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center border-4 border-gray-100">
                         <i class="fas fa-user text-3xl text-white"></i>
@@ -4846,7 +4855,7 @@ tenantPublic.get('/members/:memberId', async (c) => {
   }
   
   const avatarHTML = avatarUrl 
-    ? '<img src="' + avatarUrl + '" alt="' + nickname + '" class="w-32 h-32 rounded-full object-cover border-4 border-blue-100">'
+    ? '<img data-src="' + avatarUrl + '" alt="' + nickname + '" class="w-32 h-32 rounded-full object-cover border-4 border-blue-100" loading="lazy">'
     : '<div class="w-32 h-32 rounded-full bg-blue-100 flex items-center justify-center border-4 border-blue-200">' +
       '<i class="fas fa-user text-5xl text-blue-400"></i></div>'
   

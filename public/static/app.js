@@ -623,4 +623,296 @@ window.addEventListener('DOMContentLoaded', () => {
       console.groupEnd();
     }, 500); // DOMとCSSの読み込み完了を待つ
   }
-});
+})
+
+// ============================================
+// 画像遅延読み込み（Lazy Loading）
+// ============================================
+
+/**
+ * Intersection Observer を使った画像遅延読み込み
+ * data-src 属性を持つ画像を自動的に遅延読み込み
+ */
+class LazyImageLoader {
+  constructor(options = {}) {
+    this.options = {
+      rootMargin: options.rootMargin || '50px', // ビューポートから50px手前で読み込み開始
+      threshold: options.threshold || 0.01,
+      placeholderClass: options.placeholderClass || 'lazy-loading',
+      loadedClass: options.loadedClass || 'lazy-loaded',
+      errorClass: options.errorClass || 'lazy-error',
+      enableProgressiveLoad: options.enableProgressiveLoad || false,
+      fadeInDuration: options.fadeInDuration || 300
+    }
+    
+    this.observer = null
+    this.images = new Set()
+    this.stats = {
+      total: 0,
+      loaded: 0,
+      failed: 0,
+      cached: 0
+    }
+    
+    this.init()
+  }
+  
+  init() {
+    // Intersection Observer が使えない場合は即座に全画像を読み込む
+    if (!('IntersectionObserver' in window)) {
+      debugLog('LAZY_LOAD', 'IntersectionObserver not supported, loading all images immediately')
+      this.loadAllImages()
+      return
+    }
+    
+    this.observer = new IntersectionObserver(
+      this.handleIntersection.bind(this),
+      {
+        rootMargin: this.options.rootMargin,
+        threshold: this.options.threshold
+      }
+    )
+    
+    this.observeImages()
+    
+    debugLog('LAZY_LOAD', 'LazyImageLoader initialized', {
+      options: this.options,
+      imageCount: this.images.size
+    })
+  }
+  
+  observeImages() {
+    // data-src 属性を持つすべての画像を監視
+    const lazyImages = document.querySelectorAll('img[data-src]:not([data-lazy-observed])')
+    
+    lazyImages.forEach(img => {
+      // 重複監視を防ぐ
+      img.setAttribute('data-lazy-observed', 'true')
+      
+      // プレースホルダークラスを追加
+      img.classList.add(this.options.placeholderClass)
+      
+      // 統計に追加
+      this.images.add(img)
+      this.stats.total++
+      
+      // 監視開始
+      this.observer.observe(img)
+    })
+    
+    if (lazyImages.length > 0) {
+      debugLog('LAZY_LOAD', `Observing ${lazyImages.length} images`, {
+        total: this.stats.total
+      })
+    }
+  }
+  
+  handleIntersection(entries) {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const img = entry.target
+        this.loadImage(img)
+        this.observer.unobserve(img)
+      }
+    })
+  }
+  
+  loadImage(img) {
+    const src = img.getAttribute('data-src')
+    const srcset = img.getAttribute('data-srcset')
+    
+    if (!src) {
+      debugLog('LAZY_LOAD', 'No data-src found', { img })
+      return
+    }
+    
+    debugLog('LAZY_LOAD', 'Loading image', {
+      src,
+      srcset,
+      width: img.getAttribute('width'),
+      height: img.getAttribute('height')
+    })
+    
+    // プログレッシブ読み込み用の低解像度プレビュー
+    if (this.options.enableProgressiveLoad && img.hasAttribute('data-src-preview')) {
+      const previewSrc = img.getAttribute('data-src-preview')
+      this.loadPreview(img, previewSrc)
+    }
+    
+    // 画像の読み込み開始時刻を記録（キャッシュ判定用）
+    const startTime = performance.now()
+    
+    // 実際の画像読み込み
+    const loadPromise = new Promise((resolve, reject) => {
+      img.onload = () => {
+        const loadTime = performance.now() - startTime
+        
+        // キャッシュから読み込まれた場合（5ms以下）
+        if (loadTime < 5) {
+          this.stats.cached++
+        }
+        
+        this.stats.loaded++
+        img.classList.remove(this.options.placeholderClass)
+        img.classList.add(this.options.loadedClass)
+        
+        // フェードイン効果
+        img.style.opacity = '0'
+        img.style.transition = `opacity ${this.options.fadeInDuration}ms ease-in`
+        setTimeout(() => {
+          img.style.opacity = '1'
+        }, 10)
+        
+        debugLog('LAZY_LOAD', 'Image loaded successfully', {
+          src,
+          loadTime: `${loadTime.toFixed(2)}ms`,
+          cached: loadTime < 5,
+          stats: this.stats
+        })
+        
+        resolve()
+      }
+      
+      img.onerror = (error) => {
+        this.stats.failed++
+        img.classList.remove(this.options.placeholderClass)
+        img.classList.add(this.options.errorClass)
+        
+        debugLog('LAZY_LOAD', 'Image load failed', {
+          src,
+          error,
+          stats: this.stats
+        })
+        
+        // エラー時のフォールバック画像
+        if (img.hasAttribute('data-fallback-src')) {
+          img.src = img.getAttribute('data-fallback-src')
+        }
+        
+        reject(error)
+      }
+    })
+    
+    // srcset がある場合は設定
+    if (srcset) {
+      img.srcset = srcset
+    }
+    
+    // src を設定して読み込み開始
+    img.src = src
+    
+    return loadPromise
+  }
+  
+  loadPreview(img, previewSrc) {
+    const preview = new Image()
+    preview.onload = () => {
+      img.src = previewSrc
+      img.style.filter = 'blur(10px)'
+      img.style.transition = 'filter 300ms ease-out'
+    }
+    preview.src = previewSrc
+  }
+  
+  loadAllImages() {
+    const lazyImages = document.querySelectorAll('img[data-src]')
+    lazyImages.forEach(img => {
+      const src = img.getAttribute('data-src')
+      if (src) {
+        img.src = src
+        
+        const srcset = img.getAttribute('data-srcset')
+        if (srcset) {
+          img.srcset = srcset
+        }
+      }
+    })
+  }
+  
+  // 動的に追加された画像を監視対象に追加
+  refresh() {
+    this.observeImages()
+  }
+  
+  // 統計情報を取得
+  getStats() {
+    return {
+      ...this.stats,
+      pending: this.stats.total - this.stats.loaded - this.stats.failed,
+      successRate: this.stats.total > 0 
+        ? ((this.stats.loaded / this.stats.total) * 100).toFixed(1) + '%'
+        : '0%',
+      cacheRate: this.stats.loaded > 0
+        ? ((this.stats.cached / this.stats.loaded) * 100).toFixed(1) + '%'
+        : '0%'
+    }
+  }
+  
+  // 監視を破棄
+  destroy() {
+    if (this.observer) {
+      this.observer.disconnect()
+      this.observer = null
+    }
+    this.images.clear()
+    debugLog('LAZY_LOAD', 'LazyImageLoader destroyed', this.getStats())
+  }
+}
+
+// グローバルインスタンスを作成
+window.lazyImageLoader = new LazyImageLoader({
+  rootMargin: '100px',      // ビューポートから100px手前で読み込み開始
+  threshold: 0.01,          // 1%表示されたら読み込み
+  fadeInDuration: 400,      // 400msでフェードイン
+  enableProgressiveLoad: false  // プログレッシブ読み込みは無効（必要に応じて有効化）
+})
+
+// ページ読み込み時と動的コンテンツ追加時に監視を更新
+document.addEventListener('DOMContentLoaded', () => {
+  window.lazyImageLoader.refresh()
+})
+
+// MutationObserver で動的に追加された画像を監視
+if ('MutationObserver' in window) {
+  const mutationObserver = new MutationObserver((mutations) => {
+    let hasNewImages = false
+    
+    mutations.forEach(mutation => {
+      mutation.addedNodes.forEach(node => {
+        if (node.nodeType === 1) { // Element node
+          // 追加されたノードが画像か、または画像を含むか確認
+          if (node.tagName === 'IMG' && node.hasAttribute('data-src')) {
+            hasNewImages = true
+          } else if (node.querySelectorAll) {
+            const images = node.querySelectorAll('img[data-src]')
+            if (images.length > 0) {
+              hasNewImages = true
+            }
+          }
+        }
+      })
+    })
+    
+    // 新しい画像が追加された場合は監視を更新
+    if (hasNewImages) {
+      debugLog('LAZY_LOAD', 'New images detected, refreshing observer')
+      window.lazyImageLoader.refresh()
+    }
+  })
+  
+  // body 要素の変更を監視
+  mutationObserver.observe(document.body, {
+    childList: true,
+    subtree: true
+  })
+}
+
+// デバッグ用：統計情報を5秒ごとにログ出力
+if (DEBUG) {
+  setInterval(() => {
+    const stats = window.lazyImageLoader.getStats()
+    if (stats.total > 0) {
+      debugLog('LAZY_LOAD_STATS', 'Current statistics', stats)
+    }
+  }, 5000)
+};

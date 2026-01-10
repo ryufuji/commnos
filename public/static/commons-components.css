@@ -1183,3 +1183,72 @@
   }
 }
 
+/* ========================================
+   画像遅延読み込み（Lazy Loading）
+======================================== */
+
+/* プレースホルダー状態（読み込み中） */
+img.lazy-loading {
+  background: linear-gradient(
+    90deg,
+    var(--commons-bg-light) 0%,
+    var(--commons-bg-gray) 50%,
+    var(--commons-bg-light) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+  min-height: 200px; /* 最小高さを確保 */
+}
+
+/* 読み込み完了状態 */
+img.lazy-loaded {
+  background: none;
+  animation: none;
+}
+
+/* エラー状態 */
+img.lazy-error {
+  background: var(--commons-bg-gray);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+img.lazy-error::after {
+  content: '📷';
+  font-size: 48px;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  opacity: 0.3;
+}
+
+/* シマーアニメーション */
+@keyframes shimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+/* プログレッシブ読み込み用（ぼかし効果） */
+img[data-src-preview].loading {
+  filter: blur(10px);
+  transition: filter 300ms ease-out;
+}
+
+img[data-src-preview].loaded {
+  filter: blur(0);
+}
+
+/* レスポンシブ画像の最適化 */
+img[data-src] {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
