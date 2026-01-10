@@ -6300,7 +6300,7 @@ app.get('/points-management', (c) => {
                 'site_visit': 'サイト訪問（1日1回）',
                 'signup': '会員登録',
                 'subscription': 'サブスクリプション登録',
-                'post_create': '投稿作成',
+                'post_view': '記事閲覧（1日1回）',
                 'comment_create': 'コメント投稿'
             }
 
@@ -6950,7 +6950,7 @@ app.get('/tenant/points', (c) => {
                         'site_visit': 'サイト訪問',
                         'signup': '会員登録ボーナス',
                         'subscription': 'サブスクリプション登録',
-                        'post_create': '投稿作成',
+                        'post_view': '記事閲覧（1日1回）',
                         'comment_create': 'コメント投稿',
                         'admin_grant': '管理者付与',
                         'reward_exchange': '報酬交換',

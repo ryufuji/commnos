@@ -124,6 +124,72 @@ posts.get('/:id', tenantMiddleware, async (c) => {
         .prepare('UPDATE posts SET view_count = view_count + 1 WHERE id = ?')
         .bind(postId)
         .run()
+
+      // 記事閲覧ポイント付与（ログイン済みユーザーのみ、1日1記事）
+      const userId = c.get('userId') // authMiddleware経由でない場合はundefined
+      if (userId) {
+        try {
+          // ポイントルールを取得
+          const rule = await db.prepare(`
+            SELECT points FROM point_rules
+            WHERE tenant_id = ? AND action = 'post_view' AND is_active = 1
+          `).bind(tenantId).first() as any
+
+          if (rule && rule.points > 0) {
+            // 今日すでに閲覧ポイントを獲得したかチェック
+            const today = new Date().toISOString().split('T')[0]
+            const lastView = await db.prepare(`
+              SELECT created_at FROM point_transactions
+              WHERE user_id = ? AND tenant_id = ? AND reason = 'post_view'
+              ORDER BY created_at DESC
+              LIMIT 1
+            `).bind(userId, tenantId).first() as any
+
+            let shouldAward = true
+            if (lastView) {
+              const lastViewDate = new Date(lastView.created_at).toISOString().split('T')[0]
+              if (lastViewDate === today) {
+                shouldAward = false
+              }
+            }
+
+            if (shouldAward) {
+              // ポイント残高を取得または作成
+              let balance = await db.prepare(`
+                SELECT balance, total_earned FROM user_points
+                WHERE user_id = ? AND tenant_id = ?
+              `).bind(userId, tenantId).first() as any
+
+              if (!balance) {
+                await db.prepare(`
+                  INSERT INTO user_points (user_id, tenant_id, balance, total_earned)
+                  VALUES (?, ?, 0, 0)
+                `).bind(userId, tenantId).run()
+                balance = { balance: 0, total_earned: 0 }
+              }
+
+              const newBalance = balance.balance + rule.points
+              const newTotalEarned = balance.total_earned + rule.points
+
+              // ポイント残高を更新
+              await db.prepare(`
+                UPDATE user_points
+                SET balance = ?, total_earned = ?, updated_at = CURRENT_TIMESTAMP
+                WHERE user_id = ? AND tenant_id = ?
+              `).bind(newBalance, newTotalEarned, userId, tenantId).run()
+
+              // ポイント履歴を記録
+              await db.prepare(`
+                INSERT INTO point_transactions (user_id, tenant_id, action_type, points, reason, reference_id, balance_after, note)
+                VALUES (?, ?, 'earn', ?, 'post_view', ?, ?, '記事閲覧（1日1回）')
+              `).bind(userId, tenantId, rule.points, postId, newBalance).run()
+            }
+          }
+        } catch (error) {
+          console.error('[Award Post View Points Error]', error)
+          // ポイント付与失敗は記事閲覧を妨げない
+        }
+      }
     }
 
     // コンテンツフィルタリング
@@ -288,64 +354,14 @@ posts.post('/', authMiddleware, async (c) => {
       .bind(postId)
       .first<any>()
 
-    // ポイント付与（公開投稿の場合のみ）
-    let pointsEarned = 0
-    if (postStatus === 'published') {
-      try {
-        // ポイントルールを取得
-        const rule = await db.prepare(`
-          SELECT points FROM point_rules
-          WHERE tenant_id = ? AND action = 'post_create' AND is_active = 1
-        `).bind(tenantId).first() as any
-
-        if (rule && rule.points > 0) {
-          // ポイント残高を取得または作成
-          let balance = await db.prepare(`
-            SELECT balance, total_earned FROM user_points
-            WHERE user_id = ? AND tenant_id = ?
-          `).bind(userId, tenantId).first() as any
-
-          if (!balance) {
-            await db.prepare(`
-              INSERT INTO user_points (user_id, tenant_id, balance, total_earned)
-              VALUES (?, ?, 0, 0)
-            `).bind(userId, tenantId).run()
-            balance = { balance: 0, total_earned: 0 }
-          }
-
-          const newBalance = balance.balance + rule.points
-          const newTotalEarned = balance.total_earned + rule.points
-
-          // ポイント残高を更新
-          await db.prepare(`
-            UPDATE user_points
-            SET balance = ?, total_earned = ?, updated_at = CURRENT_TIMESTAMP
-            WHERE user_id = ? AND tenant_id = ?
-          `).bind(newBalance, newTotalEarned, userId, tenantId).run()
-
-          // ポイント履歴を記録
-          await db.prepare(`
-            INSERT INTO point_transactions (user_id, tenant_id, action_type, points, reason, reference_id, balance_after)
-            VALUES (?, ?, 'earn', ?, 'post_create', ?, ?)
-          `).bind(userId, tenantId, rule.points, postId, newBalance).run()
-
-          pointsEarned = rule.points
-        }
-      } catch (error) {
-        console.error('[Award Points Error]', error)
-        // ポイント付与失敗は投稿作成を妨げない
-      }
-    }
-
     const message = postStatus === 'draft' ? '下書きを保存しました' : 
                     postStatus === 'scheduled' ? `予約投稿を設定しました（${scheduled_at}に公開）` : 
-                    pointsEarned > 0 ? `投稿を公開しました（+${pointsEarned}ポイント）` : '投稿を公開しました'
+                    '投稿を公開しました'
 
     return c.json({
       success: true,
       post,
-      message,
-      points_earned: pointsEarned
+      message
     }, 201)
   } catch (error) {
     console.error('[Create Post Error]', error)
