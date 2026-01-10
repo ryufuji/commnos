@@ -8500,11 +8500,19 @@ app.get('/shop-settings', (c) => {
                         document.getElementById('productDescription').value = product.description || ''
                         document.getElementById('productPrice').value = product.price
                         document.getElementById('productCategory').value = product.category_id || ''
-                        document.getElementById('productType').value = product.type
+                        document.getElementById('productType').value = product.product_type
                         document.getElementById('productImageUrl').value = product.image_url || ''
                         document.getElementById('productStockQuantity').value = product.stock_quantity
                         document.getElementById('productUnlimitedStock').checked = product.is_unlimited_stock === 1
                         document.getElementById('productActive').value = product.is_active ? '1' : '0'
+                        
+                        // 画像プレビュー（既存画像がある場合）
+                        if (product.image_url) {
+                            const preview = document.getElementById('imagePreview')
+                            const container = document.getElementById('imagePreviewContainer')
+                            preview.src = product.image_url
+                            container.classList.remove('hidden')
+                        }
                         
                         if (product.event_date) {
                             document.getElementById('productEventDate').value = product.event_date.slice(0, 16)
@@ -8533,6 +8541,7 @@ app.get('/shop-settings', (c) => {
                     document.getElementById('productForm').reset()
                     document.getElementById('productId').value = ''
                     document.getElementById('productActive').value = '1'
+                    clearImage() // 画像プレビューをクリア
                     handleTypeChange()
                     handleStockChange()
                 }
