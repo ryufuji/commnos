@@ -167,14 +167,14 @@ analytics.get('/members', async (c) => {
       LIMIT 12
     `).bind(tenantId).all()
 
-    // プラン別分布
+    // プラン別分布（memberのみ、ownerとadminは除外）
     const planDistribution = await DB.prepare(`
       SELECT 
         COALESCE(pp.name, 'Free') as plan_name,
         COUNT(*) as count
       FROM tenant_memberships tm
       LEFT JOIN platform_plans pp ON tm.plan_id = pp.id
-      WHERE tm.tenant_id = ? AND tm.status = 'active'
+      WHERE tm.tenant_id = ? AND tm.status = 'active' AND tm.role = 'member'
       GROUP BY plan_name
     `).bind(tenantId).all()
 
@@ -515,24 +515,24 @@ analytics.get('/subscriptions', async (c) => {
   }
 
   try {
-    // アクティブサブスクリプション統計
+    // アクティブサブスクリプション統計（memberのみ、ownerとadminは除外）
     const subscriptionStats = await DB.prepare(`
       SELECT 
         COUNT(*) as active_count,
         COUNT(CASE WHEN billing_interval = 'month' THEN 1 END) as monthly_count,
         COUNT(CASE WHEN billing_interval = 'year' THEN 1 END) as yearly_count
       FROM tenant_memberships
-      WHERE tenant_id = ? AND status = 'active' AND stripe_subscription_id IS NOT NULL
+      WHERE tenant_id = ? AND status = 'active' AND role = 'member' AND stripe_subscription_id IS NOT NULL
     `).bind(tenantId).first() as any
 
-    // プラン別内訳
+    // プラン別内訳（memberのみ、ownerとadminは除外）
     const planBreakdown = await DB.prepare(`
       SELECT 
         COALESCE(pp.name, 'Unknown') as plan_name,
         COUNT(*) as count
       FROM tenant_memberships tm
       LEFT JOIN platform_plans pp ON tm.plan_id = pp.id
-      WHERE tm.tenant_id = ? AND tm.status = 'active' AND tm.stripe_subscription_id IS NOT NULL
+      WHERE tm.tenant_id = ? AND tm.status = 'active' AND tm.role = 'member' AND tm.stripe_subscription_id IS NOT NULL
       GROUP BY plan_name
     `).bind(tenantId).all()
 
