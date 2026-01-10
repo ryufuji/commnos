@@ -444,7 +444,7 @@ shop.get('/products', authMiddleware, async (c) => {
     }
 
     if (type) {
-      query += ' AND p.type = ?'
+      query += ' AND p.product_type = ?'
       params.push(type)
     }
 
@@ -591,7 +591,7 @@ shop.post('/products', authMiddleware, requireRole('admin'), async (c) => {
     const result = await db
       .prepare(`
         INSERT INTO shop_products (
-          tenant_id, name, description, price, category_id, type,
+          tenant_id, name, description, price, category_id, product_type,
           image_url, stock_quantity, is_unlimited_stock, requires_shipping,
           shipping_info, event_date, event_location, event_description,
           sale_start_date, sale_end_date, max_purchase_per_person,
@@ -694,7 +694,7 @@ shop.put('/products/:id', authMiddleware, requireRole('admin'), async (c) => {
     const result = await db
       .prepare(`
         UPDATE shop_products
-        SET name = ?, description = ?, price = ?, category_id = ?, type = ?,
+        SET name = ?, description = ?, price = ?, category_id = ?, product_type = ?,
             image_url = ?, stock_quantity = ?, is_unlimited_stock = ?,
             requires_shipping = ?, shipping_info = ?, event_date = ?,
             event_location = ?, event_description = ?, sale_start_date = ?,
@@ -836,7 +836,7 @@ shop.get('/public/products', authMiddleware, async (c) => {
     }
 
     if (type) {
-      query += ' AND p.type = ?'
+      query += ' AND p.product_type = ?'
       params.push(type)
     }
 
@@ -1039,7 +1039,7 @@ shop.post('/orders', authMiddleware, async (c) => {
       orderItems.push({
         product_id: product.id,
         product_name: product.name,
-        product_type: product.type,
+        product_type: product.product_type,
         quantity: item.quantity,
         unit_price: product.price,
         subtotal: subtotal,
