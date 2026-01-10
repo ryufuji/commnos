@@ -19,7 +19,7 @@ profile.get('/', authMiddleware, async (c) => {
 
   try {
     const user = await db
-      .prepare('SELECT id, email, nickname, avatar_url, bio, status, created_at, last_login_at FROM users WHERE id = ?')
+      .prepare('SELECT id, email, nickname, avatar_url, bio, birthday, status, created_at, last_login_at FROM users WHERE id = ?')
       .bind(userId)
       .first<any>()
 
@@ -60,7 +60,7 @@ profile.get('/', authMiddleware, async (c) => {
  */
 profile.put('/', authMiddleware, async (c) => {
   const userId = c.get('userId')
-  const { nickname, bio } = await c.req.json<{ nickname?: string; bio?: string }>()
+  const { nickname, bio, birthday } = await c.req.json<{ nickname?: string; bio?: string; birthday?: string }>()
   const db = c.env.DB
 
   try {
@@ -77,6 +77,11 @@ profile.put('/', authMiddleware, async (c) => {
       return c.json({ success: false, error: 'Bio must be 500 characters or less' }, 400)
     }
 
+    // 誕生日のバリデーション（YYYY-MM-DD形式）
+    if (birthday && !/^\d{4}-\d{2}-\d{2}$/.test(birthday)) {
+      return c.json({ success: false, error: 'Birthday must be in YYYY-MM-DD format' }, 400)
+    }
+
     // プロフィール更新
     const updates: string[] = []
     const values: any[] = []
@@ -89,6 +94,11 @@ profile.put('/', authMiddleware, async (c) => {
     if (bio !== undefined) {
       updates.push('bio = ?')
       values.push(bio)
+    }
+
+    if (birthday !== undefined) {
+      updates.push('birthday = ?')
+      values.push(birthday)
     }
 
     if (updates.length === 0) {

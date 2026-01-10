@@ -1186,7 +1186,11 @@ app.get('/profile', (c) => {
                         <div class="flex-1">
                             <h1 class="text-2xl font-bold mb-2" id="displayNickname">Loading...</h1>
                             <p class="text-gray-600 mb-2" id="displayEmail"></p>
-                            <p class="text-gray-700 whitespace-pre-line" id="displayBio"></p>
+                            <p class="text-gray-700 whitespace-pre-line mb-3" id="displayBio"></p>
+                            <div class="flex items-center text-sm text-gray-600">
+                                <i class="fas fa-birthday-cake mr-2 text-primary-500"></i>
+                                <span id="displayBirthday">未設定</span>
+                            </div>
                         </div>
                     </div>
 
@@ -1250,6 +1254,20 @@ app.get('/profile', (c) => {
                                       placeholder="自己紹介を入力"></textarea>
                             <p class="text-xs text-gray-500 mt-1">
                                 <span id="bioCharCount">0</span> / 500
+                            </p>
+                        </div>
+
+                        <!-- 誕生日 -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                <i class="fas fa-birthday-cake mr-1 text-primary-500"></i>
+                                誕生日
+                            </label>
+                            <input type="date" id="inputBirthday"
+                                   class="input-field"
+                                   placeholder="誕生日を選択">
+                            <p class="text-xs text-gray-500 mt-1">
+                                誕生日を設定すると、誕生日にお祝いメッセージが届きます
                             </p>
                         </div>
 
@@ -1323,6 +1341,17 @@ app.get('/profile', (c) => {
                 document.getElementById('displayEmail').textContent = user.email
                 document.getElementById('displayBio').textContent = user.bio || '自己紹介が未設定です'
 
+                // 誕生日表示
+                const displayBirthday = document.getElementById('displayBirthday')
+                if (displayBirthday) {
+                    if (user.birthday) {
+                        const birthday = new Date(user.birthday)
+                        displayBirthday.textContent = birthday.toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric' })
+                    } else {
+                        displayBirthday.textContent = '未設定'
+                    }
+                }
+
                 // アバター表示
                 const avatarIcon = document.getElementById('avatarIcon')
                 const avatarImage = document.getElementById('avatarImage')
@@ -1346,6 +1375,7 @@ app.get('/profile', (c) => {
                 // 現在の値をフォームに設定
                 document.getElementById('inputNickname').value = currentProfile.nickname
                 document.getElementById('inputBio').value = currentProfile.bio || ''
+                document.getElementById('inputBirthday').value = currentProfile.birthday || ''
                 
                 // アバター画像表示
                 if (currentProfile.avatar_url) {
@@ -1439,7 +1469,8 @@ app.get('/profile', (c) => {
                     // プロフィール情報を更新
                     const data = {
                         nickname: document.getElementById('inputNickname').value,
-                        bio: document.getElementById('inputBio').value
+                        bio: document.getElementById('inputBio').value,
+                        birthday: document.getElementById('inputBirthday').value || null
                     }
                     
                     const response = await apiRequest('/api/profile', {
@@ -1670,6 +1701,14 @@ app.get('/dashboard', (c) => {
                             </div>
                             <h3 class="font-bold text-gray-900 mb-2">統計ダッシュボード</h3>
                             <p class="text-sm text-secondary-600">会員・投稿・アンケート分析</p>
+                        </a>
+
+                        <a href="/birthday-email-settings" class="card-interactive p-6 text-center">
+                            <div class="text-4xl mb-3 text-pink-500">
+                                <i class="fas fa-birthday-cake"></i>
+                            </div>
+                            <h3 class="font-bold text-gray-900 mb-2">誕生日メール設定</h3>
+                            <p class="text-sm text-secondary-600">誕生日メッセージの内容を設定</p>
                         </a>
 
                         <a href="/profile" class="card-interactive p-6 text-center">
