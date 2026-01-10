@@ -35,6 +35,7 @@ import chat from './routes/chat' // Phase 6 - チャット機能
 import { coupons } from './routes/coupons' // クーポン管理
 import postAccess from './routes/post-access' // 投稿アクセス制御管理
 import surveys from './routes/surveys' // アンケート機能
+import birthdayEmail from './routes/birthday-email' // 誕生日メール機能
 import analytics from './routes/analytics' // 統計ダッシュボード
 
 const app = new Hono<AppContext>()
@@ -111,6 +112,7 @@ app.route('/api/chat', chat)
 
 // アンケートルート
 app.route('/api/surveys', surveys)
+app.route('/api/birthday-email', birthdayEmail)
 
 // 統計ダッシュボードルート
 app.route('/api/analytics', analytics)
@@ -5765,6 +5767,288 @@ app.get('/analytics/subscriptions', (c) => {
             }
 
             document.addEventListener('DOMContentLoaded', loadSubscriptionAnalytics)
+        </script>
+    </body>
+    </html>
+  `)
+})
+
+// ============================================
+// 誕生日メール設定ページ (/birthday-email-settings)
+// ============================================
+app.get('/birthday-email-settings', (c) => {
+  return c.html(`
+    <!DOCTYPE html>
+    <html lang="ja" data-theme="light">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>誕生日メール設定 - Commons</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <script src="/static/tailwind-config.js"></script>
+        <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+        <link href="/static/commons-theme.css" rel="stylesheet">
+        <link href="/static/commons-components.css" rel="stylesheet">
+    </head>
+    <body class="bg-gray-50">
+        <div class="min-h-screen flex flex-col">
+            <!-- Header -->
+            <header class="bg-white border-b border-gray-200 sticky top-0 z-40">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-4">
+                            <a href="/dashboard" class="text-gray-600 hover:text-gray-900">
+                                <i class="fas fa-arrow-left"></i>
+                            </a>
+                            <h1 class="text-2xl font-bold text-gray-900">
+                                <i class="fas fa-birthday-cake mr-2 text-pink-500"></i>
+                                誕生日メール設定
+                            </h1>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Main Content -->
+            <main class="flex-1 max-w-4xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
+                <!-- Loading State -->
+                <div id="loadingState" class="text-center py-12">
+                    <i class="fas fa-spinner fa-spin text-4xl text-pink-500 mb-4"></i>
+                    <p class="text-gray-600">設定を読み込み中...</p>
+                </div>
+
+                <!-- Content Container -->
+                <div id="contentContainer" class="hidden space-y-6">
+                    <!-- 説明カード -->
+                    <div class="card p-6 bg-pink-50 border-pink-200">
+                        <div class="flex items-start">
+                            <i class="fas fa-info-circle text-pink-500 text-xl mr-3 mt-1"></i>
+                            <div>
+                                <h3 class="font-semibold text-gray-900 mb-2">誕生日メールについて</h3>
+                                <p class="text-sm text-gray-700 mb-2">
+                                    会員の誕生日に自動的にお祝いメッセージを送信します。
+                                </p>
+                                <ul class="text-sm text-gray-600 space-y-1 list-disc list-inside">
+                                    <li>メッセージは誕生日当日に自動送信されます</li>
+                                    <li>{{nickname}}で会員のニックネームを挿入できます</li>
+                                    <li>{{email}}で会員のメールアドレスを挿入できます</li>
+                                    <li>テンプレートは何度でも編集できます</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- テンプレート編集フォーム -->
+                    <div class="card p-6">
+                        <form id="templateForm" class="space-y-4">
+                            <!-- 件名 -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    <i class="fas fa-envelope mr-1 text-pink-500"></i>
+                                    メール件名
+                                </label>
+                                <input type="text" id="inputSubject" required
+                                       class="input-field"
+                                       placeholder="例: {{nickname}}さん、お誕生日おめでとうございます！">
+                            </div>
+
+                            <!-- 本文 -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    <i class="fas fa-align-left mr-1 text-pink-500"></i>
+                                    メール本文
+                                </label>
+                                <textarea id="inputBody" rows="10" required
+                                          class="input-field"
+                                          placeholder="例:\\n{{nickname}}さん、お誕生日おめでとうございます！\\n\\n素敵な一年になりますように。\\n\\nコミュニティ一同"></textarea>
+                                <p class="text-xs text-gray-500 mt-1">
+                                    <span id="bodyCharCount">0</span> 文字
+                                </p>
+                            </div>
+
+                            <!-- 有効/無効 -->
+                            <div class="flex items-center">
+                                <input type="checkbox" id="inputIsActive" class="mr-2">
+                                <label for="inputIsActive" class="text-sm text-gray-700">
+                                    この誕生日メールを有効にする
+                                </label>
+                            </div>
+
+                            <!-- ボタン -->
+                            <div class="flex gap-2">
+                                <button type="submit" id="saveBtn" class="btn-primary">
+                                    <i class="fas fa-save mr-2"></i>
+                                    保存
+                                </button>
+                                <button type="button" id="testBtn" class="btn-secondary">
+                                    <i class="fas fa-paper-plane mr-2"></i>
+                                    テスト送信
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- プレビューカード -->
+                    <div class="card p-6">
+                        <h3 class="font-semibold text-gray-900 mb-4">
+                            <i class="fas fa-eye mr-2 text-pink-500"></i>
+                            プレビュー
+                        </h3>
+                        <div class="bg-gray-50 p-4 rounded-lg border border-gray-200">
+                            <div class="mb-3">
+                                <span class="text-xs text-gray-500">件名:</span>
+                                <p id="previewSubject" class="font-semibold text-gray-900">（未設定）</p>
+                            </div>
+                            <div>
+                                <span class="text-xs text-gray-500">本文:</span>
+                                <p id="previewBody" class="text-gray-700 whitespace-pre-line">（未設定）</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+        <script src="/static/app.js"></script>
+        <script>
+            let currentTemplate = null
+
+            async function loadTemplate() {
+                try {
+                    const token = localStorage.getItem('token')
+                    if (!token) {
+                        window.location.href = '/login'
+                        return
+                    }
+
+                    axios.defaults.headers.common['Authorization'] = 'Bearer ' + token
+
+                    const response = await axios.get('/api/birthday-email/template')
+                    
+                    if (response.data.success) {
+                        currentTemplate = response.data.template
+                        if (currentTemplate) {
+                            displayTemplate(currentTemplate)
+                        } else {
+                            // デフォルト値を設定
+                            document.getElementById('inputSubject').value = '{{nickname}}さん、お誕生日おめでとうございます！'
+                            document.getElementById('inputBody').value = '{{nickname}}さん\\n\\nお誕生日おめでとうございます！\\n素敵な一年になりますように。\\n\\nコミュニティ一同'
+                            document.getElementById('inputIsActive').checked = true
+                            updatePreview()
+                        }
+                    }
+
+                    document.getElementById('loadingState').classList.add('hidden')
+                    document.getElementById('contentContainer').classList.remove('hidden')
+
+                } catch (error) {
+                    console.error('Template load error:', error)
+                    if (error.response?.status === 401) {
+                        window.location.href = '/login'
+                    } else {
+                        showToast('設定の読み込みに失敗しました', 'error')
+                    }
+                }
+            }
+
+            function displayTemplate(template) {
+                document.getElementById('inputSubject').value = template.subject
+                document.getElementById('inputBody').value = template.body
+                document.getElementById('inputIsActive').checked = template.is_active === 1
+                updatePreview()
+            }
+
+            function updatePreview() {
+                const subject = document.getElementById('inputSubject').value
+                const body = document.getElementById('inputBody').value
+                
+                // {{nickname}}と{{email}}をサンプル値に置換
+                const previewSubject = subject
+                    .replace(/{{nickname}}/g, '山田太郎')
+                    .replace(/{{email}}/g, 'yamada@example.com')
+                
+                const previewBody = body
+                    .replace(/{{nickname}}/g, '山田太郎')
+                    .replace(/{{email}}/g, 'yamada@example.com')
+                
+                document.getElementById('previewSubject').textContent = previewSubject || '（未設定）'
+                document.getElementById('previewBody').textContent = previewBody || '（未設定）'
+            }
+
+            // リアルタイムプレビュー更新
+            document.getElementById('inputSubject').addEventListener('input', updatePreview)
+            document.getElementById('inputBody').addEventListener('input', (e) => {
+                const charCount = e.target.value.length
+                document.getElementById('bodyCharCount').textContent = charCount
+                updatePreview()
+            })
+
+            // フォーム送信
+            document.getElementById('templateForm').addEventListener('submit', async (e) => {
+                e.preventDefault()
+
+                const saveBtn = document.getElementById('saveBtn')
+                const originalText = saveBtn.innerHTML
+                saveBtn.disabled = true
+                saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>保存中...'
+
+                try {
+                    const token = localStorage.getItem('token')
+                    const data = {
+                        subject: document.getElementById('inputSubject').value,
+                        body: document.getElementById('inputBody').value,
+                        is_active: document.getElementById('inputIsActive').checked
+                    }
+
+                    const response = await axios.post('/api/birthday-email/template', data, {
+                        headers: {
+                            'Authorization': 'Bearer ' + token,
+                            'Content-Type': 'application/json'
+                        }
+                    })
+
+                    if (response.data.success) {
+                        currentTemplate = response.data.template
+                        showToast('設定を保存しました', 'success')
+                    }
+                } catch (error) {
+                    console.error('Save error:', error)
+                    showToast(error.response?.data?.message || '保存に失敗しました', 'error')
+                } finally {
+                    saveBtn.disabled = false
+                    saveBtn.innerHTML = originalText
+                }
+            })
+
+            // テスト送信
+            document.getElementById('testBtn').addEventListener('click', async () => {
+                const testBtn = document.getElementById('testBtn')
+                const originalText = testBtn.innerHTML
+                testBtn.disabled = true
+                testBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>送信中...'
+
+                try {
+                    const token = localStorage.getItem('token')
+                    const response = await axios.post('/api/birthday-email/test', {}, {
+                        headers: {
+                            'Authorization': 'Bearer ' + token
+                        }
+                    })
+
+                    if (response.data.success) {
+                        showToast('テストメールを送信しました（自分宛）', 'success')
+                    }
+                } catch (error) {
+                    console.error('Test send error:', error)
+                    showToast(error.response?.data?.message || 'テスト送信に失敗しました', 'error')
+                } finally {
+                    testBtn.disabled = false
+                    testBtn.innerHTML = originalText
+                }
+            })
+
+            document.addEventListener('DOMContentLoaded', loadTemplate)
         </script>
     </body>
     </html>
