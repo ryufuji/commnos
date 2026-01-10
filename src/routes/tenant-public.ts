@@ -1530,7 +1530,7 @@ tenantPublic.get('/home', async (c) => {
 
     <!-- ヒーローセクション -->
     <section style="background: linear-gradient(135deg, var(--commons-primary) 0%, var(--commons-primary-dark) 100%); color: white; padding: 40px 24px 32px;">
-        <div style="max-width: 1280px; margin: 0 auto; text-align: center;">
+        <div style="max-width: 1280px; margin: 0 auto;">
             <h1 style="font-size: var(--font-size-hero); font-weight: var(--font-weight-bold); line-height: var(--line-height-tight); margin-bottom: 12px;">
                 ${tenantName}
             </h1>
