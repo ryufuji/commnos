@@ -26,10 +26,10 @@ analytics.get('/overview', async (c) => {
     // 会員統計
     const memberStats = await DB.prepare(`
       SELECT 
-        COUNT(*) FILTER (WHERE status = 'active') as total_members,
-        COUNT(*) FILTER (WHERE status = 'pending') as pending_members,
-        COUNT(*) FILTER (WHERE status = 'inactive') as inactive_members,
-        COUNT(*) FILTER (WHERE status = 'active' AND joined_at >= date('now', '-30 days')) as new_members_month
+        COUNT(CASE WHEN status = 'active' THEN 1 END) as total_members,
+        COUNT(CASE WHEN status = 'pending' THEN 1 END) as pending_members,
+        COUNT(CASE WHEN status = 'inactive' THEN 1 END) as inactive_members,
+        COUNT(CASE WHEN status = 'active' AND joined_at >= date('now', '-30 days') THEN 1 END) as new_members_month
       FROM tenant_memberships
       WHERE tenant_id = ?
     `).bind(tenantId).first() as any
@@ -37,10 +37,10 @@ analytics.get('/overview', async (c) => {
     // 投稿統計
     const postStats = await DB.prepare(`
       SELECT 
-        COUNT(*) FILTER (WHERE status = 'published') as published_posts,
-        COUNT(*) FILTER (WHERE status = 'draft') as draft_posts,
-        COUNT(*) FILTER (WHERE status = 'scheduled') as scheduled_posts,
-        SUM(view_count) as total_views
+        COUNT(CASE WHEN status = 'published' THEN 1 END) as published_posts,
+        COUNT(CASE WHEN status = 'draft' THEN 1 END) as draft_posts,
+        COUNT(CASE WHEN status = 'scheduled' THEN 1 END) as scheduled_posts,
+        COALESCE(SUM(view_count), 0) as total_views
       FROM posts
       WHERE tenant_id = ?
     `).bind(tenantId).first() as any
@@ -63,8 +63,8 @@ analytics.get('/overview', async (c) => {
     // アンケート統計
     const surveyStats = await DB.prepare(`
       SELECT 
-        COUNT(DISTINCT sr.user_id) FILTER (WHERE s.survey_type = 'join') as join_responses,
-        COUNT(DISTINCT sr.user_id) FILTER (WHERE s.survey_type = 'leave') as leave_responses
+        COUNT(DISTINCT CASE WHEN s.survey_type = 'join' THEN sr.user_id END) as join_responses,
+        COUNT(DISTINCT CASE WHEN s.survey_type = 'leave' THEN sr.user_id END) as leave_responses
       FROM survey_responses sr
       JOIN surveys s ON sr.survey_id = s.id
       WHERE s.tenant_id = ?
@@ -116,12 +116,12 @@ analytics.get('/members', async (c) => {
     // 基本統計
     const basicStats = await DB.prepare(`
       SELECT 
-        COUNT(*) FILTER (WHERE status = 'active') as total_active,
-        COUNT(*) FILTER (WHERE status = 'pending') as total_pending,
-        COUNT(*) FILTER (WHERE status = 'inactive') as total_inactive,
-        COUNT(*) FILTER (WHERE role = 'owner') as owner_count,
-        COUNT(*) FILTER (WHERE role = 'admin') as admin_count,
-        COUNT(*) FILTER (WHERE role = 'member') as member_count
+        COUNT(CASE WHEN status = 'active' THEN 1 END) as total_active,
+        COUNT(CASE WHEN status = 'pending' THEN 1 END) as total_pending,
+        COUNT(CASE WHEN status = 'inactive' THEN 1 END) as total_inactive,
+        COUNT(CASE WHEN role = 'owner' THEN 1 END) as owner_count,
+        COUNT(CASE WHEN role = 'admin' THEN 1 END) as admin_count,
+        COUNT(CASE WHEN role = 'member' THEN 1 END) as member_count
       FROM tenant_memberships
       WHERE tenant_id = ?
     `).bind(tenantId).first() as any
@@ -175,11 +175,11 @@ analytics.get('/posts', async (c) => {
     // 基本統計
     const basicStats = await DB.prepare(`
       SELECT 
-        COUNT(*) FILTER (WHERE status = 'published') as published,
-        COUNT(*) FILTER (WHERE status = 'draft') as draft,
-        COUNT(*) FILTER (WHERE status = 'scheduled') as scheduled,
-        SUM(view_count) as total_views,
-        AVG(view_count) as avg_views
+        COUNT(CASE WHEN status = 'published' THEN 1 END) as published,
+        COUNT(CASE WHEN status = 'draft' THEN 1 END) as draft,
+        COUNT(CASE WHEN status = 'scheduled' THEN 1 END) as scheduled,
+        COALESCE(SUM(view_count), 0) as total_views,
+        COALESCE(AVG(view_count), 0) as avg_views
       FROM posts
       WHERE tenant_id = ?
     `).bind(tenantId).first() as any
@@ -430,8 +430,8 @@ analytics.get('/subscriptions', async (c) => {
     const subscriptionStats = await DB.prepare(`
       SELECT 
         COUNT(*) as active_count,
-        COUNT(*) FILTER (WHERE billing_interval = 'month') as monthly_count,
-        COUNT(*) FILTER (WHERE billing_interval = 'year') as yearly_count
+        COUNT(CASE WHEN billing_interval = 'month' THEN 1 END) as monthly_count,
+        COUNT(CASE WHEN billing_interval = 'year' THEN 1 END) as yearly_count
       FROM tenant_memberships
       WHERE tenant_id = ? AND status = 'active' AND stripe_subscription_id IS NOT NULL
     `).bind(tenantId).first() as any
