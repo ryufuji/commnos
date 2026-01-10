@@ -3152,7 +3152,7 @@ tenantPublic.get('/posts', async (c) => {
           <a href="/tenant/posts/${post.id}?subdomain=${subdomain}" class="block">
             ${thumbnailHTML}
             <div class="p-6">
-              <h3 class="text-xl font-bold text-gray-900 mb-3 line-clamp-2 group-hover:text-purple-600 transition">
+              <h3 class="text-xl font-bold text-gray-900 mb-3 line-clamp-2 group-hover:style="color: var(--commons-primary)" transition">
                 ${postTitle}
               </h3>
               <p class="text-gray-600 mb-4 line-clamp-3 text-sm leading-relaxed">
@@ -3182,7 +3182,7 @@ tenantPublic.get('/posts', async (c) => {
                     <span class="text-sm font-semibold">${viewCount}</span>
                   </div>
                 </div>
-                <div class="text-purple-600 font-semibold text-sm group-hover:translate-x-1 transition">
+                <div class="style="color: var(--commons-primary)" font-semibold text-sm group-hover:translate-x-1 transition">
                   続きを読む <i class="fas fa-arrow-right ml-1"></i>
                 </div>
               </div>
@@ -3228,7 +3228,7 @@ tenantPublic.get('/posts', async (c) => {
                     <span><i class="fas fa-eye mr-1"></i>${viewCount}</span>
                 </div>
             </div>
-            <i class="fas fa-chevron-right text-gray-400 group-hover:text-purple-600 transition"></i>
+            <i class="fas fa-chevron-right text-gray-400 group-hover:style="color: var(--commons-primary)" transition"></i>
         </a>
       `
     }).join('')
@@ -4243,7 +4243,7 @@ tenantPublic.get('/members', async (c) => {
       // ロールのバッジ
       let roleBadge = ''
       if (role === 'owner') {
-        roleBadge = '<span class="px-2 py-1 bg-purple-100 text-purple-700 text-xs font-semibold rounded-full">オーナー</span>'
+        roleBadge = '<span class="px-2 py-1 bg-purple-100 style="color: var(--commons-primary-dark)" text-xs font-semibold rounded-full">オーナー</span>'
       } else if (role === 'admin') {
         roleBadge = '<span class="px-2 py-1 bg-blue-100 text-blue-700 text-xs font-semibold rounded-full">管理者</span>'
       } else if (role === 'moderator') {
@@ -4361,81 +4361,27 @@ tenantPublic.get('/members', async (c) => {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>会員一覧 - ${tenantName}</title>
     <script src="https://cdn.tailwindcss.com"></script>
-        <script src="/static/tailwind-config.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
     <link href="/static/commons-theme.css" rel="stylesheet">
     <link href="/static/commons-components.css" rel="stylesheet">
 </head>
-<body class="bg-gray-50 min-h-screen">
+<body style="background: var(--commons-bg-light);">
     <!-- ヘッダー -->
-    <header class="bg-white shadow-sm sticky top-0 z-50">
-        <div class="container mx-auto px-4 py-4">
-            <div class="flex items-center justify-between">
-                <div class="flex items-center space-x-4">
-                    <a href="/tenant/home?subdomain=${subdomain}" class="text-2xl font-bold text-primary">
-                        ${tenantName}
-                    </a>
-                    ${tenantSubtitle ? `<span class="text-gray-500 hidden md:inline">- ${tenantSubtitle}</span>` : ''}
-                </div>
-                
-                <!-- デスクトップナビ -->
-                <nav class="hidden md:flex items-center space-x-6">
-                    <a href="/tenant/home?subdomain=${subdomain}" class="text-gray-600 hover:text-primary transition">
-                        <i class="fas fa-home mr-2"></i>ホーム
-                    </a>
-                    <a href="/tenant/posts?subdomain=${subdomain}" class="text-gray-600 hover:text-primary transition">
-                        <i class="fas fa-newspaper mr-2"></i>投稿
-                    </a>
-                    <a href="/tenant/members?subdomain=${subdomain}" class="text-primary font-semibold">
-                        <i class="fas fa-users mr-2"></i>メンバー
-                    </a>
-                    <a href="/login?subdomain=${subdomain}" class="text-gray-600 hover:text-primary transition">
-                        <i class="fas fa-sign-in-alt mr-2"></i>ログイン
-                    </a>
-                </nav>
-                
-                <!-- モバイルメニューボタン -->
-                <button id="mobileMenuToggle" class="md:hidden text-gray-600 hover:text-primary">
-                    <i class="fas fa-bars text-xl"></i>
-                </button>
-            </div>
-            
-            <!-- モバイルナビ -->
-            <nav id="mobileMenu" class="md:hidden mt-4 pb-4 space-y-2 hidden">
-                <a href="/tenant/home?subdomain=${subdomain}" class="block py-2 text-gray-600 hover:text-primary transition">
-                    <i class="fas fa-home mr-2"></i>ホーム
-                </a>
-                <a href="/tenant/posts?subdomain=${subdomain}" class="block py-2 text-gray-600 hover:text-primary transition">
-                    <i class="fas fa-newspaper mr-2"></i>投稿
-                </a>
-                <a href="/tenant/members?subdomain=${subdomain}" class="block py-2 text-primary font-semibold">
-                    <i class="fas fa-users mr-2"></i>メンバー
-                </a>
-                <a href="/login?subdomain=${subdomain}" class="block py-2 text-gray-600 hover:text-primary transition">
-                    <i class="fas fa-sign-in-alt mr-2"></i>ログイン
-                </a>
-            </nav>
+    ${renderCommonHeader(tenantName, subdomain, 'members')}
+
+    <!-- ページヘッダー -->
+    <section style="background: linear-gradient(135deg, var(--commons-primary) 0%, var(--commons-primary-dark) 100%); color: white; padding: 64px 24px 48px;">
+        <div style="max-width: 1280px; margin: 0 auto;">
+            <h1 style="font-size: var(--font-size-xlarge); font-weight: var(--font-weight-bold); margin-bottom: 16px;">
+                <i class="fas fa-users" style="margin-right: 16px;"></i>メンバー一覧
+            </h1>
+            <p style="font-size: var(--font-size-medium); opacity: 0.9;">${tenantName}のメンバー</p>
         </div>
-    </header>
+    </section>
 
     <!-- メインコンテンツ -->
-    <main class="container mx-auto px-4 py-8">
-        <!-- ページヘッダー -->
-        <div class="mb-8">
-            <h1 class="text-3xl md:text-4xl font-bold text-gray-900 mb-2">
-                <i class="fas fa-users mr-2 text-blue-600"></i>メンバー一覧
-            </h1>
-            <p class="text-gray-600">コミュニティのメンバー ${totalMembers} 人</p>
-        </div>
-        
-        <!-- 検索バー -->
-        <div class="mb-8 bg-white rounded-lg shadow-sm p-6">
-            <form method="GET" action="/tenant/members" class="space-y-4">
-                <input type="hidden" name="subdomain" value="${subdomain}">
-                
-                <div class="flex flex-col md:flex-row gap-4">
-                    <!-- 検索キーワード -->
-                    <div class="flex-1">
+    <main style="max-width: 1280px; margin: 0 auto; padding: 64px 24px;"
+                        ${tenantName}
                         <input 
                             type="text" 
                             name="search"
@@ -4542,6 +4488,9 @@ tenantPublic.get('/members', async (c) => {
             menu.classList.toggle('hidden')
         })
     </script>
+
+    <!-- フッター -->
+    ${renderCommonFooter(tenantName, subdomain)}
 </body>
 </html>`)
 })
@@ -4897,7 +4846,7 @@ tenantPublic.get('/members/:memberId', async (c) => {
   
   let roleBadgeHTML = ''
   if (role === 'owner') {
-    roleBadgeHTML = '<span class="px-3 py-1 bg-purple-100 text-purple-700 text-sm font-semibold rounded-full">オーナー</span>'
+    roleBadgeHTML = '<span class="px-3 py-1 bg-purple-100 style="color: var(--commons-primary-dark)" text-sm font-semibold rounded-full">オーナー</span>'
   } else if (role === 'admin') {
     roleBadgeHTML = '<span class="px-3 py-1 bg-blue-100 text-blue-700 text-sm font-semibold rounded-full">管理者</span>'
   } else if (role === 'moderator') {
@@ -4973,7 +4922,7 @@ tenantPublic.get('/members/:memberId', async (c) => {
     '<div class="text-2xl font-bold text-green-600">' + commentCount + '</div>' +
     '<div class="text-sm text-gray-600">コメント</div></div>' +
     '<div class="text-center p-4 bg-purple-50 rounded-lg">' +
-    '<div class="text-2xl font-bold text-purple-600">' + totalViews + '</div>' +
+    '<div class="text-2xl font-bold style="color: var(--commons-primary)"">' + totalViews + '</div>' +
     '<div class="text-sm text-gray-600">閲覧数</div></div></div>' +
     '<div class="text-sm text-gray-500"><i class="fas fa-calendar mr-2"></i>' + joinedDate + 'に参加</div>' +
     '</div></div></div>' +
@@ -5193,7 +5142,7 @@ tenantPublic.get('/mypage', async (c) => {
                 <div class="text-sm text-gray-600">下書き</div>
             </div>
             <div class="bg-white rounded-lg shadow-sm p-6 border-l-4 border-purple-500">
-                <div id="totalViews" class="text-3xl font-bold text-purple-600 mb-1">0</div>
+                <div id="totalViews" class="text-3xl font-bold style="color: var(--commons-primary)" mb-1">0</div>
                 <div class="text-sm text-gray-600">総閲覧数</div>
             </div>
         </div>
@@ -6029,7 +5978,7 @@ tenantPublic.get('/subscription', async (c) => {
                             <li><i class="fas fa-check text-green-600 mr-2"></i>無制限メンバー</li>
                             <li><i class="fas fa-check text-green-600 mr-2"></i>100GB ストレージ</li>
                         </ul>
-                        <button onclick="changePlan('pro')" class="w-full bg-purple-600 text-white py-2 rounded hover:bg-purple-700">
+                        <button onclick="changePlan('pro')" class="w-full style="background: var(--commons-primary)" text-white py-2 rounded hover:bg-purple-700">
                             選択
                         </button>
                     </div>
@@ -7036,7 +6985,7 @@ tenantPublic.get('/chat', async (c) => {
                                 <i class="fas fa-comments text-primary mr-2"></i>
                                 \${room.name}
                             </h3>
-                            \${room.is_private ? '<span class="px-2 py-1 bg-purple-100 text-purple-700 text-xs font-semibold rounded-full"><i class="fas fa-lock mr-1"></i>プライベート</span>' : ''}
+                            \${room.is_private ? '<span class="px-2 py-1 bg-purple-100 style="color: var(--commons-primary-dark)" text-xs font-semibold rounded-full"><i class="fas fa-lock mr-1"></i>プライベート</span>' : ''}
                         </div>
                         
                         <p class="text-gray-600 text-sm mb-4 line-clamp-2">\${room.description || 'チャットルーム'}</p>
@@ -7530,7 +7479,7 @@ tenantPublic.get('/chat/:id', async (c) => {
                                         <i class="fas fa-users mr-1"></i>
                                         \${room.members?.length || 0}人のメンバー
                                     </span>
-                                    \${room.is_private ? '<span class="px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs font-semibold"><i class="fas fa-lock mr-1"></i>非公開</span>' : '<span class="px-2 py-1 bg-green-100 text-green-700 rounded text-xs font-semibold"><i class="fas fa-globe mr-1"></i>公開</span>'}
+                                    \${room.is_private ? '<span class="px-2 py-1 bg-purple-100 style="color: var(--commons-primary-dark)" rounded text-xs font-semibold"><i class="fas fa-lock mr-1"></i>非公開</span>' : '<span class="px-2 py-1 bg-green-100 text-green-700 rounded text-xs font-semibold"><i class="fas fa-globe mr-1"></i>公開</span>'}
                                 </div>
                             </div>
                         </div>
@@ -8702,88 +8651,21 @@ tenantPublic.get('/events', async (c) => {
     <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
     <link href="/static/commons-theme.css" rel="stylesheet">
     <link href="/static/commons-components.css" rel="stylesheet">
-    <style>
-        .hero-gradient {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        }
-        .calendar-day {
-            aspect-ratio: 1;
-            transition: all 0.2s ease;
-        }
-        .calendar-day:hover {
-            background: #f3f4f6;
-            transform: scale(1.05);
-        }
-        .calendar-day.has-event {
-            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-        }
-        .calendar-day.has-event:hover {
-            background: linear-gradient(135deg, #fde68a 0%, #fbbf24 100%);
-        }
-        .event-card {
-            transition: all 0.3s ease;
-        }
-        .event-card:hover {
-            transform: translateY(-4px);
-        }
-        .event-badge {
-            background: rgba(0, 0, 0, 0.5);
-            backdrop-filter: blur(8px);
-        }
-    </style>
 </head>
-<body class="bg-gray-50">
-    <!-- ヒーローヘッダー -->
-    <div class="hero-gradient text-white">
-        <div class="max-w-7xl mx-auto px-4 py-8">
-            <div class="flex justify-between items-center mb-6">
-                <div class="flex items-center gap-4">
-                    <div class="w-16 h-16 bg-white/20 backdrop-blur rounded-full flex items-center justify-center">
-                        <i class="fas fa-calendar-alt text-3xl"></i>
-                    </div>
-                    <div>
-                        <h1 class="text-3xl md:text-4xl font-bold">イベントカレンダー</h1>
-                        <p class="text-white/90 mt-1">${tenantName}</p>
-                    </div>
-                </div>
-                <!-- ユーザーメニュー -->
-                <div class="flex items-center gap-3">
-                    <a href="/tenant/notifications?subdomain=${subdomain}" class="relative p-3 bg-white/10 hover:bg-white/20 rounded-full transition">
-                        <i class="fas fa-bell text-xl"></i>
-                    </a>
-                    <button id="mobileMenuBtn" class="p-3 bg-white/10 hover:bg-white/20 rounded-full transition md:hidden">
-                        <i class="fas fa-bars text-xl"></i>
-                    </button>
-                    <a href="/login?subdomain=${subdomain}" class="hidden md:block px-6 py-2 bg-white text-purple-700 font-semibold rounded-full hover:bg-white/90 transition">
-                        ログイン
-                    </a>
-                </div>
-            </div>
-            
-            <!-- ナビゲーションタブ -->
-            <nav class="flex gap-2 md:gap-4 overflow-x-auto pb-2 scrollbar-hide">
-                <a href="/tenant/home?subdomain=${subdomain}" class="px-4 md:px-6 py-2 bg-white/10 hover:bg-white/20 rounded-full whitespace-nowrap transition">
-                    <i class="fas fa-home mr-2"></i>ホーム
-                </a>
-                <a href="/tenant/posts?subdomain=${subdomain}" class="px-4 md:px-6 py-2 bg-white/10 hover:bg-white/20 rounded-full whitespace-nowrap transition">
-                    <i class="fas fa-fire mr-2"></i>投稿
-                </a>
-                <a href="/tenant/events?subdomain=${subdomain}" class="px-4 md:px-6 py-2 bg-white rounded-full text-purple-700 font-semibold whitespace-nowrap shadow-lg">
-                    <i class="fas fa-calendar-alt mr-2"></i>イベント
-                </a>
-                <a href="/tenant/members?subdomain=${subdomain}" class="px-4 md:px-6 py-2 bg-white/10 hover:bg-white/20 rounded-full whitespace-nowrap transition">
-                    <i class="fas fa-users mr-2"></i>メンバー
-                </a>
-                <a href="/tenant/shop?subdomain=${subdomain}" class="px-4 md:px-6 py-2 bg-white/10 hover:bg-white/20 rounded-full whitespace-nowrap transition">
-                    <i class="fas fa-shopping-bag mr-2"></i>ショップ
-                </a>
-            </nav>
-        </div>
-    </div>
+<body style="background: var(--commons-bg-light);">
+    <!-- ヘッダー -->
+    ${renderCommonHeader(tenantName, subdomain, 'events')}
 
-    <!-- メインコンテンツ -->
-    <main class="max-w-7xl mx-auto px-4 py-8 -mt-8">
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+    <!-- ページヘッダー -->
+    <section style="background: linear-gradient(135deg, var(--commons-primary) 0%, var(--commons-primary-dark) 100%); color: white; padding: 64px 24px 48px;">
+        <div style="max-width: 1280px; margin: 0 auto;">
+            <h1 style="font-size: var(--font-size-xlarge); font-weight: var(--font-weight-bold); margin-bottom: 16px;">
+                <i class="fas fa-calendar-alt" style="margin-right: 16px;"></i>イベントカレンダー
+            </h1>
+            <p style="font-size: var(--font-size-medium); opacity: 0.9;">${tenantName}の今後のイベント</p>
+        </div>
+    </section>
+
             <!-- メインコンテンツ -->
             <div class="lg:col-span-2 space-y-6">
                 ${featuredEvents.length > 0 ? `
@@ -8805,11 +8687,11 @@ tenantPublic.get('/events', async (c) => {
                 <div class="bg-white rounded-2xl shadow-sm p-6">
                     <div class="flex items-center justify-between mb-6">
                         <h2 class="text-2xl font-bold text-gray-900 flex items-center">
-                            <i class="fas fa-calendar-day text-purple-600 mr-3"></i>
+                            <i class="fas fa-calendar-day style="color: var(--commons-primary)" mr-3"></i>
                             今後のイベント
                         </h2>
                         <div class="flex gap-2">
-                            <button id="listViewBtn" class="px-4 py-2 bg-purple-600 text-white rounded-lg font-semibold">
+                            <button id="listViewBtn" class="px-4 py-2 style="background: var(--commons-primary)" text-white rounded-lg font-semibold">
                                 <i class="fas fa-list mr-2"></i>リスト
                             </button>
                             <button id="calendarViewBtn" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition">
@@ -8850,7 +8732,7 @@ tenantPublic.get('/events', async (c) => {
                     </h3>
                     <div class="space-y-4">
                         <div class="text-center p-4 bg-gradient-to-br from-blue-50 to-purple-50 rounded-xl">
-                            <div class="text-3xl font-bold text-purple-600" id="totalEvents">${events.length}</div>
+                            <div class="text-3xl font-bold style="color: var(--commons-primary)"" id="totalEvents">${events.length}</div>
                             <div class="text-gray-600 text-sm mt-1">今後のイベント</div>
                         </div>
                         <div class="text-center p-4 bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl">
@@ -8863,7 +8745,7 @@ tenantPublic.get('/events', async (c) => {
                 <!-- イベントタイプ凡例 -->
                 <div class="bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl shadow-sm p-6">
                     <h3 class="text-lg font-bold text-gray-900 mb-4">
-                        <i class="fas fa-tags text-purple-600 mr-2"></i>イベントタイプ
+                        <i class="fas fa-tags style="color: var(--commons-primary)" mr-2"></i>イベントタイプ
                     </h3>
                     <div class="space-y-2 text-sm">
                         <div class="flex items-center gap-2">
@@ -9045,7 +8927,7 @@ tenantPublic.get('/events', async (c) => {
                                 <h3 class="text-xl font-bold text-gray-900 mb-2">\${event.title}</h3>
                                 <p class="text-gray-600 mb-3 line-clamp-2">\${event.description || ''}</p>
                                 <div class="flex flex-wrap gap-4 text-sm text-gray-600">
-                                    <div><i class="far fa-calendar text-purple-600 mr-2"></i>\${formatEventDate(event.start_datetime)}</div>
+                                    <div><i class="far fa-calendar style="color: var(--commons-primary)" mr-2"></i>\${formatEventDate(event.start_datetime)}</div>
                                     \${event.location_name ? \`<div><i class="fas fa-map-marker-alt text-red-600 mr-2"></i>\${event.location_name}</div>\` : ''}
                                     \${event.max_participants ? \`<div><i class="fas fa-users text-blue-600 mr-2"></i>定員 \${event.max_participants}名</div>\` : ''}
                                 </div>
@@ -9091,7 +8973,7 @@ tenantPublic.get('/events', async (c) => {
                     
                     <div class="space-y-4 mb-6">
                         <div class="flex items-start gap-3">
-                            <i class="far fa-calendar text-purple-600 text-xl mt-1"></i>
+                            <i class="far fa-calendar style="color: var(--commons-primary)" text-xl mt-1"></i>
                             <div>
                                 <div class="font-semibold text-gray-900">開始</div>
                                 <div class="text-gray-600">\${formatEventDate(event.start_datetime)}</div>
@@ -9195,7 +9077,7 @@ tenantPublic.get('/events', async (c) => {
         document.getElementById('listViewBtn')?.addEventListener('click', () => {
             document.getElementById('listView').classList.remove('hidden')
             document.getElementById('calendarView').classList.add('hidden')
-            document.getElementById('listViewBtn').className = 'px-4 py-2 bg-purple-600 text-white rounded-lg font-semibold'
+            document.getElementById('listViewBtn').className = 'px-4 py-2 style="background: var(--commons-primary)" text-white rounded-lg font-semibold'
             document.getElementById('calendarViewBtn').className = 'px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition'
         })
         
@@ -9203,7 +9085,7 @@ tenantPublic.get('/events', async (c) => {
             document.getElementById('listView').classList.add('hidden')
             document.getElementById('calendarView').classList.remove('hidden')
             document.getElementById('listViewBtn').className = 'px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition'
-            document.getElementById('calendarViewBtn').className = 'px-4 py-2 bg-purple-600 text-white rounded-lg font-semibold'
+            document.getElementById('calendarViewBtn').className = 'px-4 py-2 style="background: var(--commons-primary)" text-white rounded-lg font-semibold'
             renderCalendar()
         })
         
@@ -9284,6 +9166,9 @@ tenantPublic.get('/events', async (c) => {
         renderEventsList()
         updateStats()
     </script>
+
+    <!-- フッター -->
+    ${renderCommonFooter(tenantName, subdomain)}
 </body>
 </html>
   `)
