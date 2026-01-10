@@ -3282,78 +3282,135 @@ tenantPublic.get('/posts', async (c) => {
   const tenantName = String(tenant.name || '')
   const tenantSubtitle = String(tenant.subtitle || '')
   
-  // 投稿カードのHTML生成
+  // 投稿カードのHTML生成（新しいファンクラブUIデザイン）
   let postsHTML = ''
   if (posts.length === 0) {
-    postsHTML = '<div class="col-span-full text-center py-12"><p class="text-gray-600 text-lg">まだ投稿がありません</p></div>'
+    postsHTML = `
+      <div class="text-center py-16 bg-white rounded-2xl shadow-sm">
+        <div class="w-24 h-24 bg-gray-100 rounded-full mx-auto mb-6 flex items-center justify-center">
+          <i class="fas fa-inbox text-4xl text-gray-400"></i>
+        </div>
+        <p class="text-gray-600 text-lg font-semibold mb-2">まだ投稿がありません</p>
+        <p class="text-gray-500 text-sm">最初の投稿を楽しみにしています！</p>
+      </div>
+    `
   } else {
-    postsHTML = posts.map((post: any) => {
+    postsHTML = posts.map((post: any, index: number) => {
       const postTitle = String(post.title || '')
       const postContent = String(post.content || '')
-      const postExcerpt = String(post.excerpt || postContent.substring(0, 150))
+      const postExcerpt = String(post.excerpt || postContent.substring(0, 120))
       const authorName = String(post.author_name || '不明')
-      const createdDate = new Date(String(post.created_at)).toLocaleDateString('ja-JP')
+      const createdDate = new Date(String(post.created_at))
+      const now = new Date()
+      const diffMs = now.getTime() - createdDate.getTime()
+      const diffMins = Math.floor(diffMs / 60000)
+      const diffHours = Math.floor(diffMs / 3600000)
+      const diffDays = Math.floor(diffMs / 86400000)
+      
+      let timeAgo = ''
+      if (diffMins < 60) {
+        timeAgo = `${diffMins}分前`
+      } else if (diffHours < 24) {
+        timeAgo = `${diffHours}時間前`
+      } else if (diffDays < 7) {
+        timeAgo = `${diffDays}日前`
+      } else {
+        timeAgo = createdDate.toLocaleDateString('ja-JP', { month: 'short', day: 'numeric' })
+      }
+      
       const likeCount = Number(post.like_count || 0)
+      const viewCount = Number(post.view_count || 0)
       const thumbnailUrl = String(post.thumbnail_url || '')
       const videoUrl = String(post.video_url || '')
+      
+      // 新着バッジ（24時間以内）
+      const isNew = diffHours < 24
+      const newBadge = isNew ? '<span class="absolute top-4 right-4 bg-red-500 text-white text-xs font-bold px-3 py-1 rounded-full shadow-lg animate-pulse">NEW</span>' : ''
       
       // サムネイル画像の表示
       let thumbnailHTML = ''
       if (thumbnailUrl) {
-        // 動画がある場合は再生アイコンを重ねて表示
         const videoOverlay = videoUrl ? `
-          <div class="absolute inset-0 flex items-center justify-center bg-black/30">
-            <div class="w-16 h-16 bg-white/90 rounded-full flex items-center justify-center shadow-lg">
-              <i class="fas fa-play text-blue-600 text-2xl ml-1"></i>
+          <div class="absolute inset-0 flex items-center justify-center bg-black/40 group-hover:bg-black/50 transition">
+            <div class="w-20 h-20 bg-white rounded-full flex items-center justify-center shadow-2xl transform group-hover:scale-110 transition">
+              <i class="fas fa-play text-purple-600 text-2xl ml-1"></i>
             </div>
           </div>
         ` : ''
         
         thumbnailHTML = `
-          <div class="w-full h-48 rounded-t-lg overflow-hidden relative">
-            <img src="${thumbnailUrl}" alt="${postTitle}" class="w-full h-full object-cover">
+          <div class="relative w-full h-72 overflow-hidden rounded-t-2xl">
+            <img src="${thumbnailUrl}" alt="${postTitle}" class="w-full h-full object-cover transform group-hover:scale-105 transition duration-500">
             ${videoOverlay}
+            ${newBadge}
+            <div class="absolute bottom-4 left-4 time-badge text-white text-sm px-3 py-1 rounded-full">
+              <i class="far fa-clock mr-1"></i>${timeAgo}
+            </div>
           </div>
         `
       } else {
-        // サムネイルなし：動画があれば動画アイコン、なければ通常アイコン
-        const icon = videoUrl ? 'fa-video' : 'fa-file-alt'
+        const icon = videoUrl ? 'fa-video' : 'fa-image'
+        const gradientClass = index % 3 === 0 ? 'from-purple-400 to-pink-500' : 
+                             index % 3 === 1 ? 'from-blue-400 to-cyan-500' : 
+                             'from-orange-400 to-red-500'
         thumbnailHTML = `
-          <div class="w-full h-48 bg-gradient-to-br from-blue-400 to-blue-600 rounded-t-lg flex items-center justify-center">
-            <i class="fas ${icon} text-6xl text-white opacity-50"></i>
+          <div class="relative w-full h-72 bg-gradient-to-br ${gradientClass} rounded-t-2xl flex items-center justify-center">
+            <i class="fas ${icon} text-8xl text-white opacity-30"></i>
+            ${newBadge}
+            <div class="absolute bottom-4 left-4 time-badge text-white text-sm px-3 py-1 rounded-full">
+              <i class="far fa-clock mr-1"></i>${timeAgo}
+            </div>
           </div>
         `
       }
       
       return `
-        <div class="bg-white rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300">
+        <div class="post-card bg-white rounded-2xl shadow-md hover:shadow-2xl overflow-hidden group">
+          <a href="/tenant/posts/${post.id}?subdomain=${subdomain}" class="block">
             ${thumbnailHTML}
             <div class="p-6">
-                <h3 class="text-xl font-bold text-gray-900 mb-2 line-clamp-2">${postTitle}</h3>
-                <p class="text-gray-600 mb-4 line-clamp-3">${postExcerpt}...</p>
-                <div class="flex items-center justify-between text-sm text-gray-500 mb-4">
-                    <span><i class="fas fa-user mr-1"></i>${authorName}</span>
-                    <span><i class="fas fa-calendar mr-1"></i>${createdDate}</span>
+              <h3 class="text-xl font-bold text-gray-900 mb-3 line-clamp-2 group-hover:text-purple-600 transition">
+                ${postTitle}
+              </h3>
+              <p class="text-gray-600 mb-4 line-clamp-3 text-sm leading-relaxed">
+                ${postExcerpt}${postExcerpt.length >= 120 ? '...' : ''}
+              </p>
+              
+              <!-- 投稿者情報 -->
+              <div class="flex items-center mb-4 pb-4 border-b border-gray-100">
+                <div class="w-10 h-10 bg-gradient-to-br from-blue-400 to-purple-500 rounded-full flex items-center justify-center text-white font-bold mr-3">
+                  ${authorName.charAt(0).toUpperCase()}
                 </div>
-                <div class="flex items-center justify-between mb-4">
-                    <div class="flex items-center space-x-4 text-sm text-gray-600">
-                        <span><i class="far fa-thumbs-up mr-1"></i>${likeCount}</span>
-                        <span><i class="far fa-eye mr-1"></i>${post.view_count || 0}</span>
-                    </div>
+                <div>
+                  <div class="font-semibold text-gray-900 text-sm">${authorName}</div>
+                  <div class="text-gray-500 text-xs">${timeAgo}</div>
                 </div>
-                <a href="/tenant/posts/${post.id}?subdomain=${subdomain}" 
-                   class="block w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded-lg text-center transition-colors"
-                   data-subdomain="${subdomain}"
-                   data-post-id="${post.id}">
-                    続きを読む <i class="fas fa-arrow-right ml-2"></i>
-                </a>
+              </div>
+              
+              <!-- エンゲージメント -->
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-4">
+                  <button class="engagement-icon flex items-center gap-1 text-gray-600 hover:text-red-500 transition">
+                    <i class="far fa-heart text-lg"></i>
+                    <span class="text-sm font-semibold">${likeCount}</span>
+                  </button>
+                  <div class="flex items-center gap-1 text-gray-600">
+                    <i class="far fa-eye text-lg"></i>
+                    <span class="text-sm font-semibold">${viewCount}</span>
+                  </div>
+                </div>
+                <div class="text-purple-600 font-semibold text-sm group-hover:translate-x-1 transition">
+                  続きを読む <i class="fas fa-arrow-right ml-1"></i>
+                </div>
+              </div>
             </div>
+          </a>
         </div>
       `
     }).join('')
   }
   
-  // 人気投稿HTMLを生成
+  // 人気投稿HTMLを生成（新しいデザイン）
   let popularPostsHTML = ''
   if (popularPosts.length > 0) {
     popularPostsHTML = popularPosts.map((post: any, index: number) => {
@@ -3362,32 +3419,39 @@ tenantPublic.get('/posts', async (c) => {
       const likeCount = Number(post.like_count || 0)
       const viewCount = Number(post.view_count || 0)
       
-      // ランキングバッジの色
-      let badgeClass = 'bg-gray-500'
-      if (index === 0) badgeClass = 'bg-yellow-500'
-      else if (index === 1) badgeClass = 'bg-gray-400'
-      else if (index === 2) badgeClass = 'bg-orange-600'
+      // ランキングバッジのデザイン
+      let badgeHTML = ''
+      if (index === 0) {
+        badgeHTML = '<div class="w-10 h-10 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-lg">🥇</div>'
+      } else if (index === 1) {
+        badgeHTML = '<div class="w-10 h-10 bg-gradient-to-br from-gray-300 to-gray-400 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-lg">🥈</div>'
+      } else if (index === 2) {
+        badgeHTML = '<div class="w-10 h-10 bg-gradient-to-br from-orange-400 to-orange-600 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-lg">🥉</div>'
+      } else {
+        badgeHTML = `<div class="w-10 h-10 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center text-white font-bold shadow">${index + 1}</div>`
+      }
       
       return `
         <a href="/tenant/posts/${post.id}?subdomain=${subdomain}" 
-           class="flex items-center p-4 bg-white rounded-lg shadow hover:shadow-md transition">
-            <div class="${badgeClass} text-white font-bold w-8 h-8 rounded-full flex items-center justify-center mr-4">
-                ${index + 1}
-            </div>
-            <div class="flex-grow">
-                <h4 class="font-semibold text-gray-900 mb-1 line-clamp-1">${postTitle}</h4>
-                <div class="flex items-center space-x-4 text-xs text-gray-500">
+           class="flex items-center gap-3 p-4 bg-gradient-to-r from-gray-50 to-white rounded-xl hover:shadow-md transition group">
+            ${badgeHTML}
+            <div class="flex-grow min-w-0">
+                <h4 class="font-semibold text-gray-900 group-hover:text-purple-600 transition truncate text-sm mb-1">
+                  ${postTitle}
+                </h4>
+                <div class="flex items-center gap-3 text-xs text-gray-500">
                     <span><i class="fas fa-user mr-1"></i>${authorName}</span>
-                    <span><i class="far fa-thumbs-up mr-1"></i>${likeCount}</span>
-                    <span><i class="far fa-eye mr-1"></i>${viewCount}</span>
+                    <span><i class="fas fa-heart text-red-500 mr-1"></i>${likeCount}</span>
+                    <span><i class="fas fa-eye mr-1"></i>${viewCount}</span>
                 </div>
             </div>
+            <i class="fas fa-chevron-right text-gray-400 group-hover:text-purple-600 transition"></i>
         </a>
       `
     }).join('')
   }
   
-  // ページネーションHTML生成
+  // ページネーションHTML生成（新しいデザイン）
   let paginationHTML = ''
   if (totalPages > 1) {
     const pages = []
@@ -3395,43 +3459,43 @@ tenantPublic.get('/posts', async (c) => {
     // 前へボタン
     if (page > 1) {
       pages.push(`<a href="/tenant/posts?subdomain=${subdomain}&page=${page - 1}" 
-                    class="px-4 py-2 bg-white text-blue-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition">
-                    <i class="fas fa-chevron-left"></i> 前へ
+                    class="px-5 py-3 bg-white text-purple-600 font-semibold border-2 border-purple-200 rounded-xl hover:bg-purple-50 hover:border-purple-300 transition shadow-sm">
+                    <i class="fas fa-chevron-left mr-2"></i>前へ
                  </a>`)
     } else {
-      pages.push(`<span class="px-4 py-2 bg-gray-100 text-gray-400 border border-gray-300 rounded-lg cursor-not-allowed">
-                    <i class="fas fa-chevron-left"></i> 前へ
+      pages.push(`<span class="px-5 py-3 bg-gray-100 text-gray-400 border-2 border-gray-200 rounded-xl cursor-not-allowed">
+                    <i class="fas fa-chevron-left mr-2"></i>前へ
                  </span>`)
     }
     
     // ページ番号
     for (let i = 1; i <= totalPages; i++) {
       if (i === page) {
-        pages.push(`<span class="px-4 py-2 bg-blue-600 text-white rounded-lg font-semibold">${i}</span>`)
+        pages.push(`<span class="px-5 py-3 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-xl font-bold shadow-lg">${i}</span>`)
       } else if (i === 1 || i === totalPages || (i >= page - 2 && i <= page + 2)) {
         pages.push(`<a href="/tenant/posts?subdomain=${subdomain}&page=${i}" 
-                      class="px-4 py-2 bg-white text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition">
+                      class="px-5 py-3 bg-white text-gray-700 border-2 border-gray-200 rounded-xl hover:bg-gray-50 hover:border-purple-300 transition shadow-sm font-semibold">
                       ${i}
                    </a>`)
       } else if (i === page - 3 || i === page + 3) {
-        pages.push(`<span class="px-4 py-2 text-gray-500">...</span>`)
+        pages.push(`<span class="px-3 py-3 text-gray-500">...</span>`)
       }
     }
     
     // 次へボタン
     if (page < totalPages) {
       pages.push(`<a href="/tenant/posts?subdomain=${subdomain}&page=${page + 1}" 
-                    class="px-4 py-2 bg-white text-blue-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition">
-                    次へ <i class="fas fa-chevron-right"></i>
+                    class="px-5 py-3 bg-white text-purple-600 font-semibold border-2 border-purple-200 rounded-xl hover:bg-purple-50 hover:border-purple-300 transition shadow-sm">
+                    次へ<i class="fas fa-chevron-right ml-2"></i>
                  </a>`)
     } else {
-      pages.push(`<span class="px-4 py-2 bg-gray-100 text-gray-400 border border-gray-300 rounded-lg cursor-not-allowed">
-                    次へ <i class="fas fa-chevron-right"></i>
+      pages.push(`<span class="px-5 py-3 bg-gray-100 text-gray-400 border-2 border-gray-200 rounded-xl cursor-not-allowed">
+                    次へ<i class="fas fa-chevron-right ml-2"></i>
                  </span>`)
     }
     
     paginationHTML = `
-      <div class="flex justify-center items-center gap-2 flex-wrap">
+      <div class="flex justify-center items-center gap-2 flex-wrap bg-white rounded-2xl p-6 shadow-sm">
         ${pages.join('')}
       </div>
     `
@@ -3442,75 +3506,116 @@ tenantPublic.get('/posts', async (c) => {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>投稿一覧 - ${tenantName}</title>
+    <title>${tenantName} - ホーム</title>
     <script src="https://cdn.tailwindcss.com"></script>
-        <script src="/static/tailwind-config.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
     <link href="/static/commons-theme.css" rel="stylesheet">
     <link href="/static/commons-components.css" rel="stylesheet">
+    <style>
+        /* カスタムスタイル */
+        .hero-gradient {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .post-card {
+            transition: all 0.3s ease;
+        }
+        .post-card:hover {
+            transform: translateY(-4px);
+        }
+        .time-badge {
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(8px);
+        }
+        .stats-card {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        }
+        .stats-card-blue {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+        }
+        .stats-card-green {
+            background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+        }
+        .engagement-icon {
+            transition: all 0.2s ease;
+        }
+        .engagement-icon:hover {
+            transform: scale(1.2);
+        }
+    </style>
 </head>
-<body class="bg-gradient-to-br from-gray-50 to-gray-100">
-    <!-- ヘッダー -->
-    <header class="bg-white/80 backdrop-blur-sm shadow-sm border-b border-gray-200 sticky top-0 z-10">
-        <div class="max-w-7xl mx-auto px-4 py-4">
-            <div class="flex justify-between items-center">
-                <div>
-                    <h1 class="text-2xl md:text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                        <i class="fas fa-users mr-2"></i>${tenantName}
-                    </h1>
-                    ${tenantSubtitle ? `<p class="text-gray-600 mt-1">${tenantSubtitle}</p>` : ''}
+<body class="bg-gray-50">
+    <!-- ヒーローヘッダー -->
+    <div class="hero-gradient text-white">
+        <div class="max-w-7xl mx-auto px-4 py-8">
+            <div class="flex justify-between items-center mb-6">
+                <div class="flex items-center gap-4">
+                    <div class="w-16 h-16 bg-white/20 backdrop-blur rounded-full flex items-center justify-center">
+                        <i class="fas fa-users text-3xl"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-3xl md:text-4xl font-bold">${tenantName}</h1>
+                        ${tenantSubtitle ? `<p class="text-white/90 mt-1">${tenantSubtitle}</p>` : ''}
+                    </div>
                 </div>
-                <!-- デスクトップナビ -->
-                <nav class="hidden md:flex gap-4 items-center">
-                    <a href="/tenant/home?subdomain=${subdomain}" class="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition">
-                        <i class="fas fa-home mr-2"></i>ホーム
+                <!-- ユーザーメニュー -->
+                <div class="flex items-center gap-3">
+                    <a href="/tenant/notifications?subdomain=${subdomain}" class="relative p-3 bg-white/10 hover:bg-white/20 rounded-full transition">
+                        <i class="fas fa-bell text-xl"></i>
+                        <span id="notificationBadge" class="hidden absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center"></span>
                     </a>
-                    <a href="/tenant/posts?subdomain=${subdomain}" class="px-4 py-2 bg-blue-100 text-blue-700 rounded-lg font-semibold">
-                        <i class="fas fa-file-alt mr-2"></i>投稿
+                    <button id="mobileMenuBtn" class="p-3 bg-white/10 hover:bg-white/20 rounded-full transition md:hidden">
+                        <i class="fas fa-bars text-xl"></i>
+                    </button>
+                    <a href="/login?subdomain=${subdomain}" class="hidden md:block px-6 py-2 bg-white text-purple-700 font-semibold rounded-full hover:bg-white/90 transition">
+                        ログイン
                     </a>
-                    <a href="/tenant/members?subdomain=${subdomain}" class="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition">
-                        <i class="fas fa-users mr-2"></i>メンバー
-                    </a>
-                    <a href="/tenant/notifications?subdomain=${subdomain}" id="notificationLink" class="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition relative">
-                        <i class="fas fa-bell mr-2"></i>通知
-                        <span id="notificationBadge" class="hidden absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full"></span>
-                    </a>
-                    <a href="/login?subdomain=${subdomain}" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition">
-                        <i class="fas fa-sign-in-alt mr-2"></i>ログイン
-                    </a>
-                </nav>
-                <!-- モバイルメニューボタン -->
-                <button id="mobileMenuBtn" class="md:hidden p-2 text-gray-700 hover:bg-gray-100 rounded-lg">
-                    <i class="fas fa-bars text-xl"></i>
-                </button>
+                </div>
             </div>
-            <!-- モバイルメニュー -->
-            <div id="mobileMenu" class="hidden md:hidden mt-4 space-y-2">
-                <a href="/tenant/home?subdomain=${subdomain}" class="block px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg text-center">
+            
+            <!-- ナビゲーションタブ -->
+            <nav class="flex gap-2 md:gap-4 overflow-x-auto pb-2 scrollbar-hide">
+                <a href="/tenant/home?subdomain=${subdomain}" class="px-4 md:px-6 py-2 bg-white/10 hover:bg-white/20 rounded-full whitespace-nowrap transition">
                     <i class="fas fa-home mr-2"></i>ホーム
                 </a>
-                <a href="/tenant/posts?subdomain=${subdomain}" class="block px-4 py-2 bg-blue-100 text-blue-700 rounded-lg text-center font-semibold">
-                    <i class="fas fa-file-alt mr-2"></i>投稿
+                <a href="/tenant/posts?subdomain=${subdomain}" class="px-4 md:px-6 py-2 bg-white rounded-full text-purple-700 font-semibold whitespace-nowrap shadow-lg">
+                    <i class="fas fa-fire mr-2"></i>投稿
                 </a>
-                <a href="/tenant/members?subdomain=${subdomain}" class="block px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg text-center">
+                <a href="/tenant/members?subdomain=${subdomain}" class="px-4 md:px-6 py-2 bg-white/10 hover:bg-white/20 rounded-full whitespace-nowrap transition">
                     <i class="fas fa-users mr-2"></i>メンバー
                 </a>
-                <a href="/tenant/notifications?subdomain=${subdomain}" id="notificationLinkMobile" class="block px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg text-center relative">
-                    <i class="fas fa-bell mr-2"></i>通知
-                    <span id="notificationBadgeMobile" class="hidden ml-2 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded-full"></span>
+                <a href="/tenant/shop?subdomain=${subdomain}" class="px-4 md:px-6 py-2 bg-white/10 hover:bg-white/20 rounded-full whitespace-nowrap transition">
+                    <i class="fas fa-shopping-bag mr-2"></i>ショップ
                 </a>
-                <a href="/login?subdomain=${subdomain}" class="block px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-center">
-                    <i class="fas fa-sign-in-alt mr-2"></i>ログイン
-                </a>
+            </nav>
+            
+            <!-- 統計情報 -->
+            <div class="grid grid-cols-3 gap-3 mt-6">
+                <div class="text-center">
+                    <div class="text-2xl md:text-3xl font-bold">${totalPosts}</div>
+                    <div class="text-white/80 text-xs md:text-sm">投稿</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-2xl md:text-3xl font-bold">🔥</div>
+                    <div class="text-white/80 text-xs md:text-sm">人気</div>
+                </div>
+                <div class="text-center">
+                    <div class="text-2xl md:text-3xl font-bold">✨</div>
+                    <div class="text-white/80 text-xs md:text-sm">NEW</div>
+                </div>
             </div>
         </div>
-    </header>
+    </div>
 
     <!-- メインコンテンツ -->
-    <main class="max-w-7xl mx-auto px-4 py-8">
-        <!-- ページタイトルと投稿作成ボタン -->
-        <div class="mb-8 flex justify-between items-center">
-            <div>
+    <main class="max-w-7xl mx-auto px-4 py-8 -mt-8">
+        <!-- グリッドレイアウト: メインコンテンツ + サイドバー -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- メインコンテンツ (投稿一覧) -->
+            <div class="lg:col-span-2">
+                <!-- セクションヘッダー -->
+                <div class="bg-white rounded-2xl shadow-sm p-6 mb-6">
+                    <div class="flex items-center justify-between">
+                        <div>
                 <h2 class="text-3xl md:text-4xl font-bold text-gray-900 mb-2">
                     <i class="fas fa-file-alt mr-2 text-blue-600"></i>投稿一覧
                 </h2>
@@ -3522,34 +3627,95 @@ tenantPublic.get('/posts', async (c) => {
             </a>
         </div>
 
-        <!-- 人気投稿ランキング -->
-        ${popularPostsHTML ? `
-        <div class="mb-8 bg-gradient-to-r from-yellow-50 to-orange-50 rounded-lg p-6 border border-yellow-200">
-            <h3 class="text-2xl font-bold text-gray-900 mb-4">
-                <i class="fas fa-fire text-orange-500 mr-2"></i>人気投稿ランキング
-            </h3>
-            <div class="space-y-3">
-                ${popularPostsHTML}
+                            <h2 class="text-2xl font-bold text-gray-900">
+                                <i class="fas fa-fire text-orange-500 mr-2"></i>最新投稿
+                            </h2>
+                            <p class="text-gray-600 text-sm mt-1">コミュニティの新着コンテンツ</p>
+                        </div>
+                        <button id="createPostBtn" class="hidden px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white rounded-full font-semibold hover:shadow-lg transition">
+                            <i class="fas fa-plus mr-2"></i>投稿する
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 投稿グリッド -->
+                <div class="space-y-6">
+                    ${postsHTML}
+                </div>
+
+                <!-- ページネーション -->
+                <div class="mt-8">
+                    ${paginationHTML}
+                </div>
+            </div>
+
+            <!-- サイドバー -->
+            <div class="lg:col-span-1 space-y-6">
+                <!-- 人気投稿ランキング -->
+                ${popularPostsHTML ? `
+                <div class="bg-white rounded-2xl shadow-sm p-6 sticky top-24">
+                    <h3 class="text-xl font-bold text-gray-900 mb-4 flex items-center">
+                        <span class="w-8 h-8 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center mr-3">
+                            <i class="fas fa-fire text-white text-sm"></i>
+                        </span>
+                        人気投稿
+                    </h3>
+                    <div class="space-y-3">
+                        ${popularPostsHTML}
+                    </div>
+                </div>
+                ` : ''}
+                
+                <!-- コミュニティ情報 -->
+                <div class="bg-gradient-to-br from-blue-50 to-purple-50 rounded-2xl shadow-sm p-6">
+                    <h3 class="text-lg font-bold text-gray-900 mb-4">
+                        <i class="fas fa-info-circle text-blue-600 mr-2"></i>コミュニティ情報
+                    </h3>
+                    <div class="space-y-3 text-sm">
+                        <div class="flex items-center justify-between">
+                            <span class="text-gray-600">総投稿数</span>
+                            <span class="font-bold text-blue-600">${totalPosts}件</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-gray-600">ページ</span>
+                            <span class="font-bold text-purple-600">${page} / ${totalPages || 1}</span>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
-        ` : ''}
-
-        <!-- 投稿グリッド -->
-        <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-            ${postsHTML}
-        </div>
-
-        <!-- ページネーション -->
-        ${paginationHTML}
     </main>
 
     <!-- フッター -->
-    <footer class="bg-gray-900 text-white py-12 mt-20">
-        <div class="max-w-7xl mx-auto px-4 text-center">
-            <h2 class="text-2xl font-bold mb-2">${tenantName}</h2>
-            ${tenantSubtitle ? `<p class="text-gray-400 mb-4">${tenantSubtitle}</p>` : ''}
-            <p class="text-gray-400">&copy; ${new Date().getFullYear()} ${tenantName}. All rights reserved.</p>
-            <p class="text-gray-500 mt-2 text-sm">Powered by Commons</p>
+    <footer class="bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900 text-white py-16 mt-20">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="text-center mb-8">
+                <div class="w-20 h-20 bg-white/10 backdrop-blur rounded-full mx-auto mb-4 flex items-center justify-center">
+                    <i class="fas fa-users text-4xl"></i>
+                </div>
+                <h2 class="text-3xl font-bold mb-2">${tenantName}</h2>
+                ${tenantSubtitle ? `<p class="text-gray-300 mb-4">${tenantSubtitle}</p>` : ''}
+            </div>
+            
+            <div class="flex justify-center gap-6 mb-8">
+                <a href="/tenant/posts?subdomain=${subdomain}" class="text-gray-300 hover:text-white transition">
+                    <i class="fas fa-newspaper mr-2"></i>投稿
+                </a>
+                <a href="/tenant/members?subdomain=${subdomain}" class="text-gray-300 hover:text-white transition">
+                    <i class="fas fa-users mr-2"></i>メンバー
+                </a>
+                <a href="/tenant/shop?subdomain=${subdomain}" class="text-gray-300 hover:text-white transition">
+                    <i class="fas fa-shopping-bag mr-2"></i>ショップ
+                </a>
+            </div>
+            
+            <div class="text-center border-t border-white/10 pt-8">
+                <p class="text-gray-400">&copy; ${new Date().getFullYear()} ${tenantName}. All rights reserved.</p>
+                <p class="text-gray-500 mt-2 text-sm flex items-center justify-center gap-2">
+                    <span>Powered by</span>
+                    <span class="font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">Commons</span>
+                </p>
+            </div>
         </div>
     </footer>
 
@@ -3579,12 +3745,11 @@ tenantPublic.get('/posts', async (c) => {
         // ページ読み込み時に実行
         checkAdminAndShowCreateButton()
         
-        // モバイルメニュー切り替え
-        const mobileMenuBtn = document.getElementById('mobileMenuBtn')
-        const mobileMenu = document.getElementById('mobileMenu')
-        if (mobileMenuBtn && mobileMenu) {
-            mobileMenuBtn.addEventListener('click', () => {
-                mobileMenu.classList.toggle('hidden')
+        // 投稿作成ボタンのクリックイベント
+        const createPostBtn = document.getElementById('createPostBtn')
+        if (createPostBtn) {
+            createPostBtn.addEventListener('click', () => {
+                window.location.href = '/posts?subdomain=${subdomain}'
             })
         }
 
