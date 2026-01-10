@@ -4837,7 +4837,16 @@ tenantPublic.get('/members/:memberId', async (c) => {
   const avatarUrl = member.avatar_url ? String(member.avatar_url) : ''
   const role = String(member.role || 'member')
   const birthday = member.birthday ? String(member.birthday) : null
-  const lastLoginAt = member.last_login_at ? String(member.last_login_at) : null
+  // 最終ログイン日時を日本語フォーマットに変換（すでにJSTで記録されている想定）
+  const lastLoginAt = member.last_login_at 
+    ? new Date(String(member.last_login_at)).toLocaleString('ja-JP', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      })
+    : null
   const joinedDate = new Date(String(member.joined_at)).toLocaleDateString('ja-JP', {
     year: 'numeric', month: 'long', day: 'numeric'
   })

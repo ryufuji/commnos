@@ -192,9 +192,9 @@ auth.post('/login', async (c) => {
       return c.json({ success: false, error: 'Invalid email or password' }, 401)
     }
 
-    // 最終ログイン日時を更新
+    // 最終ログイン日時を更新（JST = UTC+9時間）
     await db
-      .prepare('UPDATE users SET last_login_at = datetime(\'now\') WHERE id = ?')
+      .prepare('UPDATE users SET last_login_at = datetime(\'now\', \'+9 hours\') WHERE id = ?')
       .bind(user.id)
       .run()
 
