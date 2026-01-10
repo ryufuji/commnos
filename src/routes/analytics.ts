@@ -5,42 +5,14 @@
 
 import { Hono } from 'hono'
 import type { AppContext } from '../types'
-import { verifyToken } from '../lib/jwt'
+import { authMiddleware, requireRole } from '../middleware/auth'
 
 const analytics = new Hono<AppContext>()
 
 // ============================================
 // 認証ミドルウェア（owner/admin のみ）
 // ============================================
-analytics.use('/*', async (c, next) => {
-  const token = c.req.header('Authorization')?.replace('Bearer ', '')
-  
-  if (!token) {
-    return c.json({ success: false, message: '認証が必要です' }, 401)
-  }
-
-  try {
-    const payload = await verifyToken(token, c.env.JWT_SECRET)
-    const userId = payload.userId
-    const tenantId = c.get('tenantId')
-
-    // テナントメンバーシップを確認
-    const membership = await c.env.DB.prepare(`
-      SELECT role FROM tenant_memberships
-      WHERE tenant_id = ? AND user_id = ? AND status = 'active'
-    `).bind(tenantId, userId).first() as any
-
-    if (!membership || (membership.role !== 'owner' && membership.role !== 'admin')) {
-      return c.json({ success: false, message: 'アクセス権限がありません' }, 403)
-    }
-
-    c.set('userId', userId)
-    c.set('role', membership.role)
-    await next()
-  } catch (error) {
-    return c.json({ success: false, message: '認証エラー' }, 401)
-  }
-})
+analytics.use('/*', authMiddleware, requireRole('admin'))
 
 // ============================================
 // GET /api/analytics/overview
