@@ -4537,11 +4537,6 @@ tenantPublic.get('/notifications', async (c) => {
       return c.html('<html><body><h1>開発環境</h1><p>URLに ?subdomain=your-subdomain を追加してください。</p></body></html>')
     }
 
-    const authHeader = c.req.header('Authorization')
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return c.redirect('/login?subdomain=' + subdomain)
-    }
-
     const userId = 1
 
     const tenant = await DB.prepare('SELECT id, name FROM tenants WHERE subdomain = ? AND status = ?').bind(subdomain, 'active').first()
