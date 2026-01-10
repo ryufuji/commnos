@@ -6234,22 +6234,58 @@ app.get('/points-management', (c) => {
 
                 <!-- Rewards Tab -->
                 <div id="rewardsContent" class="tab-content hidden">
-                    <div class="text-center py-12">
-                        <p class="text-gray-600">実装予定</p>
+                    <div class="mb-6 flex justify-between items-center">
+                        <h3 class="font-semibold text-gray-900">報酬一覧</h3>
+                        <button onclick="showCreateRewardModal()" class="btn-primary">
+                            <i class="fas fa-plus mr-2"></i>
+                            新規作成
+                        </button>
                     </div>
+                    <div id="rewardsList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
                 </div>
 
                 <!-- Exchanges Tab -->
                 <div id="exchangesContent" class="tab-content hidden">
-                    <div class="text-center py-12">
-                        <p class="text-gray-600">実装予定</p>
+                    <div class="mb-6">
+                        <h3 class="font-semibold text-gray-900">交換申請一覧</h3>
                     </div>
+                    <div id="exchangesList" class="space-y-4"></div>
                 </div>
 
                 <!-- Grant Tab -->
                 <div id="grantContent" class="tab-content hidden">
-                    <div class="text-center py-12">
-                        <p class="text-gray-600">実装予定</p>
+                    <div class="card p-6">
+                        <h3 class="font-semibold text-gray-900 mb-4">会員へのポイント付与</h3>
+                        <form id="grantForm" class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    会員ID
+                                </label>
+                                <input type="number" id="grantUserId" required
+                                       class="input-field"
+                                       placeholder="会員IDを入力">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    ポイント数
+                                </label>
+                                <input type="number" id="grantPoints" required min="1"
+                                       class="input-field"
+                                       placeholder="付与するポイント数">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    備考（任意）
+                                </label>
+                                <textarea id="grantNote" rows="3"
+                                          class="input-field"
+                                          placeholder="付与理由など"></textarea>
+                            </div>
+                            <button type="submit" class="btn-primary">
+                                <i class="fas fa-gift mr-2"></i>
+                                ポイントを付与
+                            </button>
+                        </form>
                     </div>
                 </div>
             </main>
@@ -6376,9 +6412,707 @@ app.get('/points-management', (c) => {
                 }
             }
 
+            // 報酬管理
+            let currentRewards = []
+
+            async function loadRewards() {
+                try {
+                    const token = localStorage.getItem('token')
+                    const response = await axios.get('/api/points/admin/rewards', {
+                        headers: { 'Authorization': 'Bearer ' + token }
+                    })
+
+                    if (response.data.success) {
+                        currentRewards = response.data.rewards
+                        displayRewards()
+                    }
+                } catch (error) {
+                    console.error('Load rewards error:', error)
+                    showToast('報酬の読み込みに失敗しました', 'error')
+                }
+            }
+
+            function displayRewards() {
+                const container = document.getElementById('rewardsList')
+                container.innerHTML = ''
+
+                if (currentRewards.length === 0) {
+                    container.innerHTML = '<p class="text-gray-600 text-center col-span-full py-12">報酬がありません</p>'
+                    return
+                }
+
+                currentRewards.forEach(reward => {
+                    const card = document.createElement('div')
+                    card.className = 'card p-4'
+                    card.innerHTML = \`
+                        <div class="mb-3">
+                            \${reward.image_url ? \`<img src="\${reward.image_url}" class="w-full h-32 object-cover rounded mb-2">\` : '<div class="w-full h-32 bg-gray-200 rounded mb-2 flex items-center justify-center"><i class="fas fa-gift text-4xl text-gray-400"></i></div>'}
+                            <h4 class="font-semibold text-gray-900">\${reward.name}</h4>
+                            <p class="text-sm text-gray-600 mt-1">\${reward.description || ''}</p>
+                        </div>
+                        <div class="flex items-center justify-between mb-3">
+                            <div>
+                                <span class="text-lg font-bold text-yellow-600">\${reward.points_required}pt</span>
+                                <span class="text-xs text-gray-500 ml-2">在庫: \${reward.stock === -1 ? '無制限' : reward.stock}</span>
+                            </div>
+                            <span class="\${reward.is_active ? 'badge-success' : 'badge-secondary'}">\${reward.is_active ? '有効' : '無効'}</span>
+                        </div>
+                        <div class="flex gap-2">
+                            <button onclick="editReward(\${reward.id})" class="btn-secondary flex-1">
+                                <i class="fas fa-edit"></i>
+                                編集
+                            </button>
+                            <button onclick="deleteReward(\${reward.id})" class="btn-secondary text-red-600">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    \`
+                    container.appendChild(card)
+                })
+            }
+
+            function showCreateRewardModal() {
+                const name = prompt('報酬名を入力してください：')
+                if (!name) return
+
+                const description = prompt('説明を入力してください（任意）：')
+                const pointsRequired = prompt('必要ポイント数を入力してください：')
+                if (!pointsRequired) return
+
+                const pointsNum = parseInt(pointsRequired)
+                if (isNaN(pointsNum) || pointsNum <= 0) {
+                    showToast('無効なポイント数です', 'error')
+                    return
+                }
+
+                const stock = prompt('在庫数を入力してください（-1で無制限）：', '-1')
+                const stockNum = parseInt(stock)
+
+                createReward({
+                    name,
+                    description: description || null,
+                    points_required: pointsNum,
+                    stock: stockNum,
+                    display_order: 0
+                })
+            }
+
+            async function createReward(data) {
+                try {
+                    const token = localStorage.getItem('token')
+                    const response = await axios.post('/api/points/admin/rewards', data, {
+                        headers: { 'Authorization': 'Bearer ' + token }
+                    })
+
+                    if (response.data.success) {
+                        showToast('報酬を作成しました', 'success')
+                        loadRewards()
+                    }
+                } catch (error) {
+                    console.error('Create reward error:', error)
+                    showToast(error.response?.data?.error || '報酬の作成に失敗しました', 'error')
+                }
+            }
+
+            async function editReward(id) {
+                const reward = currentRewards.find(r => r.id === id)
+                if (!reward) return
+
+                const name = prompt('報酬名を入力してください：', reward.name)
+                if (!name) return
+
+                const description = prompt('説明を入力してください（任意）：', reward.description || '')
+                const pointsRequired = prompt('必要ポイント数を入力してください：', reward.points_required)
+                if (!pointsRequired) return
+
+                const pointsNum = parseInt(pointsRequired)
+                if (isNaN(pointsNum) || pointsNum <= 0) {
+                    showToast('無効なポイント数です', 'error')
+                    return
+                }
+
+                const stock = prompt('在庫数を入力してください（-1で無制限）：', reward.stock)
+                const stockNum = parseInt(stock)
+
+                const isActive = confirm('この報酬を有効にしますか？')
+
+                try {
+                    const token = localStorage.getItem('token')
+                    const response = await axios.put(\`/api/points/admin/rewards/\${id}\`, {
+                        name,
+                        description: description || null,
+                        points_required: pointsNum,
+                        stock: stockNum,
+                        is_active: isActive,
+                        display_order: reward.display_order
+                    }, {
+                        headers: { 'Authorization': 'Bearer ' + token }
+                    })
+
+                    if (response.data.success) {
+                        showToast('報酬を更新しました', 'success')
+                        loadRewards()
+                    }
+                } catch (error) {
+                    console.error('Update reward error:', error)
+                    showToast(error.response?.data?.error || '報酬の更新に失敗しました', 'error')
+                }
+            }
+
+            async function deleteReward(id) {
+                if (!confirm('この報酬を削除しますか？')) return
+
+                try {
+                    const token = localStorage.getItem('token')
+                    const response = await axios.delete(\`/api/points/admin/rewards/\${id}\`, {
+                        headers: { 'Authorization': 'Bearer ' + token }
+                    })
+
+                    if (response.data.success) {
+                        showToast('報酬を削除しました', 'success')
+                        loadRewards()
+                    }
+                } catch (error) {
+                    console.error('Delete reward error:', error)
+                    showToast(error.response?.data?.error || '報酬の削除に失敗しました', 'error')
+                }
+            }
+
+            // 交換申請管理
+            let currentExchanges = []
+
+            async function loadExchanges() {
+                try {
+                    const token = localStorage.getItem('token')
+                    const response = await axios.get('/api/points/admin/exchanges', {
+                        headers: { 'Authorization': 'Bearer ' + token }
+                    })
+
+                    if (response.data.success) {
+                        currentExchanges = response.data.exchanges
+                        displayExchanges()
+                    }
+                } catch (error) {
+                    console.error('Load exchanges error:', error)
+                    showToast('交換申請の読み込みに失敗しました', 'error')
+                }
+            }
+
+            function displayExchanges() {
+                const container = document.getElementById('exchangesList')
+                container.innerHTML = ''
+
+                if (currentExchanges.length === 0) {
+                    container.innerHTML = '<p class="text-gray-600 text-center py-12">交換申請がありません</p>'
+                    return
+                }
+
+                const pendingExchanges = currentExchanges.filter(e => e.status === 'pending')
+                const completedExchanges = currentExchanges.filter(e => e.status !== 'pending')
+
+                if (pendingExchanges.length > 0) {
+                    const pendingSection = document.createElement('div')
+                    pendingSection.innerHTML = '<h4 class="font-semibold text-gray-900 mb-3">承認待ち</h4>'
+                    container.appendChild(pendingSection)
+
+                    pendingExchanges.forEach(exchange => {
+                        container.appendChild(createExchangeCard(exchange, true))
+                    })
+                }
+
+                if (completedExchanges.length > 0) {
+                    const completedSection = document.createElement('div')
+                    completedSection.innerHTML = '<h4 class="font-semibold text-gray-900 mb-3 mt-6">処理済み</h4>'
+                    container.appendChild(completedSection)
+
+                    completedExchanges.forEach(exchange => {
+                        container.appendChild(createExchangeCard(exchange, false))
+                    })
+                }
+            }
+
+            function createExchangeCard(exchange, isPending) {
+                const card = document.createElement('div')
+                card.className = 'card p-4'
+                
+                const statusColors = {
+                    'pending': 'badge-warning',
+                    'approved': 'badge-success',
+                    'rejected': 'badge-secondary'
+                }
+                const statusLabels = {
+                    'pending': '承認待ち',
+                    'approved': '承認済み',
+                    'rejected': '却下'
+                }
+
+                card.innerHTML = \`
+                    <div class="flex items-start justify-between mb-3">
+                        <div class="flex-1">
+                            <h4 class="font-semibold text-gray-900">\${exchange.reward_name}</h4>
+                            <p class="text-sm text-gray-600 mt-1">
+                                会員: \${exchange.user_name} (\${exchange.user_email})
+                            </p>
+                            <p class="text-sm text-gray-600">
+                                消費ポイント: <span class="font-semibold text-yellow-600">\${exchange.points_spent}pt</span>
+                            </p>
+                            <p class="text-xs text-gray-500 mt-2">\${new Date(exchange.created_at).toLocaleString('ja-JP')}</p>
+                        </div>
+                        <span class="\${statusColors[exchange.status]}">\${statusLabels[exchange.status]}</span>
+                    </div>
+                    \${exchange.admin_note ? \`<p class="text-sm text-gray-600 mb-3">メモ: \${exchange.admin_note}</p>\` : ''}
+                    \${isPending ? \`
+                        <div class="flex gap-2">
+                            <button onclick="approveExchange(\${exchange.id})" class="btn-primary flex-1">
+                                <i class="fas fa-check mr-2"></i>
+                                承認
+                            </button>
+                            <button onclick="rejectExchange(\${exchange.id})" class="btn-secondary text-red-600 flex-1">
+                                <i class="fas fa-times mr-2"></i>
+                                却下
+                            </button>
+                        </div>
+                    \` : \`
+                        \${exchange.approved_by_name ? \`<p class="text-xs text-gray-500">処理者: \${exchange.approved_by_name}</p>\` : ''}
+                        \${exchange.approved_at ? \`<p class="text-xs text-gray-500">処理日時: \${new Date(exchange.approved_at).toLocaleString('ja-JP')}</p>\` : ''}
+                    \`}
+                \`
+                return card
+            }
+
+            async function approveExchange(id) {
+                const note = prompt('管理者メモ（任意）：')
+                
+                try {
+                    const token = localStorage.getItem('token')
+                    const response = await axios.post(\`/api/points/admin/exchanges/\${id}/approve\`, {
+                        admin_note: note || null
+                    }, {
+                        headers: { 'Authorization': 'Bearer ' + token }
+                    })
+
+                    if (response.data.success) {
+                        showToast('交換を承認しました', 'success')
+                        loadExchanges()
+                    }
+                } catch (error) {
+                    console.error('Approve exchange error:', error)
+                    showToast(error.response?.data?.error || '承認に失敗しました', 'error')
+                }
+            }
+
+            async function rejectExchange(id) {
+                const note = prompt('却下理由を入力してください：')
+                if (!note) return
+
+                try {
+                    const token = localStorage.getItem('token')
+                    const response = await axios.post(\`/api/points/admin/exchanges/\${id}/reject\`, {
+                        admin_note: note
+                    }, {
+                        headers: { 'Authorization': 'Bearer ' + token }
+                    })
+
+                    if (response.data.success) {
+                        showToast('交換を却下し、ポイントを返却しました', 'success')
+                        loadExchanges()
+                    }
+                } catch (error) {
+                    console.error('Reject exchange error:', error)
+                    showToast(error.response?.data?.error || '却下に失敗しました', 'error')
+                }
+            }
+
+            // ポイント付与
+            document.getElementById('grantForm').addEventListener('submit', async (e) => {
+                e.preventDefault()
+
+                const userId = document.getElementById('grantUserId').value
+                const points = document.getElementById('grantPoints').value
+                const note = document.getElementById('grantNote').value
+
+                try {
+                    const token = localStorage.getItem('token')
+                    const response = await axios.post('/api/points/admin/grant', {
+                        user_id: parseInt(userId),
+                        points: parseInt(points),
+                        note: note || null
+                    }, {
+                        headers: { 'Authorization': 'Bearer ' + token }
+                    })
+
+                    if (response.data.success) {
+                        showToast(response.data.message, 'success')
+                        document.getElementById('grantForm').reset()
+                    }
+                } catch (error) {
+                    console.error('Grant points error:', error)
+                    showToast(error.response?.data?.error || 'ポイント付与に失敗しました', 'error')
+                }
+            })
+
+            // タブ切り替え時のデータ読み込み
+            const originalSwitchTab = switchTab
+            switchTab = function(tab) {
+                originalSwitchTab(tab)
+                
+                if (tab === 'rewards' && currentRewards.length === 0) {
+                    loadRewards()
+                } else if (tab === 'exchanges' && currentExchanges.length === 0) {
+                    loadExchanges()
+                }
+            }
+
             // 初期化
             document.addEventListener('DOMContentLoaded', () => {
                 loadRules()
+            })
+        </script>
+    </body>
+    </html>
+  `)
+})
+
+// ============================================
+// 会員向けポイントページ (/tenant/points)
+// ============================================
+app.get('/tenant/points', (c) => {
+  const subdomain = c.req.query('subdomain')
+  
+  return c.html(`
+    <!DOCTYPE html>
+    <html lang="ja" data-theme="light">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>マイポイント - Commons</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <script src="/static/tailwind-config.js"></script>
+        <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+        <link href="/static/commons-theme.css" rel="stylesheet">
+        <link href="/static/commons-components.css" rel="stylesheet">
+    </head>
+    <body class="bg-gray-50">
+        <div class="min-h-screen flex flex-col">
+            <!-- Header -->
+            <header class="bg-white border-b border-gray-200">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+                    <div class="flex items-center justify-between">
+                        <a href="/tenant/home?subdomain=\${subdomain}" class="text-gray-600 hover:text-gray-900">
+                            <i class="fas fa-arrow-left mr-2"></i>
+                            戻る
+                        </a>
+                        <h1 class="text-2xl font-bold text-gray-900">
+                            <i class="fas fa-coins mr-2 text-yellow-500"></i>
+                            マイポイント
+                        </h1>
+                        <div></div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Main Content -->
+            <main class="flex-1 max-w-4xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
+                <!-- ポイント残高カード -->
+                <div class="card p-6 mb-6 bg-gradient-to-r from-yellow-50 to-yellow-100">
+                    <div class="text-center">
+                        <p class="text-sm text-gray-600 mb-2">現在の残高</p>
+                        <p class="text-5xl font-bold text-yellow-600 mb-4" id="currentBalance">0</p>
+                        <div class="flex justify-center gap-8 text-sm text-gray-600">
+                            <div>
+                                <p class="text-xs">累計獲得</p>
+                                <p class="font-semibold" id="totalEarned">0pt</p>
+                            </div>
+                            <div>
+                                <p class="text-xs">累計消費</p>
+                                <p class="font-semibold" id="totalSpent">0pt</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- タブ -->
+                <div class="mb-6 border-b border-gray-200">
+                    <nav class="-mb-px flex space-x-8">
+                        <button id="historyTab" class="tab-button active" onclick="switchPointTab('history')">
+                            <i class="fas fa-history mr-2"></i>
+                            ポイント履歴
+                        </button>
+                        <button id="rewardsTab" class="tab-button" onclick="switchPointTab('rewards')">
+                            <i class="fas fa-gift mr-2"></i>
+                            報酬一覧
+                        </button>
+                        <button id="myExchangesTab" class="tab-button" onclick="switchPointTab('myExchanges')">
+                            <i class="fas fa-exchange-alt mr-2"></i>
+                            交換履歴
+                        </button>
+                    </nav>
+                </div>
+
+                <!-- ポイント履歴タブ -->
+                <div id="historyContent" class="tab-content">
+                    <div class="card p-6">
+                        <h3 class="font-semibold text-gray-900 mb-4">ポイント履歴</h3>
+                        <div id="transactionsList" class="space-y-3"></div>
+                    </div>
+                </div>
+
+                <!-- 報酬一覧タブ -->
+                <div id="rewardsContent" class="tab-content hidden">
+                    <div id="availableRewardsList" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+                </div>
+
+                <!-- 交換履歴タブ -->
+                <div id="myExchangesContent" class="tab-content hidden">
+                    <div id="myExchangesList" class="space-y-4"></div>
+                </div>
+            </main>
+        </div>
+
+        <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+        <script src="/static/app.js"></script>
+        <script>
+            let pointBalance = null
+            let transactions = []
+            let rewards = []
+            let myExchanges = []
+
+            function switchPointTab(tab) {
+                document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'))
+                document.getElementById(tab + 'Tab').classList.add('active')
+
+                document.querySelectorAll('.tab-content').forEach(content => content.classList.add('hidden'))
+                document.getElementById(tab + 'Content').classList.remove('hidden')
+
+                if (tab === 'rewards' && rewards.length === 0) {
+                    loadRewards()
+                } else if (tab === 'myExchanges' && myExchanges.length === 0) {
+                    loadMyExchanges()
+                }
+            }
+
+            async function loadBalance() {
+                try {
+                    const token = localStorage.getItem('token')
+                    if (!token) {
+                        window.location.href = '/login?subdomain=\${subdomain}'
+                        return
+                    }
+
+                    const response = await axios.get('/api/points/balance', {
+                        headers: { 'Authorization': 'Bearer ' + token }
+                    })
+
+                    if (response.data.success) {
+                        pointBalance = response.data.balance
+                        document.getElementById('currentBalance').textContent = (pointBalance.balance || 0).toLocaleString() + 'pt'
+                        document.getElementById('totalEarned').textContent = (pointBalance.total_earned || 0).toLocaleString() + 'pt'
+                        document.getElementById('totalSpent').textContent = (pointBalance.total_spent || 0).toLocaleString() + 'pt'
+                    }
+                } catch (error) {
+                    console.error('Load balance error:', error)
+                    if (error.response?.status === 401) {
+                        window.location.href = '/login?subdomain=\${subdomain}'
+                    }
+                }
+            }
+
+            async function loadTransactions() {
+                try {
+                    const token = localStorage.getItem('token')
+                    const response = await axios.get('/api/points/transactions', {
+                        headers: { 'Authorization': 'Bearer ' + token }
+                    })
+
+                    if (response.data.success) {
+                        transactions = response.data.transactions
+                        displayTransactions()
+                    }
+                } catch (error) {
+                    console.error('Load transactions error:', error)
+                }
+            }
+
+            function displayTransactions() {
+                const container = document.getElementById('transactionsList')
+                container.innerHTML = ''
+
+                if (transactions.length === 0) {
+                    container.innerHTML = '<p class="text-gray-600 text-center py-8">履歴がありません</p>'
+                    return
+                }
+
+                transactions.forEach(tx => {
+                    const div = document.createElement('div')
+                    div.className = 'flex items-center justify-between p-3 border border-gray-200 rounded hover:bg-gray-50'
+                    
+                    const reasonLabels = {
+                        'site_visit': 'サイト訪問',
+                        'signup': '会員登録ボーナス',
+                        'subscription': 'サブスクリプション登録',
+                        'post_create': '投稿作成',
+                        'comment_create': 'コメント投稿',
+                        'admin_grant': '管理者付与',
+                        'reward_exchange': '報酬交換',
+                        'exchange_rejected': '交換却下（返却）'
+                    }
+
+                    const isEarn = tx.action_type === 'earn'
+                    const icon = isEarn ? 'fa-plus-circle text-green-500' : 'fa-minus-circle text-red-500'
+
+                    div.innerHTML = \\\`
+                        <div class="flex-1">
+                            <div class="flex items-center space-x-2">
+                                <i class="fas \\\${icon}"></i>
+                                <span class="font-semibold text-gray-900">\\\${reasonLabels[tx.reason] || tx.reason}</span>
+                            </div>
+                            <p class="text-xs text-gray-500 mt-1">\\\${new Date(tx.created_at).toLocaleString('ja-JP')}</p>
+                            \\\${tx.note ? \\\`<p class="text-xs text-gray-600 mt-1">\\\${tx.note}</p>\\\` : ''}
+                            \\\${tx.admin_name ? \\\`<p class="text-xs text-gray-500">付与者: \\\${tx.admin_name}</p>\\\` : ''}
+                        </div>
+                        <div class="text-right">
+                            <p class="text-lg font-bold \\\${isEarn ? 'text-green-600' : 'text-red-600'}">
+                                \\\${isEarn ? '+' : '-'}\\\${tx.points}pt
+                            </p>
+                            <p class="text-xs text-gray-500">残高: \\\${tx.balance_after}pt</p>
+                        </div>
+                    \\\`
+                    container.appendChild(div)
+                })
+            }
+
+            async function loadRewards() {
+                try {
+                    const token = localStorage.getItem('token')
+                    const response = await axios.get('/api/points/rewards', {
+                        headers: { 'Authorization': 'Bearer ' + token }
+                    })
+
+                    if (response.data.success) {
+                        rewards = response.data.rewards
+                        displayRewards()
+                    }
+                } catch (error) {
+                    console.error('Load rewards error:', error)
+                    showToast('報酬の読み込みに失敗しました', 'error')
+                }
+            }
+
+            function displayRewards() {
+                const container = document.getElementById('availableRewardsList')
+                container.innerHTML = ''
+
+                if (rewards.length === 0) {
+                    container.innerHTML = '<p class="text-gray-600 text-center col-span-full py-12">報酬がありません</p>'
+                    return
+                }
+
+                rewards.forEach(reward => {
+                    const card = document.createElement('div')
+                    card.className = 'card p-4'
+                    const canExchange = pointBalance && pointBalance.balance >= reward.points_required && reward.stock !== 0
+                    
+                    card.innerHTML = \\\`
+                        <div class="mb-3">
+                            \\\${reward.image_url ? \\\`<img src="\\\${reward.image_url}" class="w-full h-32 object-cover rounded mb-2">\\\` : '<div class="w-full h-32 bg-gray-200 rounded mb-2 flex items-center justify-center"><i class="fas fa-gift text-4xl text-gray-400"></i></div>'}
+                            <h4 class="font-semibold text-gray-900">\\\${reward.name}</h4>
+                            <p class="text-sm text-gray-600 mt-1">\\\${reward.description || ''}</p>
+                        </div>
+                        <div class="flex items-center justify-between mb-3">
+                            <span class="text-lg font-bold text-yellow-600">\\\${reward.points_required}pt</span>
+                            <span class="text-xs text-gray-500">在庫: \\\${reward.stock === -1 ? '無制限' : reward.stock}</span>
+                        </div>
+                        <button onclick="exchangeReward(\\\${reward.id})" class="btn-primary w-full" \\\${!canExchange ? 'disabled' : ''}>
+                            <i class="fas fa-exchange-alt mr-2"></i>
+                            \\\${canExchange ? '交換する' : 'ポイント不足'}
+                        </button>
+                    \\\`
+                    container.appendChild(card)
+                })
+            }
+
+            async function exchangeReward(rewardId) {
+                if (!confirm('この報酬と交換しますか？\\n\\n※交換申請は管理者の承認が必要です')) return
+
+                try {
+                    const token = localStorage.getItem('token')
+                    const response = await axios.post(\\\`/api/points/rewards/\\\${rewardId}/exchange\\\`, {}, {
+                        headers: { 'Authorization': 'Bearer ' + token }
+                    })
+
+                    if (response.data.success) {
+                        showToast(response.data.message, 'success')
+                        loadBalance()
+                        loadTransactions()
+                        loadRewards()
+                    }
+                } catch (error) {
+                    console.error('Exchange reward error:', error)
+                    showToast(error.response?.data?.error || '交換申請に失敗しました', 'error')
+                }
+            }
+
+            async function loadMyExchanges() {
+                try {
+                    const token = localStorage.getItem('token')
+                    const response = await axios.get('/api/points/exchanges', {
+                        headers: { 'Authorization': 'Bearer ' + token }
+                    })
+
+                    if (response.data.success) {
+                        myExchanges = response.data.exchanges
+                        displayMyExchanges()
+                    }
+                } catch (error) {
+                    console.error('Load exchanges error:', error)
+                }
+            }
+
+            function displayMyExchanges() {
+                const container = document.getElementById('myExchangesList')
+                container.innerHTML = ''
+
+                if (myExchanges.length === 0) {
+                    container.innerHTML = '<p class="text-gray-600 text-center py-12">交換履歴がありません</p>'
+                    return
+                }
+
+                const statusColors = {
+                    'pending': 'badge-warning',
+                    'approved': 'badge-success',
+                    'rejected': 'badge-secondary'
+                }
+                const statusLabels = {
+                    'pending': '承認待ち',
+                    'approved': '承認済み',
+                    'rejected': '却下'
+                }
+
+                myExchanges.forEach(exchange => {
+                    const card = document.createElement('div')
+                    card.className = 'card p-4'
+                    card.innerHTML = \\\`
+                        <div class="flex items-start justify-between mb-3">
+                            <div class="flex-1">
+                                <h4 class="font-semibold text-gray-900">\\\${exchange.reward_name}</h4>
+                                <p class="text-sm text-gray-600 mt-1">\\\${exchange.reward_description || ''}</p>
+                                <p class="text-sm text-gray-600 mt-2">
+                                    消費ポイント: <span class="font-semibold text-yellow-600">\\\${exchange.points_spent}pt</span>
+                                </p>
+                                <p class="text-xs text-gray-500 mt-2">\\\${new Date(exchange.created_at).toLocaleString('ja-JP')}</p>
+                            </div>
+                            <span class="\\\${statusColors[exchange.status]}">\\\${statusLabels[exchange.status]}</span>
+                        </div>
+                        \\\${exchange.admin_note ? \\\`<p class="text-sm text-gray-600 mt-3 p-2 bg-gray-50 rounded">管理者メモ: \\\${exchange.admin_note}</p>\\\` : ''}
+                    \\\`
+                    container.appendChild(card)
+                })
+            }
+
+            // 初期化
+            document.addEventListener('DOMContentLoaded', () => {
+                loadBalance()
+                loadTransactions()
             })
         </script>
     </body>
