@@ -4814,7 +4814,7 @@ tenantPublic.get('/members/:memberId', async (c) => {
 
   const member = await DB.prepare(`
     SELECT 
-      u.id, u.nickname, u.email, u.avatar_url, u.bio, u.created_at,
+      u.id, u.nickname, u.email, u.avatar_url, u.bio, u.created_at, u.birthday, u.last_login_at,
       tm.role, tm.joined_at
     FROM tenant_memberships tm
     JOIN users u ON tm.user_id = u.id
@@ -4832,21 +4832,12 @@ tenantPublic.get('/members/:memberId', async (c) => {
     return c.html(notFoundHTML)
   }
   
-  const postsResult = await DB.prepare(`
-    SELECT p.id, p.title, p.content, p.excerpt, p.view_count, p.created_at,
-           COUNT(DISTINCT c.id) as comment_count
-    FROM posts p
-    LEFT JOIN comments c ON c.post_id = p.id
-    WHERE p.tenant_id = ? AND p.author_id = ? AND p.status = ?
-    GROUP BY p.id ORDER BY p.created_at DESC LIMIT 10
-  `).bind(tenant.id, memberId, 'published').all()
-  
-  const posts = postsResult.results || []
-  
   const nickname = String(member.nickname || '不明')
   const bio = String(member.bio || 'プロフィールが設定されていません')
   const avatarUrl = member.avatar_url ? String(member.avatar_url) : ''
   const role = String(member.role || 'member')
+  const birthday = member.birthday ? String(member.birthday) : null
+  const lastLoginAt = member.last_login_at ? String(member.last_login_at) : null
   const joinedDate = new Date(String(member.joined_at)).toLocaleDateString('ja-JP', {
     year: 'numeric', month: 'long', day: 'numeric'
   })
@@ -4867,33 +4858,31 @@ tenantPublic.get('/members/:memberId', async (c) => {
     : '<div class="w-32 h-32 rounded-full bg-blue-100 flex items-center justify-center border-4 border-blue-200">' +
       '<i class="fas fa-user text-5xl text-blue-400"></i></div>'
   
-  let postsHTML = ''
-  if (posts.length === 0) {
-    postsHTML = '<div class="text-center py-12 text-gray-600">まだ投稿がありません</div>'
-  } else {
-    const postItems: string[] = []
-    for (const post of posts) {
-      const postTitle = String(post.title || '')
-      const postExcerpt = String(post.excerpt || post.content || '').substring(0, 100)
-      const postViewCount = Number(post.view_count || 0)
-      const postCommentCount = Number(post.comment_count || 0)
-      const postCreatedDate = new Date(String(post.created_at)).toLocaleDateString('ja-JP')
-      
-      const postHTML = '<div class="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow">' +
-        '<a href="/tenant/posts/' + post.id + '?subdomain=' + subdomain + '" class="block">' +
-        '<h3 class="text-xl font-bold mb-2 hover:text-blue-600 transition" style="color: var(--commons-text-primary);">' + postTitle + '</h3>' +
-        '<p class="text-gray-600 mb-4">' + postExcerpt + '...</p>' +
-        '<div class="flex items-center justify-between text-sm text-gray-500">' +
-        '<div class="flex items-center gap-4">' +
-        '<span><i class="fas fa-eye mr-1"></i>' + postViewCount + ' 閲覧</span>' +
-        '<span><i class="fas fa-comments mr-1"></i>' + postCommentCount + ' コメント</span>' +
-        '</div>' +
-        '<span><i class="fas fa-calendar mr-1"></i>' + postCreatedDate + '</span>' +
-        '</div>' +
-        '</a></div>'
-      postItems.push(postHTML)
+  // 年齢計算
+  let ageText = ''
+  if (birthday) {
+    const birthDate = new Date(birthday)
+    const today = new Date()
+    let age = today.getFullYear() - birthDate.getFullYear()
+    const monthDiff = today.getMonth() - birthDate.getMonth()
+    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+      age--
     }
-    postsHTML = postItems.join('')
+    const birthdayFormatted = birthDate.toLocaleDateString('ja-JP', { year: 'numeric', month: 'long', day: 'numeric' })
+    ageText = birthdayFormatted + ' (' + age + '歳)'
+  }
+  
+  // 最終ログイン日時
+  let lastLoginText = 'なし'
+  if (lastLoginAt) {
+    const lastLoginDate = new Date(lastLoginAt)
+    lastLoginText = lastLoginDate.toLocaleString('ja-JP', { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    })
   }
 
   const html = '<!DOCTYPE html>' +
@@ -4921,12 +4910,12 @@ tenantPublic.get('/members/:memberId', async (c) => {
     '<div class="flex flex-col md:flex-row items-center md:items-start gap-3 mb-4">' +
     '<h1 class="text-3xl font-bold" style="color: var(--commons-text-primary);">' + nickname + '</h1>' + roleBadgeHTML + '</div>' +
     '<p class="text-gray-600 mb-6 whitespace-pre-wrap">' + bio + '</p>' +
-    '<div class="text-sm text-gray-500"><i class="fas fa-calendar mr-2"></i>' + joinedDate + 'に参加</div>' +
+    '<div class="space-y-2 text-sm text-gray-600">' +
+    (birthday ? '<div class="flex items-center"><i class="fas fa-birthday-cake mr-3 text-pink-500 w-5"></i><span>' + ageText + '</span></div>' : '') +
+    '<div class="flex items-center"><i class="fas fa-user-check mr-3 text-blue-500 w-5"></i><span>' + joinedDate + 'に参加</span></div>' +
+    '<div class="flex items-center"><i class="fas fa-clock mr-3 text-green-500 w-5"></i><span>最終ログイン: ' + lastLoginText + '</span></div>' +
+    '</div>' +
     '</div></div></div>' +
-    '<div class="bg-white rounded-lg shadow-lg p-8">' +
-    '<div class="flex items-center justify-between mb-6">' +
-    '<h2 class="text-2xl font-bold" style="color: var(--commons-text-primary);"><i class="fas fa-newspaper mr-2 text-blue-600"></i>最近の投稿</h2>' +
-    '</div><div class="space-y-4">' + postsHTML + '</div></div>' +
     '<div class="mt-8 text-center">' +
     '<a href="/tenant/members?subdomain=' + subdomain + '" class="inline-block px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition">' +
     '<i class="fas fa-arrow-left mr-2"></i>会員一覧に戻る</a></div></main>' +
