@@ -405,7 +405,65 @@ window.addEventListener('DOMContentLoaded', () => {
     readyState: document.readyState,
     title: document.title
   });
+
+  // モバイルメニューの初期化
+  initMobileMenu();
 });
+
+// ============================================
+// モバイルメニュー管理
+// ============================================
+function initMobileMenu() {
+  const mobileMenuBtn = document.getElementById('commonsMobileMenuBtn');
+  const mobileMenu = document.getElementById('commonsMobileMenu');
+  const mobileMenuOverlay = document.getElementById('commonsMobileMenuOverlay');
+  const mobileMenuClose = document.getElementById('commonsMobileMenuClose');
+
+  if (!mobileMenuBtn || !mobileMenu || !mobileMenuOverlay) {
+    debugLog('MOBILE_MENU', 'Mobile menu elements not found');
+    return;
+  }
+
+  debugLog('MOBILE_MENU', 'Mobile menu initialized', {
+    hasBtn: !!mobileMenuBtn,
+    hasMenu: !!mobileMenu,
+    hasOverlay: !!mobileMenuOverlay,
+    hasClose: !!mobileMenuClose
+  });
+
+  // メニューを開く
+  mobileMenuBtn.addEventListener('click', () => {
+    debugLog('MOBILE_MENU', 'Open button clicked');
+    mobileMenu.classList.add('open');
+    mobileMenuOverlay.classList.add('open');
+    document.body.style.overflow = 'hidden'; // スクロール無効化
+  });
+
+  // メニューを閉じる関数
+  const closeMobileMenu = () => {
+    debugLog('MOBILE_MENU', 'Closing menu');
+    mobileMenu.classList.remove('open');
+    mobileMenuOverlay.classList.remove('open');
+    document.body.style.overflow = ''; // スクロール有効化
+  };
+
+  // 閉じるボタン
+  if (mobileMenuClose) {
+    mobileMenuClose.addEventListener('click', closeMobileMenu);
+  }
+
+  // オーバーレイクリック
+  mobileMenuOverlay.addEventListener('click', closeMobileMenu);
+
+  // メニュー内のリンククリック時に閉じる
+  const mobileNavLinks = mobileMenu.querySelectorAll('.commons-mobile-nav-link');
+  mobileNavLinks.forEach(link => {
+    link.addEventListener('click', () => {
+      debugLog('MOBILE_MENU', 'Nav link clicked, closing menu');
+      closeMobileMenu();
+    });
+  });
+}
 
 window.addEventListener('load', () => {
   debugLog('PAGE', 'Page Fully Loaded', {

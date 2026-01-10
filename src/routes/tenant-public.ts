@@ -52,7 +52,7 @@ function renderCommonHeader(tenantName: string, subdomain: string, activePage: s
                     <i class="fas fa-bell text-xl" style="color: var(--commons-text-secondary);"></i>
                     <span id="notificationBadge" class="hidden absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center"></span>
                 </a>
-                <button class="commons-mobile-menu-btn md:hidden">
+                <button id="commonsMobileMenuBtn" class="commons-mobile-menu-btn md:hidden">
                     <i class="fas fa-bars"></i>
                 </button>
                 <a href="/login?subdomain=${subdomain}" class="hidden md:block px-6 py-2 rounded-full font-semibold transition" 
@@ -62,6 +62,43 @@ function renderCommonHeader(tenantName: string, subdomain: string, activePage: s
             </div>
         </div>
     </header>
+
+    <!-- モバイルメニュー -->
+    <div id="commonsMobileMenuOverlay" class="commons-mobile-menu-overlay"></div>
+    <div id="commonsMobileMenu" class="commons-mobile-menu">
+        <div class="commons-mobile-menu-header">
+            <h2 style="font-weight: var(--font-weight-bold); color: var(--commons-text-primary);">${tenantName}</h2>
+            <button id="commonsMobileMenuClose" class="commons-mobile-menu-close">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <nav class="commons-mobile-nav">
+            <a href="/tenant/home?subdomain=${subdomain}" class="commons-mobile-nav-link ${isActive('home')}">
+                <i class="fas fa-home"></i>
+                <span>ホーム</span>
+            </a>
+            <a href="/tenant/posts?subdomain=${subdomain}" class="commons-mobile-nav-link ${isActive('posts')}">
+                <i class="fas fa-newspaper"></i>
+                <span>投稿</span>
+            </a>
+            <a href="/tenant/events?subdomain=${subdomain}" class="commons-mobile-nav-link ${isActive('events')}">
+                <i class="fas fa-calendar-alt"></i>
+                <span>イベント</span>
+            </a>
+            <a href="/tenant/members?subdomain=${subdomain}" class="commons-mobile-nav-link ${isActive('members')}">
+                <i class="fas fa-users"></i>
+                <span>メンバー</span>
+            </a>
+            <a href="/tenant/shop?subdomain=${subdomain}" class="commons-mobile-nav-link ${isActive('shop')}">
+                <i class="fas fa-shopping-bag"></i>
+                <span>ショップ</span>
+            </a>
+            <a href="/login?subdomain=${subdomain}" class="commons-mobile-nav-link" style="margin-top: 24px; padding-top: 24px; border-top: 1px solid var(--commons-border-light);">
+                <i class="fas fa-sign-in-alt"></i>
+                <span>ログイン</span>
+            </a>
+        </nav>
+    </div>
   `
 }
 
