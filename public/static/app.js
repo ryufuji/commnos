@@ -646,6 +646,11 @@ async function loadNotifications() {
   const notificationList = document.getElementById('notificationList');
   const token = localStorage.getItem('token');
 
+  debugLog('NOTIFICATION', 'Loading notifications', {
+    hasToken: !!token,
+    tokenLength: token ? token.length : 0
+  });
+
   if (!token) {
     notificationList.innerHTML = `
       <div class="p-8 text-center">
@@ -660,10 +665,16 @@ async function loadNotifications() {
     const urlParams = new URLSearchParams(window.location.search);
     const subdomain = urlParams.get('subdomain') || 'test';
 
+    debugLog('NOTIFICATION', 'Fetching notifications from API');
+
     const response = await axios.get(`/api/notifications?perPage=10`, {
       headers: {
         'Authorization': `Bearer ${token}`
       }
+    });
+
+    debugLog('NOTIFICATION', 'Notifications loaded successfully', {
+      count: response.data.notifications?.length || 0
     });
 
     const notifications = response.data.notifications || [];
@@ -741,10 +752,20 @@ async function loadNotifications() {
 
   } catch (error) {
     debugLog('ERROR', 'Failed to load notifications', error);
+    
+    // エラーの詳細を表示
+    const errorMessage = error.response?.data?.error || error.message || '不明なエラー';
+    const statusCode = error.response?.status || 'N/A';
+    
+    console.error('[Notification Error] Status:', statusCode, 'Message:', errorMessage);
+    console.error('[Notification Error] Full error:', error);
+    
     notificationList.innerHTML = `
       <div class="p-8 text-center">
         <i class="fas fa-exclamation-triangle text-2xl mb-2 text-red-500"></i>
         <p style="color: var(--commons-text-secondary);">通知の読み込みに失敗しました</p>
+        <p class="text-xs mt-2" style="color: var(--commons-text-secondary);">Status: ${statusCode}</p>
+        <p class="text-xs" style="color: var(--commons-text-secondary);">${errorMessage}</p>
       </div>
     `;
   }
@@ -778,6 +799,7 @@ async function updateUnreadCount() {
 
   } catch (error) {
     debugLog('ERROR', 'Failed to update unread count', error);
+    console.error('[Unread Count Error]', error.response?.status, error.response?.data);
   }
 }
 
