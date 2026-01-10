@@ -409,58 +409,139 @@ th, td {
 ======================================== */
 
 @media (min-width: 769px) {
-  /* ヒーローセクション（ホームページ）のパディングを削減 */
+  /* ヒーローセクション（ホームページ）のパディングを大幅削減 */
   section[style*="padding: 80px 24px 60px"],
   section[style*="padding: 80px 24px"] {
-    padding: 40px 24px 32px !important;
+    padding: 24px 24px 20px !important;
   }
   
-  /* ページヘッダー（投稿、イベント）のパディングを削減 */
+  /* ページヘッダー（投稿、イベント）のパディングを大幅削減 */
   section[style*="padding: 64px 24px 48px"],
   section[style*="padding: 64px 24px"] {
-    padding: 40px 24px 32px !important;
+    padding: 24px 24px 20px !important;
   }
   
   /* グラデーション背景セクション全般の高さ調整 */
   section[style*="background: linear-gradient"] {
-    padding-top: 40px !important;
-    padding-bottom: 32px !important;
+    padding-top: 24px !important;
+    padding-bottom: 20px !important;
   }
   
   /* メインコンテンツの上部余白を削減 */
   main[style*="padding: 64px 24px"] {
-    padding: 40px 24px !important;
+    padding: 24px 24px !important;
   }
   
   main[style*="padding: 48px 24px"] {
-    padding: 32px 24px !important;
+    padding: 20px 24px !important;
   }
   
-  /* セクション間の余白を削減 */
+  /* セクション間の余白を大幅削減 */
   section[style*="margin-bottom: 96px"] {
-    margin-bottom: 48px !important;
+    margin-bottom: 24px !important;
   }
   
   section[style*="margin-bottom: 64px"] {
-    margin-bottom: 40px !important;
+    margin-bottom: 20px !important;
   }
   
   /* ヒーローセクション内の要素調整 */
   section[style*="background: linear-gradient"] h1 {
-    margin-bottom: 12px !important;
+    margin-bottom: 6px !important;
+    font-size: 28px !important;
   }
   
   section[style*="background: linear-gradient"] p {
-    margin-bottom: 32px !important;
+    margin-bottom: 12px !important;
+    font-size: 13px !important;
   }
   
-  /* 統計カードのパディング削減 */
+  /* 統計カードのパディング大幅削減 */
   section[style*="background: linear-gradient"] div[style*="padding: 32px"] {
-    padding: 20px 16px !important;
+    padding: 10px 8px !important;
   }
   
   /* 統計カードの数字サイズ調整 */
   section[style*="background: linear-gradient"] div[style*="font-size: 48px"] {
-    font-size: 36px !important;
+    font-size: 24px !important;
+    margin-bottom: 2px !important;
+  }
+  
+  /* セクションタイトルのサイズと余白削減 */
+  h2[style*="font-size: var(--font-size-large)"] {
+    font-size: 18px !important;
+    margin-bottom: 4px !important;
+  }
+  
+  /* セクション見出し全体の余白削減 */
+  div[style*="margin-bottom: 48px"] {
+    margin-bottom: 16px !important;
+  }
+  
+  /* カード間の余白削減 */
+  div[style*="gap: 32px"] {
+    gap: 12px !important;
+  }
+  
+  div[style*="gap: 24px"] {
+    gap: 10px !important;
+  }
+  
+  /* メンバーカードのパディング削減 */
+  .bg-white.rounded-lg.shadow-md.p-6,
+  div[style*="padding: 32px"],
+  div[style*="padding: 24px"] {
+    padding: 12px !important;
+  }
+  
+  /* メンバーカード内の要素サイズ調整 */
+  .bg-white.rounded-lg h3,
+  div[style*="padding: 32px"] h3,
+  div[style*="padding: 24px"] h3 {
+    font-size: 15px !important;
+    margin-bottom: 4px !important;
+  }
+  
+  .bg-white.rounded-lg p,
+  div[style*="padding: 32px"] p,
+  div[style*="padding: 24px"] p {
+    font-size: 12px !important;
+    margin-bottom: 6px !important;
+  }
+  
+  /* アバター画像のサイズ削減 */
+  img.w-24.h-24,
+  img[style*="width: 120px"],
+  img[style*="width: 100px"] {
+    width: 60px !important;
+    height: 60px !important;
+  }
+  
+  div.w-24.h-24,
+  div[style*="width: 120px"],
+  div[style*="width: 100px"] {
+    width: 60px !important;
+    height: 60px !important;
+  }
+  
+  /* メンバーカード内のマージン調整 */
+  .mb-4 {
+    margin-bottom: 8px !important;
+  }
+  
+  .mb-2 {
+    margin-bottom: 4px !important;
+  }
+  
+  /* メンバーグリッドのカラム数増加 */
+  .grid.grid-cols-1.md\\:grid-cols-2.lg\\:grid-cols-3.xl\\:grid-cols-4 {
+    grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+  }
+}
+
+/* 大画面では6列表示 */
+@media (min-width: 1440px) {
+  .grid.grid-cols-1.md\\:grid-cols-2.lg\\:grid-cols-3.xl\\:grid-cols-4 {
+    grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
   }
 }
