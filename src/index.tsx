@@ -4476,6 +4476,15 @@ app.get('/analytics/posts', (c) => {
                         </div>
                     </div>
 
+                    <!-- Post Status Chart -->
+                    <div class="card p-6">
+                        <h3 class="text-lg font-bold text-gray-900 mb-4">
+                            <i class="fas fa-chart-bar mr-2 text-primary-500"></i>
+                            投稿ステータス別分布
+                        </h3>
+                        <canvas id="postStatusChart" style="max-height: 300px;"></canvas>
+                    </div>
+
                     <!-- Top Posts -->
                     <div class="card p-6">
                         <h3 class="text-lg font-bold text-gray-900 mb-4">
@@ -4513,9 +4522,11 @@ app.get('/analytics/posts', (c) => {
         </div>
 
         <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
         <script src="/static/app.js"></script>
         <script>
             let postData = null
+            let statusChart = null
 
             async function loadPostAnalytics() {
                 try {
@@ -4557,6 +4568,66 @@ app.get('/analytics/posts', (c) => {
                 document.getElementById('draftPosts').textContent = (basic.draft || 0).toLocaleString()
                 document.getElementById('scheduledPosts').textContent = (basic.scheduled || 0).toLocaleString()
                 document.getElementById('totalViews').textContent = (basic.total_views || 0).toLocaleString()
+
+                // 投稿ステータス別棒グラフ
+                if (statusChart) statusChart.destroy()
+                const statusCtx = document.getElementById('postStatusChart').getContext('2d')
+                statusChart = new Chart(statusCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['公開投稿', '下書き', '予約投稿'],
+                        datasets: [{
+                            label: '投稿数',
+                            data: [basic.published || 0, basic.draft || 0, basic.scheduled || 0],
+                            backgroundColor: [
+                                'rgba(76, 175, 80, 0.8)',
+                                'rgba(158, 158, 158, 0.8)',
+                                'rgba(255, 152, 0, 0.8)'
+                            ],
+                            borderColor: [
+                                '#4CAF50',
+                                '#9E9E9E',
+                                '#FF9800'
+                            ],
+                            borderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        plugins: {
+                            legend: {
+                                display: false
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        return '投稿数: ' + context.parsed.y + '件'
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    stepSize: 1,
+                                    callback: function(value) {
+                                        return value + '件'
+                                    }
+                                },
+                                grid: {
+                                    color: 'rgba(0, 0, 0, 0.05)'
+                                }
+                            },
+                            x: {
+                                grid: {
+                                    display: false
+                                }
+                            }
+                        }
+                    }
+                })
 
                 // 人気投稿トップ10
                 const topPosts = postData.top_posts || []
@@ -4713,7 +4784,12 @@ app.get('/analytics/members', (c) => {
                             <i class="fas fa-chart-pie mr-2 text-primary-500"></i>
                             プラン別分布
                         </h3>
-                        <div id="planDistribution" class="space-y-3"></div>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <canvas id="planChart"></canvas>
+                            </div>
+                            <div id="planDistribution" class="space-y-3"></div>
+                        </div>
                     </div>
 
                     <!-- Monthly Trend -->
@@ -4722,16 +4798,19 @@ app.get('/analytics/members', (c) => {
                             <i class="fas fa-chart-line mr-2 text-primary-500"></i>
                             会員数推移（過去12ヶ月）
                         </h3>
-                        <div id="monthlyTrend" class="space-y-2"></div>
+                        <canvas id="monthlyTrendChart"></canvas>
                     </div>
                 </div>
             </main>
         </div>
 
         <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
         <script src="/static/app.js"></script>
         <script>
             let memberData = null
+            let planChart = null
+            let trendChart = null
 
             async function loadMemberAnalytics() {
                 try {
@@ -4797,6 +4876,53 @@ app.get('/analytics/members', (c) => {
                 })
                 document.getElementById('planDistribution').innerHTML = planHtml || '<p class="text-gray-500 text-sm">データがありません</p>'
 
+                // プラン別分布円グラフ
+                if (planChart) planChart.destroy()
+                const planCtx = document.getElementById('planChart').getContext('2d')
+                planChart = new Chart(planCtx, {
+                    type: 'pie',
+                    data: {
+                        labels: planDist.map(p => p.plan_name),
+                        datasets: [{
+                            data: planDist.map(p => p.count),
+                            backgroundColor: [
+                                '#00BCD4',
+                                '#4CAF50',
+                                '#FF9800',
+                                '#9C27B0',
+                                '#F44336',
+                                '#2196F3'
+                            ],
+                            borderWidth: 2,
+                            borderColor: '#fff'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: {
+                                    padding: 15,
+                                    font: { size: 12 }
+                                }
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        const label = context.label || ''
+                                        const value = context.parsed || 0
+                                        const total = context.dataset.data.reduce((a, b) => a + b, 0)
+                                        const percentage = Math.round((value / total) * 100)
+                                        return label + ': ' + value + '人 (' + percentage + '%)'
+                                    }
+                                }
+                            }
+                        }
+                    }
+                })
+
                 // 月次推移
                 const monthlyTrend = memberData.monthly_trend || []
                 let trendHtml = ''
@@ -4809,6 +4935,65 @@ app.get('/analytics/members', (c) => {
                     \`
                 })
                 document.getElementById('monthlyTrend').innerHTML = trendHtml || '<p class="text-gray-500 text-sm">データがありません</p>'
+
+                // 月次推移折れ線グラフ
+                if (trendChart) trendChart.destroy()
+                const trendCtx = document.getElementById('monthlyTrendChart').getContext('2d')
+                trendChart = new Chart(trendCtx, {
+                    type: 'line',
+                    data: {
+                        labels: monthlyTrend.map(t => t.month),
+                        datasets: [{
+                            label: '会員数',
+                            data: monthlyTrend.map(t => t.count),
+                            borderColor: '#00BCD4',
+                            backgroundColor: 'rgba(0, 188, 212, 0.1)',
+                            borderWidth: 3,
+                            fill: true,
+                            tension: 0.4,
+                            pointRadius: 5,
+                            pointHoverRadius: 7,
+                            pointBackgroundColor: '#00BCD4',
+                            pointBorderColor: '#fff',
+                            pointBorderWidth: 2
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        plugins: {
+                            legend: {
+                                display: false
+                            },
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        return '会員数: ' + context.parsed.y + '人'
+                                    }
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    stepSize: 1,
+                                    callback: function(value) {
+                                        return value + '人'
+                                    }
+                                },
+                                grid: {
+                                    color: 'rgba(0, 0, 0, 0.05)'
+                                }
+                            },
+                            x: {
+                                grid: {
+                                    display: false
+                                }
+                            }
+                        }
+                    }
+                })
             }
 
             document.addEventListener('DOMContentLoaded', loadMemberAnalytics)
@@ -5027,6 +5212,9 @@ app.get('/analytics/surveys', (c) => {
 
                 const typeLabel = type === 'join' ? '入会時' : '退会時'
                 const typeColor = type === 'join' ? 'primary' : 'error'
+                const chartColors = type === 'join' 
+                    ? ['#00BCD4', '#26C6DA', '#4DD0E1', '#80DEEA', '#B2EBF2', '#E0F7FA']
+                    : ['#F44336', '#EF5350', '#E57373', '#EF9A9A', '#FFCDD2', '#FFEBEE']
 
                 let html = \`
                     <div class="card p-6">
@@ -5038,6 +5226,8 @@ app.get('/analytics/surveys', (c) => {
                 \`
 
                 questionData.question_stats.forEach((q, index) => {
+                    const chartId = \`chart-\${type}-\${index}\`
+                    
                     html += \`
                         <div class="border-b border-gray-200 pb-6 last:border-b-0">
                             <h4 class="font-semibold text-gray-900 mb-4">
@@ -5063,10 +5253,14 @@ app.get('/analytics/surveys', (c) => {
                         html += \`</div>\`
 
                     } else if (q.question_type === 'radio' || q.question_type === 'checkbox') {
-                        // 選択肢集計
+                        // 選択肢集計（円グラフ + テーブル）
                         html += \`
-                            <div class="space-y-2">
-                                <p class="text-sm text-gray-600 mb-3">回答数: \${q.total_responses}件</p>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <canvas id="\${chartId}" style="max-height: 300px;"></canvas>
+                                </div>
+                                <div class="space-y-2">
+                                    <p class="text-sm text-gray-600 mb-3">回答数: \${q.total_responses}件</p>
                         \`
                         q.aggregation.forEach(agg => {
                             const percentage = agg.percentage
@@ -5082,21 +5276,29 @@ app.get('/analytics/surveys', (c) => {
                                 </div>
                             \`
                         })
-                        html += \`</div>\`
+                        html += \`
+                                </div>
+                            </div>
+                        \`
 
                     } else if (q.question_type === 'scale') {
-                        // スケール評価
+                        // スケール評価（棒グラフ + 平均スコア）
                         html += \`
-                            <div class="space-y-3">
-                                <div class="flex items-center justify-between">
-                                    <span class="text-sm text-gray-600">平均スコア</span>
-                                    <span class="text-3xl font-bold text-\${typeColor}-600">\${q.avg_score}</span>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <div>
+                                    <canvas id="\${chartId}" style="max-height: 300px;"></canvas>
                                 </div>
-                                <div class="flex justify-between text-xs text-gray-500">
-                                    <span>\${q.scale_label_min || ''}</span>
-                                    <span>\${q.scale_label_max || ''}</span>
+                                <div class="space-y-3">
+                                    <div class="flex items-center justify-between">
+                                        <span class="text-sm text-gray-600">平均スコア</span>
+                                        <span class="text-3xl font-bold text-\${typeColor}-600">\${q.avg_score}</span>
+                                    </div>
+                                    <div class="flex justify-between text-xs text-gray-500">
+                                        <span>\${q.scale_label_min || ''}</span>
+                                        <span>\${q.scale_label_max || ''}</span>
+                                    </div>
+                                    <p class="text-sm text-gray-600">回答数: \${q.total_responses}件</p>
                                 </div>
-                                <p class="text-sm text-gray-600">回答数: \${q.total_responses}件</p>
                             </div>
                         \`
                     }
@@ -5110,6 +5312,107 @@ app.get('/analytics/surveys', (c) => {
                 \`
 
                 document.getElementById('questionAnalysis').innerHTML = html
+
+                // Chart.jsでグラフを描画
+                setTimeout(() => {
+                    questionData.question_stats.forEach((q, index) => {
+                        const chartId = \`chart-\${type}-\${index}\`
+                        const canvas = document.getElementById(chartId)
+                        
+                        if (!canvas) return
+
+                        if (q.question_type === 'radio' || q.question_type === 'checkbox') {
+                            // 円グラフ
+                            new Chart(canvas.getContext('2d'), {
+                                type: 'pie',
+                                data: {
+                                    labels: q.aggregation.map(a => a.answer),
+                                    datasets: [{
+                                        data: q.aggregation.map(a => a.count),
+                                        backgroundColor: chartColors,
+                                        borderWidth: 2,
+                                        borderColor: '#fff'
+                                    }]
+                                },
+                                options: {
+                                    responsive: true,
+                                    maintainAspectRatio: true,
+                                    plugins: {
+                                        legend: {
+                                            position: 'bottom',
+                                            labels: {
+                                                padding: 10,
+                                                font: { size: 11 }
+                                            }
+                                        },
+                                        tooltip: {
+                                            callbacks: {
+                                                label: function(context) {
+                                                    const label = context.label || ''
+                                                    const value = context.parsed || 0
+                                                    const total = context.dataset.data.reduce((a, b) => a + b, 0)
+                                                    const percentage = Math.round((value / total) * 100)
+                                                    return label + ': ' + value + '件 (' + percentage + '%)'
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            })
+                        } else if (q.question_type === 'scale') {
+                            // 棒グラフ
+                            const scaleData = q.distribution || []
+                            new Chart(canvas.getContext('2d'), {
+                                type: 'bar',
+                                data: {
+                                    labels: scaleData.map(s => \`\${s.score}点\`),
+                                    datasets: [{
+                                        label: '回答数',
+                                        data: scaleData.map(s => s.count),
+                                        backgroundColor: chartColors[0],
+                                        borderColor: chartColors[0],
+                                        borderWidth: 2
+                                    }]
+                                },
+                                options: {
+                                    responsive: true,
+                                    maintainAspectRatio: true,
+                                    plugins: {
+                                        legend: {
+                                            display: false
+                                        },
+                                        tooltip: {
+                                            callbacks: {
+                                                label: function(context) {
+                                                    return '回答数: ' + context.parsed.y + '件'
+                                                }
+                                            }
+                                        }
+                                    },
+                                    scales: {
+                                        y: {
+                                            beginAtZero: true,
+                                            ticks: {
+                                                stepSize: 1,
+                                                callback: function(value) {
+                                                    return value + '件'
+                                                }
+                                            },
+                                            grid: {
+                                                color: 'rgba(0, 0, 0, 0.05)'
+                                            }
+                                        },
+                                        x: {
+                                            grid: {
+                                                display: false
+                                            }
+                                        }
+                                    }
+                                }
+                            })
+                        }
+                    })
+                }, 100)
             }
 
             function escapeHtml(text) {
