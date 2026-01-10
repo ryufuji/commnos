@@ -5418,6 +5418,226 @@ app.get('/analytics/surveys', (c) => {
 })
 
 // ============================================
+// 収益分析ページ (/analytics/subscriptions)
+// ============================================
+app.get('/analytics/subscriptions', (c) => {
+  return c.html(`
+    <!DOCTYPE html>
+    <html lang="ja" data-theme="light">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>収益分析 - Commons</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <script src="/static/tailwind-config.js"></script>
+        <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+        <link href="/static/commons-theme.css" rel="stylesheet">
+        <link href="/static/commons-components.css" rel="stylesheet">
+    </head>
+    <body class="bg-gray-50">
+        <div class="min-h-screen flex flex-col">
+            <!-- Header -->
+            <header class="bg-white border-b border-gray-200 sticky top-0 z-40">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-4">
+                            <a href="/analytics" class="text-gray-600 hover:text-gray-900">
+                                <i class="fas fa-arrow-left"></i>
+                            </a>
+                            <h1 class="text-2xl font-bold text-gray-900">
+                                <i class="fas fa-dollar-sign mr-2 text-purple-500"></i>
+                                収益分析
+                            </h1>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Main Content -->
+            <main class="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
+                <!-- Loading State -->
+                <div id="loadingState" class="text-center py-12">
+                    <i class="fas fa-spinner fa-spin text-4xl text-purple-500 mb-4"></i>
+                    <p class="text-gray-600">収益データを読み込み中...</p>
+                </div>
+
+                <!-- Content Container -->
+                <div id="contentContainer" class="hidden space-y-8">
+                    <!-- Summary Cards -->
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div class="card p-6">
+                            <div class="text-sm text-gray-600 mb-1">アクティブサブスク</div>
+                            <div class="text-3xl font-bold text-purple-600" id="activeSubscriptions">-</div>
+                        </div>
+                        <div class="card p-6">
+                            <div class="text-sm text-gray-600 mb-1">月額プラン</div>
+                            <div class="text-3xl font-bold text-primary-600" id="monthlyCount">-</div>
+                        </div>
+                        <div class="card p-6">
+                            <div class="text-sm text-gray-600 mb-1">年額プラン</div>
+                            <div class="text-3xl font-bold text-success-600" id="yearlyCount">-</div>
+                        </div>
+                    </div>
+
+                    <!-- Plan Distribution -->
+                    <div class="card p-6">
+                        <h3 class="text-lg font-bold text-gray-900 mb-4">
+                            <i class="fas fa-chart-pie mr-2 text-purple-500"></i>
+                            プラン別サブスクリプション分布
+                        </h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <canvas id="planChart"></canvas>
+                            </div>
+                            <div id="planBreakdown" class="space-y-3"></div>
+                        </div>
+                    </div>
+
+                    <!-- Owner Only Notice -->
+                    <div class="card p-6 bg-purple-50 border-purple-200">
+                        <div class="flex items-start">
+                            <i class="fas fa-info-circle text-purple-500 text-xl mr-3 mt-1"></i>
+                            <div>
+                                <h4 class="font-semibold text-gray-900 mb-1">オーナー限定機能</h4>
+                                <p class="text-sm text-gray-600">
+                                    収益データはコミュニティオーナーのみが閲覧できます。
+                                    詳細な売上データや決済履歴は、Stripeダッシュボードをご確認ください。
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+        <script src="/static/app.js"></script>
+        <script>
+            let subscriptionData = null
+            let planChart = null
+
+            async function loadSubscriptionAnalytics() {
+                try {
+                    const token = localStorage.getItem('token')
+                    if (!token) {
+                        window.location.href = '/login'
+                        return
+                    }
+
+                    axios.defaults.headers.common['Authorization'] = 'Bearer ' + token
+
+                    const response = await axios.get('/api/analytics/subscriptions')
+                    
+                    if (!response.data.success) {
+                        throw new Error(response.data.message)
+                    }
+
+                    subscriptionData = response.data.data
+                    displaySubscriptionAnalytics()
+
+                    document.getElementById('loadingState').classList.add('hidden')
+                    document.getElementById('contentContainer').classList.remove('hidden')
+
+                } catch (error) {
+                    console.error('Subscription analytics error:', error)
+                    if (error.response?.status === 401) {
+                        window.location.href = '/login'
+                    } else if (error.response?.status === 403) {
+                        showToast('収益データはオーナーのみ閲覧可能です', 'error')
+                        setTimeout(() => window.location.href = '/analytics', 2000)
+                    } else {
+                        showToast('収益データの読み込みに失敗しました', 'error')
+                    }
+                }
+            }
+
+            function displaySubscriptionAnalytics() {
+                if (!subscriptionData) return
+
+                const stats = subscriptionData.subscription_stats
+                document.getElementById('activeSubscriptions').textContent = (stats.active_count || 0).toLocaleString()
+                document.getElementById('monthlyCount').textContent = (stats.monthly_count || 0).toLocaleString()
+                document.getElementById('yearlyCount').textContent = (stats.yearly_count || 0).toLocaleString()
+
+                // プラン別分布
+                const planBreakdown = subscriptionData.plan_breakdown || []
+                let breakdownHtml = ''
+                planBreakdown.forEach(plan => {
+                    const total = planBreakdown.reduce((sum, p) => sum + p.count, 0)
+                    const percentage = total > 0 ? Math.round((plan.count / total) * 100) : 0
+                    breakdownHtml += \`
+                        <div>
+                            <div class="flex justify-between text-sm mb-1">
+                                <span class="text-gray-700">\${plan.plan_name}</span>
+                                <span class="font-semibold text-gray-900">\${plan.count}件 (\${percentage}%)</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-2">
+                                <div class="bg-purple-500 h-2 rounded-full" style="width: \${percentage}%"></div>
+                            </div>
+                        </div>
+                    \`
+                })
+                document.getElementById('planBreakdown').innerHTML = breakdownHtml || '<p class="text-gray-500 text-sm">データがありません</p>'
+
+                // プラン別分布円グラフ
+                if (planBreakdown.length > 0) {
+                    if (planChart) planChart.destroy()
+                    const planCtx = document.getElementById('planChart').getContext('2d')
+                    planChart = new Chart(planCtx, {
+                        type: 'pie',
+                        data: {
+                            labels: planBreakdown.map(p => p.plan_name),
+                            datasets: [{
+                                data: planBreakdown.map(p => p.count),
+                                backgroundColor: [
+                                    '#9C27B0',
+                                    '#00BCD4',
+                                    '#4CAF50',
+                                    '#FF9800',
+                                    '#F44336',
+                                    '#2196F3'
+                                ],
+                                borderWidth: 2,
+                                borderColor: '#fff'
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: true,
+                            plugins: {
+                                legend: {
+                                    position: 'bottom',
+                                    labels: {
+                                        padding: 15,
+                                        font: { size: 12 }
+                                    }
+                                },
+                                tooltip: {
+                                    callbacks: {
+                                        label: function(context) {
+                                            const label = context.label || ''
+                                            const value = context.parsed || 0
+                                            const total = context.dataset.data.reduce((a, b) => a + b, 0)
+                                            const percentage = Math.round((value / total) * 100)
+                                            return label + ': ' + value + '件 (' + percentage + '%)'
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    })
+                }
+            }
+
+            document.addEventListener('DOMContentLoaded', loadSubscriptionAnalytics)
+        </script>
+    </body>
+    </html>
+  `)
+})
+
+// ============================================
 // 統計詳細ページ（準備中）
 // ============================================
 app.get('/analytics/:page', (c) => {
