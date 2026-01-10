@@ -655,7 +655,58 @@ npx wrangler tail commons-webapp-cron
 ### 詳細ドキュメント
 - `docs/SCHEDULED_POSTS.md` - 予約投稿機能の詳細仕様
 
+## 誕生日メール機能
+
+### 概要
+会員の誕生日に自動的にお祝いメールを送信する機能を実装しました。メールのテンプレートはオーナー・管理者が管理画面から編集できます。
+
+### データベーステーブル
+- **users.birthday** - 会員の誕生日（DATE型、YYYY-MM-DD）
+- **birthday_email_templates** - テンプレート管理（subject, body, is_active, last_updated）
+- **birthday_email_logs** - 送信履歴（year単位で重複送信を防止、user_id + sent_year がユニークキー）
+
+### 管理画面機能
+- **ダッシュボード** - 「誕生日メール設定」カードから管理画面へアクセス
+- **/birthday-email-settings** - テンプレート編集・プレビュー・テスト送信
+  - 件名と本文を自由に編集
+  - プレースホルダー: `{name}`, `{year}`, `{month}`, `{day}`, `{community_name}`
+  - テンプレートの有効/無効切り替え
+  - テスト送信機能（指定したメールアドレスに送信）
+
+### 自動送信API
+- **POST /api/birthday-email/send** - 今日誕生日の会員へ自動送信
+  - 今年すでに送信済みの会員はスキップ
+  - テンプレートが無効な場合は送信しない
+  - 送信結果を birthday_email_logs に記録
+
+**注意**: 自動送信スケジュール（Cloudflare Workers Cron Triggers）は別途設定が必要です。
+
+### プロフィール編集
+- **/profile** - プロフィール編集画面に誕生日フィールドを追加
+  - 生年月日を入力（type="date"）
+  - メールアドレスも編集可能
+  - ニックネーム、自己紹介、アバター画像も更新可能
+
+### APIエンドポイント
+- **GET /api/birthday-email/template** - テンプレート取得（管理者のみ）
+- **PUT /api/birthday-email/template** - テンプレート更新（管理者のみ）
+- **POST /api/birthday-email/send** - 今日の誕生日メール一斉送信（管理者のみ）
+- **POST /api/birthday-email/test** - テスト送信（管理者のみ）
+
+### デプロイ
+```bash
+# マイグレーション適用（本番）
+npx wrangler d1 migrations apply commons-webapp-production --remote
+
+# ビルド & デプロイ
+npm run deploy
+```
+
 ---
 
-**最終更新**: 2026-01-09
-**バージョン**: Phase 4（予約投稿機能）
+**最終更新**: 2026-01-10
+**バージョン**: Phase 5（支払い失敗アラート・誕生日メール機能）
+**新機能**:
+- 支払い失敗時の通知・リマインダーシステム
+- 誕生日メール自動送信機能
+- プロフィールのメールアドレス編集機能
