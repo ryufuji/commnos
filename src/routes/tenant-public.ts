@@ -1679,8 +1679,8 @@ tenantPublic.get('/home', async (c) => {
         </section>
         ` : ''}
         
-        <!-- CTAセクション -->
-        <section style="background: linear-gradient(135deg, var(--commons-primary-light) 0%, rgba(0, 212, 224, 0.2) 100%); padding: 80px 48px; border-radius: var(--radius-xl); text-align: center;">
+        <!-- CTAセクション（ログインしていない場合のみ表示） -->
+        <section id="ctaSection" style="background: linear-gradient(135deg, var(--commons-primary-light) 0%, rgba(0, 212, 224, 0.2) 100%); padding: 80px 48px; border-radius: var(--radius-xl); text-align: center;">
             <h2 style="font-size: var(--font-size-xlarge); font-weight: var(--font-weight-bold); color: var(--commons-text-primary); margin-bottom: 24px;">
                 コミュニティに参加しよう
             </h2>

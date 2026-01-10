@@ -614,6 +614,13 @@ function updateHeaderLoginState() {
       }, 100);
     }
     
+    // CTAセクション（ログインボタン）を非表示
+    const ctaSection = document.getElementById('ctaSection');
+    if (ctaSection) {
+      ctaSection.style.display = 'none';
+      debugLog('CTA_SECTION', 'CTA section hidden for logged-in user');
+    }
+    
     debugLog('HEADER_UPDATE', 'Header updated successfully with user menu');
   } catch (error) {
     debugLog('ERROR', 'Failed to update header login state', error);
