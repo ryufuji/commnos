@@ -37,6 +37,7 @@ import postAccess from './routes/post-access' // 投稿アクセス制御管理
 import surveys from './routes/surveys' // アンケート機能
 import birthdayEmail from './routes/birthday-email' // 誕生日メール機能
 import analytics from './routes/analytics' // 統計ダッシュボード
+import points from './routes/points' // ポイントシステム
 
 const app = new Hono<AppContext>()
 
@@ -116,6 +117,9 @@ app.route('/api/birthday-email', birthdayEmail)
 
 // 統計ダッシュボードルート
 app.route('/api/analytics', analytics)
+
+// ポイントシステムルート
+app.route('/api/points', points)
 
 // --------------------------------------------
 // ルーティングロジック
@@ -1737,6 +1741,14 @@ app.get('/dashboard', (c) => {
                             </div>
                             <h3 class="font-bold text-gray-900 mb-2">誕生日メール設定</h3>
                             <p class="text-sm text-secondary-600">誕生日メッセージの内容を設定</p>
+                        </a>
+
+                        <a href="/points-management" class="card-interactive p-6 text-center">
+                            <div class="text-4xl mb-3 text-yellow-500">
+                                <i class="fas fa-coins"></i>
+                            </div>
+                            <h3 class="font-bold text-gray-900 mb-2">ポイント管理</h3>
+                            <p class="text-sm text-secondary-600">ポイントルール・報酬・交換申請を管理</p>
                         </a>
 
                         <a href="/profile" class="card-interactive p-6 text-center">
@@ -6129,6 +6141,254 @@ app.get('/analytics/:page', (c) => {
   `)
 })
 
+// ============================================
+// ポイント管理ページ (/points-management)
+// ============================================
+app.get('/points-management', (c) => {
+  return c.html(`
+    <!DOCTYPE html>
+    <html lang="ja" data-theme="light">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>ポイント管理 - Commons</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <script src="/static/tailwind-config.js"></script>
+        <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+        <link href="/static/commons-theme.css" rel="stylesheet">
+        <link href="/static/commons-components.css" rel="stylesheet">
+    </head>
+    <body class="bg-gray-50">
+        <div class="min-h-screen flex flex-col">
+            <!-- Header -->
+            <header class="bg-white border-b border-gray-200 sticky top-0 z-40">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-4">
+                            <a href="/dashboard" class="text-gray-600 hover:text-gray-900">
+                                <i class="fas fa-arrow-left"></i>
+                            </a>
+                            <h1 class="text-2xl font-bold text-gray-900">
+                                <i class="fas fa-coins mr-2 text-yellow-500"></i>
+                                ポイント管理
+                            </h1>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Main Content -->
+            <main class="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
+                <!-- Tabs -->
+                <div class="mb-6 border-b border-gray-200">
+                    <nav class="-mb-px flex space-x-8">
+                        <button id="rulesTab" class="tab-button active" onclick="switchTab('rules')">
+                            <i class="fas fa-sliders-h mr-2"></i>
+                            ポイントルール
+                        </button>
+                        <button id="rewardsTab" class="tab-button" onclick="switchTab('rewards')">
+                            <i class="fas fa-gift mr-2"></i>
+                            報酬管理
+                        </button>
+                        <button id="exchangesTab" class="tab-button" onclick="switchTab('exchanges')">
+                            <i class="fas fa-exchange-alt mr-2"></i>
+                            交換申請
+                        </button>
+                        <button id="grantTab" class="tab-button" onclick="switchTab('grant')">
+                            <i class="fas fa-user-plus mr-2"></i>
+                            ポイント付与
+                        </button>
+                    </nav>
+                </div>
+
+                <!-- Loading State -->
+                <div id="loadingState" class="text-center py-12">
+                    <i class="fas fa-spinner fa-spin text-4xl text-yellow-500 mb-4"></i>
+                    <p class="text-gray-600">データを読み込み中...</p>
+                </div>
+
+                <!-- Rules Tab -->
+                <div id="rulesContent" class="tab-content hidden">
+                    <div class="card p-6 mb-6 bg-yellow-50 border-yellow-200">
+                        <div class="flex items-start">
+                            <i class="fas fa-info-circle text-yellow-500 text-xl mr-3 mt-1"></i>
+                            <div>
+                                <h3 class="font-semibold text-gray-900 mb-2">ポイントルールについて</h3>
+                                <p class="text-sm text-gray-700 mb-2">
+                                    会員のアクションに対して付与するポイント数を設定できます。
+                                </p>
+                                <ul class="text-sm text-gray-600 space-y-1 list-disc list-inside">
+                                    <li>ポイント数を0にすると付与されません</li>
+                                    <li>無効にすると一時的にポイント付与を停止できます</li>
+                                    <li>変更はすぐに反映されます</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="card p-6">
+                        <h3 class="font-semibold text-gray-900 mb-4">アクション別ポイント設定</h3>
+                        <div id="rulesList" class="space-y-4"></div>
+                    </div>
+                </div>
+
+                <!-- Rewards Tab -->
+                <div id="rewardsContent" class="tab-content hidden">
+                    <div class="text-center py-12">
+                        <p class="text-gray-600">実装予定</p>
+                    </div>
+                </div>
+
+                <!-- Exchanges Tab -->
+                <div id="exchangesContent" class="tab-content hidden">
+                    <div class="text-center py-12">
+                        <p class="text-gray-600">実装予定</p>
+                    </div>
+                </div>
+
+                <!-- Grant Tab -->
+                <div id="grantContent" class="tab-content hidden">
+                    <div class="text-center py-12">
+                        <p class="text-gray-600">実装予定</p>
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+        <script src="/static/app.js"></script>
+        <script>
+            let currentRules = []
+
+            const actionLabels = {
+                'site_visit': 'サイト訪問（1日1回）',
+                'signup': '会員登録',
+                'subscription': 'サブスクリプション登録',
+                'post_create': '投稿作成',
+                'comment_create': 'コメント投稿'
+            }
+
+            function switchTab(tab) {
+                // タブボタンの切り替え
+                document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'))
+                document.getElementById(tab + 'Tab').classList.add('active')
+
+                // コンテンツの切り替え
+                document.querySelectorAll('.tab-content').forEach(content => content.classList.add('hidden'))
+                document.getElementById(tab + 'Content').classList.remove('hidden')
+            }
+
+            async function loadRules() {
+                try {
+                    const token = localStorage.getItem('token')
+                    if (!token) {
+                        window.location.href = '/login'
+                        return
+                    }
+
+                    const response = await axios.get('/api/points/rules', {
+                        headers: { 'Authorization': 'Bearer ' + token }
+                    })
+
+                    if (response.data.success) {
+                        currentRules = response.data.rules
+                        displayRules()
+                        document.getElementById('loadingState').classList.add('hidden')
+                        document.getElementById('rulesContent').classList.remove('hidden')
+                    }
+                } catch (error) {
+                    console.error('Load rules error:', error)
+                    if (error.response?.status === 401) {
+                        window.location.href = '/login'
+                    } else if (error.response?.status === 403) {
+                        showToast('管理者権限が必要です', 'error')
+                        setTimeout(() => window.location.href = '/dashboard', 2000)
+                    } else {
+                        showToast('ルールの読み込みに失敗しました', 'error')
+                    }
+                }
+            }
+
+            function displayRules() {
+                const container = document.getElementById('rulesList')
+                container.innerHTML = ''
+
+                currentRules.forEach(rule => {
+                    const ruleCard = document.createElement('div')
+                    ruleCard.className = 'border border-gray-200 rounded-lg p-4 hover:border-yellow-300 transition-colors'
+                    ruleCard.innerHTML = \`
+                        <div class="flex items-center justify-between">
+                            <div class="flex-1">
+                                <div class="flex items-center space-x-3 mb-2">
+                                    <h4 class="font-semibold text-gray-900">\${actionLabels[rule.action] || rule.action}</h4>
+                                    <span class="\${rule.is_active ? 'badge-success' : 'badge-secondary'}">\${rule.is_active ? '有効' : '無効'}</span>
+                                </div>
+                                <p class="text-sm text-gray-600">\${rule.note || ''}</p>
+                            </div>
+                            <div class="flex items-center space-x-4">
+                                <div class="text-right">
+                                    <p class="text-2xl font-bold text-yellow-600">\${rule.points}</p>
+                                    <p class="text-xs text-gray-500">ポイント</p>
+                                </div>
+                                <button onclick="editRule('\${rule.action}')" class="btn-secondary">
+                                    <i class="fas fa-edit"></i>
+                                    編集
+                                </button>
+                            </div>
+                        </div>
+                    \`
+                    container.appendChild(ruleCard)
+                })
+            }
+
+            async function editRule(action) {
+                const rule = currentRules.find(r => r.action === action)
+                if (!rule) return
+
+                const points = prompt(\`\${actionLabels[action]}のポイント数を入力してください：\`, rule.points)
+                if (points === null) return
+
+                const pointsNum = parseInt(points)
+                if (isNaN(pointsNum) || pointsNum < 0) {
+                    showToast('無効なポイント数です', 'error')
+                    return
+                }
+
+                const isActive = confirm('このルールを有効にしますか？\\n\\nOK = 有効\\nキャンセル = 無効')
+
+                try {
+                    const token = localStorage.getItem('token')
+                    const response = await axios.put(\`/api/points/rules/\${action}\`, {
+                        points: pointsNum,
+                        is_active: isActive,
+                        note: rule.note
+                    }, {
+                        headers: { 'Authorization': 'Bearer ' + token }
+                    })
+
+                    if (response.data.success) {
+                        showToast('ルールを更新しました', 'success')
+                        loadRules()
+                    }
+                } catch (error) {
+                    console.error('Update rule error:', error)
+                    showToast(error.response?.data?.error || 'ルールの更新に失敗しました', 'error')
+                }
+            }
+
+            // 初期化
+            document.addEventListener('DOMContentLoaded', () => {
+                loadRules()
+            })
+        </script>
+    </body>
+    </html>
+  `)
+})
+
+// ============================================
+// ヘルスチェックAPI
+// ============================================
 app.get('/health', (c) => {
   return c.json({ status: 'ok', timestamp: new Date().toISOString() })
 })

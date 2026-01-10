@@ -288,14 +288,64 @@ posts.post('/', authMiddleware, async (c) => {
       .bind(postId)
       .first<any>()
 
+    // ポイント付与（公開投稿の場合のみ）
+    let pointsEarned = 0
+    if (postStatus === 'published') {
+      try {
+        // ポイントルールを取得
+        const rule = await db.prepare(`
+          SELECT points FROM point_rules
+          WHERE tenant_id = ? AND action = 'post_create' AND is_active = 1
+        `).bind(tenantId).first() as any
+
+        if (rule && rule.points > 0) {
+          // ポイント残高を取得または作成
+          let balance = await db.prepare(`
+            SELECT balance, total_earned FROM user_points
+            WHERE user_id = ? AND tenant_id = ?
+          `).bind(userId, tenantId).first() as any
+
+          if (!balance) {
+            await db.prepare(`
+              INSERT INTO user_points (user_id, tenant_id, balance, total_earned)
+              VALUES (?, ?, 0, 0)
+            `).bind(userId, tenantId).run()
+            balance = { balance: 0, total_earned: 0 }
+          }
+
+          const newBalance = balance.balance + rule.points
+          const newTotalEarned = balance.total_earned + rule.points
+
+          // ポイント残高を更新
+          await db.prepare(`
+            UPDATE user_points
+            SET balance = ?, total_earned = ?, updated_at = CURRENT_TIMESTAMP
+            WHERE user_id = ? AND tenant_id = ?
+          `).bind(newBalance, newTotalEarned, userId, tenantId).run()
+
+          // ポイント履歴を記録
+          await db.prepare(`
+            INSERT INTO point_transactions (user_id, tenant_id, action_type, points, reason, reference_id, balance_after)
+            VALUES (?, ?, 'earn', ?, 'post_create', ?, ?)
+          `).bind(userId, tenantId, rule.points, postId, newBalance).run()
+
+          pointsEarned = rule.points
+        }
+      } catch (error) {
+        console.error('[Award Points Error]', error)
+        // ポイント付与失敗は投稿作成を妨げない
+      }
+    }
+
     const message = postStatus === 'draft' ? '下書きを保存しました' : 
                     postStatus === 'scheduled' ? `予約投稿を設定しました（${scheduled_at}に公開）` : 
-                    '投稿を公開しました'
+                    pointsEarned > 0 ? `投稿を公開しました（+${pointsEarned}ポイント）` : '投稿を公開しました'
 
     return c.json({
       success: true,
       post,
-      message
+      message,
+      points_earned: pointsEarned
     }, 201)
   } catch (error) {
     console.error('[Create Post Error]', error)
@@ -585,10 +635,58 @@ posts.post('/:id/comments', authMiddleware, async (c) => {
       .bind(tenantId, postId)
       .first<any>()
 
+    // ポイント付与（コメント投稿）
+    let pointsEarned = 0
+    try {
+      // ポイントルールを取得
+      const rule = await db.prepare(`
+        SELECT points FROM point_rules
+        WHERE tenant_id = ? AND action = 'comment_create' AND is_active = 1
+      `).bind(tenantId).first() as any
+
+      if (rule && rule.points > 0) {
+        // ポイント残高を取得または作成
+        let balance = await db.prepare(`
+          SELECT balance, total_earned FROM user_points
+          WHERE user_id = ? AND tenant_id = ?
+        `).bind(userId, tenantId).first() as any
+
+        if (!balance) {
+          await db.prepare(`
+            INSERT INTO user_points (user_id, tenant_id, balance, total_earned)
+            VALUES (?, ?, 0, 0)
+          `).bind(userId, tenantId).run()
+          balance = { balance: 0, total_earned: 0 }
+        }
+
+        const newBalance = balance.balance + rule.points
+        const newTotalEarned = balance.total_earned + rule.points
+
+        // ポイント残高を更新
+        await db.prepare(`
+          UPDATE user_points
+          SET balance = ?, total_earned = ?, updated_at = CURRENT_TIMESTAMP
+          WHERE user_id = ? AND tenant_id = ?
+        `).bind(newBalance, newTotalEarned, userId, tenantId).run()
+
+        // ポイント履歴を記録
+        await db.prepare(`
+          INSERT INTO point_transactions (user_id, tenant_id, action_type, points, reason, reference_id, balance_after)
+          VALUES (?, ?, 'earn', ?, 'comment_create', ?, ?)
+        `).bind(userId, tenantId, rule.points, result.meta.last_row_id, newBalance).run()
+
+        pointsEarned = rule.points
+      }
+    } catch (error) {
+      console.error('[Award Comment Points Error]', error)
+      // ポイント付与失敗はコメント投稿を妨げない
+    }
+
     return c.json({
       success: true,
       comment,
-      message: 'Comment created successfully'
+      message: pointsEarned > 0 ? `コメントを投稿しました（+${pointsEarned}ポイント）` : 'Comment created successfully',
+      points_earned: pointsEarned
     }, 201)
   } catch (error) {
     console.error('[Create Comment Error]', error)

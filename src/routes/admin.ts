@@ -132,13 +132,42 @@ admin.post('/members/:id/approve', authMiddleware, requireRole('admin'), async (
       }
     }
 
+    // 会員登録ポイント付与
+    let signupPoints = 0
+    try {
+      const rule = await db.prepare(`
+        SELECT points FROM point_rules
+        WHERE tenant_id = ? AND action = 'signup' AND is_active = 1
+      `).bind(tenantId).first() as any
+
+      if (rule && rule.points > 0) {
+        // ポイント残高を作成
+        await db.prepare(`
+          INSERT INTO user_points (user_id, tenant_id, balance, total_earned)
+          VALUES (?, ?, ?, ?)
+        `).bind(membership.user_id, tenantId, rule.points, rule.points).run()
+
+        // ポイント履歴を記録
+        await db.prepare(`
+          INSERT INTO point_transactions (user_id, tenant_id, action_type, points, reason, balance_after, note)
+          VALUES (?, ?, 'earn', ?, 'signup', ?, '会員登録ボーナス')
+        `).bind(membership.user_id, tenantId, rule.points, rule.points).run()
+
+        signupPoints = rule.points
+      }
+    } catch (error) {
+      console.error('[Award Signup Points Error]', error)
+      // ポイント付与失敗は承認を妨げない
+    }
+
     return c.json({
       success: true,
       member: {
         id: membershipId,
         member_number: memberNumber,
         status: 'active'
-      }
+      },
+      signup_points: signupPoints
     })
   } catch (error) {
     console.error('[Approve Member Error]', error)
