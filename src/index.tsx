@@ -38,6 +38,7 @@ import surveys from './routes/surveys' // アンケート機能
 import birthdayEmail from './routes/birthday-email' // 誕生日メール機能
 import analytics from './routes/analytics' // 統計ダッシュボード
 import points from './routes/points' // ポイントシステム
+import shop from './routes/shop' // Phase 7 - ショップシステム
 
 const app = new Hono<AppContext>()
 
@@ -120,6 +121,9 @@ app.route('/api/analytics', analytics)
 
 // ポイントシステムルート
 app.route('/api/points', points)
+
+// ショップシステムルート（Phase 7）
+app.route('/api/shop', shop)
 
 // --------------------------------------------
 // ルーティングロジック
@@ -1749,6 +1753,14 @@ app.get('/dashboard', (c) => {
                             </div>
                             <h3 class="font-bold text-gray-900 mb-2">ポイント管理</h3>
                             <p class="text-sm text-secondary-600">ポイントルール・報酬・交換申請を管理</p>
+                        </a>
+
+                        <a href="/shop-settings" class="card-interactive p-6 text-center">
+                            <div class="text-4xl mb-3 text-purple-500">
+                                <i class="fas fa-store"></i>
+                            </div>
+                            <h3 class="font-bold text-gray-900 mb-2">ショップ設定</h3>
+                            <p class="text-sm text-secondary-600">特定商取引法・商品管理・注文管理</p>
                         </a>
 
                         <a href="/profile" class="card-interactive p-6 text-center">
@@ -7286,6 +7298,419 @@ app.get('/tenant/points', (c) => {
             document.addEventListener('DOMContentLoaded', () => {
                 loadBalance()
                 loadTransactions()
+            })
+        </script>
+    </body>
+    </html>
+  `)
+})
+
+// ============================================
+// ショップ設定ページ (/shop-settings)
+// ============================================
+app.get('/shop-settings', (c) => {
+  return c.html(`
+    <!DOCTYPE html>
+    <html lang="ja" data-theme="light">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>ショップ設定 - Commons</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+        <link href="/static/tailwind-config.js" rel="stylesheet">
+        <link href="/static/commons-theme.css" rel="stylesheet">
+        <link href="/static/commons-components.css" rel="stylesheet">
+    </head>
+    <body class="bg-gray-50">
+        <div class="min-h-screen flex flex-col">
+            <!-- Header -->
+            <header class="bg-white border-b border-gray-200 sticky top-0 z-40">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-4">
+                            <a href="/dashboard" class="text-gray-600 hover:text-gray-900">
+                                <i class="fas fa-arrow-left"></i>
+                            </a>
+                            <h1 class="text-2xl font-bold text-gray-900">
+                                <i class="fas fa-store mr-2 text-purple-500"></i>
+                                ショップ設定
+                            </h1>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Main Content -->
+            <main class="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
+                <!-- 販売可否ステータス -->
+                <div id="statusCard" class="card p-6 mb-6 hidden">
+                    <div class="flex items-start">
+                        <div id="statusIcon" class="text-4xl mr-4"></div>
+                        <div>
+                            <h3 id="statusTitle" class="font-semibold text-gray-900 mb-2"></h3>
+                            <p id="statusMessage" class="text-sm text-gray-700"></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- タブ -->
+                <div class="mb-6 border-b border-gray-200">
+                    <nav class="-mb-px flex space-x-8">
+                        <button id="legalTab" class="tab-button active" onclick="switchTab('legal')">
+                            <i class="fas fa-file-contract mr-2"></i>
+                            特定商取引法
+                        </button>
+                        <button id="productsTab" class="tab-button" onclick="switchTab('products')">
+                            <i class="fas fa-box mr-2"></i>
+                            商品管理
+                        </button>
+                        <button id="ordersTab" class="tab-button" onclick="switchTab('orders')">
+                            <i class="fas fa-shopping-cart mr-2"></i>
+                            注文管理
+                        </button>
+                    </nav>
+                </div>
+
+                <!-- 特定商取引法タブ -->
+                <div id="legalContent" class="tab-content">
+                    <div class="card p-6 mb-6 bg-yellow-50 border-yellow-200">
+                        <div class="flex items-start">
+                            <i class="fas fa-exclamation-triangle text-yellow-500 text-xl mr-3 mt-1"></i>
+                            <div>
+                                <h3 class="font-semibold text-gray-900 mb-2">特定商取引法について</h3>
+                                <p class="text-sm text-gray-700 mb-2">
+                                    インターネット通販を行う場合、特定商取引法に基づく事業者情報の表示が法律で義務付けられています。
+                                </p>
+                                <p class="text-sm text-gray-700">
+                                    以下の情報をすべて入力することで、商品の販売が可能になります。
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <form id="legalForm" class="card p-6 space-y-6">
+                        <h3 class="font-semibold text-gray-900 text-lg mb-4">事業者情報</h3>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    事業者名 <span class="text-red-500">*</span>
+                                </label>
+                                <input type="text" id="business_name" required
+                                       class="input-field"
+                                       placeholder="例: 株式会社サンプル">
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    代表者名
+                                </label>
+                                <input type="text" id="representative_name"
+                                       class="input-field"
+                                       placeholder="例: 山田 太郎">
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    郵便番号 <span class="text-red-500">*</span>
+                                </label>
+                                <input type="text" id="postal_code" required
+                                       class="input-field"
+                                       placeholder="例: 123-4567">
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    住所 <span class="text-red-500">*</span>
+                                </label>
+                                <input type="text" id="address" required
+                                       class="input-field"
+                                       placeholder="例: 東京都渋谷区1-2-3">
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    電話番号 <span class="text-red-500">*</span>
+                                </label>
+                                <input type="tel" id="phone_number" required
+                                       class="input-field"
+                                       placeholder="例: 03-1234-5678">
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    メールアドレス <span class="text-red-500">*</span>
+                                </label>
+                                <input type="email" id="email" required
+                                       class="input-field"
+                                       placeholder="例: info@example.com">
+                            </div>
+                            
+                            <div class="md:col-span-2">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    営業時間
+                                </label>
+                                <input type="text" id="business_hours"
+                                       class="input-field"
+                                       placeholder="例: 平日10:00-18:00">
+                            </div>
+                        </div>
+
+                        <h3 class="font-semibold text-gray-900 text-lg mt-8 mb-4">販売条件</h3>
+                        
+                        <div class="space-y-6">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    支払方法 <span class="text-red-500">*</span>
+                                </label>
+                                <textarea id="payment_methods" required rows="2"
+                                          class="input-field"
+                                          placeholder="例: クレジットカード（Visa、Mastercard、JCB、American Express）"></textarea>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    支払時期 <span class="text-red-500">*</span>
+                                </label>
+                                <textarea id="payment_timing" required rows="2"
+                                          class="input-field"
+                                          placeholder="例: 商品注文時にお支払いが確定します"></textarea>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    商品引渡時期 <span class="text-red-500">*</span>
+                                </label>
+                                <textarea id="delivery_time" required rows="2"
+                                          class="input-field"
+                                          placeholder="例: ご注文から3営業日以内に発送いたします"></textarea>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    送料について <span class="text-red-500">*</span>
+                                </label>
+                                <textarea id="shipping_fee_info" required rows="2"
+                                          class="input-field"
+                                          placeholder="例: 全国一律500円。10,000円以上のご購入で送料無料"></textarea>
+                            </div>
+                        </div>
+
+                        <h3 class="font-semibold text-gray-900 text-lg mt-8 mb-4">返品・交換について</h3>
+                        
+                        <div class="space-y-6">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    返品ポリシー <span class="text-red-500">*</span>
+                                </label>
+                                <textarea id="return_policy" required rows="4"
+                                          class="input-field"
+                                          placeholder="例: 商品到着後8日以内であれば、未開封・未使用に限り返品可能です。お客様都合による返品の場合は返送料をご負担ください。"></textarea>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    返品可能期間 <span class="text-red-500">*</span>
+                                </label>
+                                <input type="number" id="return_period" required min="1"
+                                       class="input-field"
+                                       placeholder="8"
+                                       value="8">
+                                <p class="text-xs text-gray-500 mt-1">日数で入力してください（デフォルト: 8日）</p>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    返品送料負担 <span class="text-red-500">*</span>
+                                </label>
+                                <textarea id="return_shipping_fee" required rows="2"
+                                          class="input-field"
+                                          placeholder="例: 返品時の送料はお客様負担となります。ただし、初期不良・誤配送の場合は当社が負担いたします。"></textarea>
+                            </div>
+                        </div>
+
+                        <h3 class="font-semibold text-gray-900 text-lg mt-8 mb-4">その他（任意）</h3>
+                        
+                        <div class="space-y-6">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    その他費用
+                                </label>
+                                <textarea id="additional_fees" rows="2"
+                                          class="input-field"
+                                          placeholder="例: 代金引換の場合は手数料300円が別途かかります"></textarea>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    商品瑕疵責任
+                                </label>
+                                <textarea id="product_liability" rows="2"
+                                          class="input-field"
+                                          placeholder="例: 商品の瑕疵がある場合は、商品到着後7日以内にご連絡ください。交換または返金にて対応いたします。"></textarea>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-end space-x-4 mt-8">
+                            <button type="button" onclick="location.href='/dashboard'" class="btn-secondary">
+                                キャンセル
+                            </button>
+                            <button type="submit" class="btn-primary">
+                                <i class="fas fa-save mr-2"></i>
+                                保存する
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- 商品管理タブ -->
+                <div id="productsContent" class="tab-content hidden">
+                    <div class="card p-6">
+                        <p class="text-gray-600">商品管理機能は開発中です</p>
+                    </div>
+                </div>
+
+                <!-- 注文管理タブ -->
+                <div id="ordersContent" class="tab-content hidden">
+                    <div class="card p-6">
+                        <p class="text-gray-600">注文管理機能は開発中です</p>
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+        <script src="/static/app.js"></script>
+        <script>
+            function switchTab(tab) {
+                document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'))
+                document.getElementById(tab + 'Tab').classList.add('active')
+
+                document.querySelectorAll('.tab-content').forEach(content => content.classList.add('hidden'))
+                document.getElementById(tab + 'Content').classList.remove('hidden')
+            }
+
+            async function loadStatus() {
+                try {
+                    const token = localStorage.getItem('token')
+                    if (!token) {
+                        window.location.href = '/login'
+                        return
+                    }
+
+                    const response = await axios.get('/api/shop/legal-info/status', {
+                        headers: { 'Authorization': 'Bearer ' + token }
+                    })
+
+                    if (response.data.success) {
+                        const statusCard = document.getElementById('statusCard')
+                        const statusIcon = document.getElementById('statusIcon')
+                        const statusTitle = document.getElementById('statusTitle')
+                        const statusMessage = document.getElementById('statusMessage')
+
+                        statusCard.classList.remove('hidden')
+
+                        if (response.data.can_sell) {
+                            statusCard.className = 'card p-6 mb-6 bg-green-50 border-green-200'
+                            statusIcon.innerHTML = '<i class="fas fa-check-circle text-green-500"></i>'
+                            statusTitle.textContent = '販売機能が利用可能です'
+                            statusMessage.textContent = '特定商取引法に基づく事業者情報が登録されています。商品の販売が可能です。'
+                        } else {
+                            statusCard.className = 'card p-6 mb-6 bg-yellow-50 border-yellow-200'
+                            statusIcon.innerHTML = '<i class="fas fa-exclamation-triangle text-yellow-500"></i>'
+                            statusTitle.textContent = '販売機能が利用できません'
+                            statusMessage.textContent = '商品を販売するには、特定商取引法に基づく事業者情報の登録が必要です。下記フォームにすべての必須項目を入力してください。'
+                        }
+                    }
+                } catch (error) {
+                    console.error('Load status error:', error)
+                }
+            }
+
+            async function loadLegalInfo() {
+                try {
+                    const token = localStorage.getItem('token')
+                    const response = await axios.get('/api/shop/legal-info', {
+                        headers: { 'Authorization': 'Bearer ' + token }
+                    })
+
+                    if (response.data.success && response.data.legal_info) {
+                        const info = response.data.legal_info
+                        document.getElementById('business_name').value = info.business_name || ''
+                        document.getElementById('representative_name').value = info.representative_name || ''
+                        document.getElementById('postal_code').value = info.postal_code || ''
+                        document.getElementById('address').value = info.address || ''
+                        document.getElementById('phone_number').value = info.phone_number || ''
+                        document.getElementById('email').value = info.email || ''
+                        document.getElementById('business_hours').value = info.business_hours || ''
+                        document.getElementById('payment_methods').value = info.payment_methods || ''
+                        document.getElementById('payment_timing').value = info.payment_timing || ''
+                        document.getElementById('delivery_time').value = info.delivery_time || ''
+                        document.getElementById('shipping_fee_info').value = info.shipping_fee_info || ''
+                        document.getElementById('return_policy').value = info.return_policy || ''
+                        document.getElementById('return_period').value = info.return_period || 8
+                        document.getElementById('return_shipping_fee').value = info.return_shipping_fee || ''
+                        document.getElementById('additional_fees').value = info.additional_fees || ''
+                        document.getElementById('product_liability').value = info.product_liability || ''
+                    }
+                } catch (error) {
+                    console.error('Load legal info error:', error)
+                }
+            }
+
+            document.getElementById('legalForm').addEventListener('submit', async (e) => {
+                e.preventDefault()
+
+                const token = localStorage.getItem('token')
+                if (!token) {
+                    window.location.href = '/login'
+                    return
+                }
+
+                const data = {
+                    business_name: document.getElementById('business_name').value,
+                    representative_name: document.getElementById('representative_name').value,
+                    postal_code: document.getElementById('postal_code').value,
+                    address: document.getElementById('address').value,
+                    phone_number: document.getElementById('phone_number').value,
+                    email: document.getElementById('email').value,
+                    business_hours: document.getElementById('business_hours').value,
+                    payment_methods: document.getElementById('payment_methods').value,
+                    payment_timing: document.getElementById('payment_timing').value,
+                    delivery_time: document.getElementById('delivery_time').value,
+                    shipping_fee_info: document.getElementById('shipping_fee_info').value,
+                    return_policy: document.getElementById('return_policy').value,
+                    return_period: parseInt(document.getElementById('return_period').value),
+                    return_shipping_fee: document.getElementById('return_shipping_fee').value,
+                    additional_fees: document.getElementById('additional_fees').value,
+                    product_liability: document.getElementById('product_liability').value
+                }
+
+                try {
+                    const response = await axios.post('/api/shop/legal-info', data, {
+                        headers: { 'Authorization': 'Bearer ' + token }
+                    })
+
+                    if (response.data.success) {
+                        showToast(response.data.message, 'success')
+                        await loadStatus()
+                        await loadLegalInfo()
+                    }
+                } catch (error) {
+                    console.error('Save error:', error)
+                    if (error.response?.data?.missing_fields) {
+                        showToast(\`以下の項目が未入力です: \${error.response.data.missing_fields.join('、')}\`, 'error')
+                    } else {
+                        showToast(error.response?.data?.error || '保存に失敗しました', 'error')
+                    }
+                }
+            })
+
+            // 初期化
+            document.addEventListener('DOMContentLoaded', () => {
+                loadStatus()
+                loadLegalInfo()
             })
         </script>
     </body>
