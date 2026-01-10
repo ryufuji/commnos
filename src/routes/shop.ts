@@ -51,6 +51,67 @@ shop.post('/legal-info', authMiddleware, requireRole('admin'), async (c) => {
   const db = c.env.DB
 
   try {
+    // 必須項目のバリデーション
+    const requiredFields = {
+      business_name: '事業者名',
+      postal_code: '郵便番号',
+      address: '住所',
+      phone_number: '電話番号',
+      email: 'メールアドレス',
+      return_policy: '返品ポリシー',
+      return_shipping_fee: '返品送料負担',
+      delivery_time: '商品引渡時期',
+      shipping_fee_info: '送料について',
+      payment_methods: '支払方法',
+      payment_timing: '支払時期'
+    }
+
+    const body = await c.req.json()
+    
+    const missingFields: string[] = []
+    for (const [field, label] of Object.entries(requiredFields)) {
+      const value = body[field]
+      if (!value || value.toString().trim() === '') {
+        missingFields.push(label)
+      }
+    }
+
+    if (missingFields.length > 0) {
+      return c.json({
+        success: false,
+        error: `以下の必須項目が入力されていません: ${missingFields.join('、')}`,
+        missing_fields: missingFields
+      }, 400)
+    }
+
+    // メールアドレスの形式チェック
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(body.email)) {
+      return c.json({
+        success: false,
+        error: 'メールアドレスの形式が正しくありません'
+      }, 400)
+    }
+
+    // 郵便番号の形式チェック（ハイフンあり/なし両方対応）
+    const postalCodeRegex = /^\d{3}-?\d{4}$/
+    if (!postalCodeRegex.test(body.postal_code)) {
+      return c.json({
+        success: false,
+        error: '郵便番号の形式が正しくありません（例: 123-4567）'
+      }, 400)
+    }
+
+    // 電話番号の形式チェック（ハイフンあり/なし両方対応）
+    const phoneRegex = /^0\d{1,4}-?\d{1,4}-?\d{4}$/
+    if (!phoneRegex.test(body.phone_number)) {
+      return c.json({
+        success: false,
+        error: '電話番号の形式が正しくありません（例: 03-1234-5678）'
+      }, 400)
+    }
+
+    // データを変数に割り当て
     const {
       business_name,
       representative_name,
@@ -68,65 +129,7 @@ shop.post('/legal-info', authMiddleware, requireRole('admin'), async (c) => {
       payment_timing,
       additional_fees,
       product_liability
-    } = await c.req.json()
-
-    // 必須項目のバリデーション
-    const requiredFields = {
-      business_name: '事業者名',
-      postal_code: '郵便番号',
-      address: '住所',
-      phone_number: '電話番号',
-      email: 'メールアドレス',
-      return_policy: '返品ポリシー',
-      return_shipping_fee: '返品送料負担',
-      delivery_time: '商品引渡時期',
-      shipping_fee_info: '送料について',
-      payment_methods: '支払方法',
-      payment_timing: '支払時期'
-    }
-
-    const missingFields: string[] = []
-    for (const [field, label] of Object.entries(requiredFields)) {
-      const value = (c.req as any).parsedBody?.[field]
-      if (!value || value.toString().trim() === '') {
-        missingFields.push(label)
-      }
-    }
-
-    if (missingFields.length > 0) {
-      return c.json({
-        success: false,
-        error: `以下の必須項目が入力されていません: ${missingFields.join('、')}`,
-        missing_fields: missingFields
-      }, 400)
-    }
-
-    // メールアドレスの形式チェック
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    if (!emailRegex.test(email)) {
-      return c.json({
-        success: false,
-        error: 'メールアドレスの形式が正しくありません'
-      }, 400)
-    }
-
-    // 郵便番号の形式チェック（ハイフンあり/なし両方対応）
-    const postalCodeRegex = /^\d{3}-?\d{4}$/
-    if (!postalCodeRegex.test(postal_code)) {
-      return c.json({
-        success: false,
-        error: '郵便番号の形式が正しくありません（例: 123-4567）'
-      }, 400)
-    }
-
-    // 電話番号の形式チェック（ハイフンあり/なし両方対応）
-    const phoneRegex = /^0\d{1,4}-?\d{1,4}-?\d{4}$/
-    if (!phoneRegex.test(phone_number)) {
-      return c.json({
-        success: false,
-        error: '電話番号の形式が正しくありません（例: 03-1234-5678）'
-      }, 400)
-    }
+    } = body
 
     // 既存のレコードを確認
     const existing = await db

@@ -7318,7 +7318,6 @@ app.get('/shop-settings', (c) => {
         <title>ショップ設定 - Commons</title>
         <script src="https://cdn.tailwindcss.com"></script>
         <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
-        <link href="/static/tailwind-config.js" rel="stylesheet">
         <link href="/static/commons-theme.css" rel="stylesheet">
         <link href="/static/commons-components.css" rel="stylesheet">
     </head>
@@ -8982,7 +8981,6 @@ app.get('/tenant/shop', (c) => {
         <title>ショップ - Commons</title>
         <script src="https://cdn.tailwindcss.com"></script>
         <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
-        <link href="/static/tailwind-config.js" rel="stylesheet">
         <link href="/static/commons-theme.css" rel="stylesheet">
         <link href="/static/commons-components.css" rel="stylesheet">
     </head>
@@ -9440,7 +9438,6 @@ app.get('/tenant/shop/product', (c) => {
         <title>商品詳細 - Commons</title>
         <script src="https://cdn.tailwindcss.com"></script>
         <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
-        <link href="/static/tailwind-config.js" rel="stylesheet">
         <link href="/static/commons-theme.css" rel="stylesheet">
         <link href="/static/commons-components.css" rel="stylesheet">
     </head>
@@ -9677,7 +9674,6 @@ app.get('/tenant/shop/checkout', (c) => {
         <title>購入手続き - Commons</title>
         <script src="https://cdn.tailwindcss.com"></script>
         <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
-        <link href="/static/tailwind-config.js" rel="stylesheet">
         <link href="/static/commons-theme.css" rel="stylesheet">
         <link href="/static/commons-components.css" rel="stylesheet">
     </head>
@@ -9947,7 +9943,6 @@ app.get('/tenant/shop/orders', (c) => {
         <title>注文履歴 - Commons</title>
         <script src="https://cdn.tailwindcss.com"></script>
         <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
-        <link href="/static/tailwind-config.js" rel="stylesheet">
         <link href="/static/commons-theme.css" rel="stylesheet">
         <link href="/static/commons-components.css" rel="stylesheet">
     </head>
