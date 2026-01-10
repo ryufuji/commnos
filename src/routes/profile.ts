@@ -137,14 +137,99 @@ profile.put('/', authMiddleware, async (c) => {
 
     // 更新後のユーザー情報を取得
     const user = await db
-      .prepare('SELECT id, email, nickname, avatar_url, bio, status, created_at, last_login_at FROM users WHERE id = ?')
+      .prepare('SELECT id, email, nickname, avatar_url, bio, birthday, status, created_at, last_login_at FROM users WHERE id = ?')
       .bind(userId)
       .first<any>()
+
+    // プロフィール完成度チェック（ポイント付与）
+    let profileCompletePoints = 0
+    try {
+      const tenantId = c.get('tenantId')
+      if (tenantId && user) {
+        // プロフィール完成度: ニックネーム、自己紹介、誕生日、アバターがすべて入力されている
+        const isProfileComplete = user.nickname && user.bio && user.birthday && user.avatar_url
+        
+        if (isProfileComplete) {
+          // プロフィール完成ボーナスルールを取得
+          const profileCompleteRule = await db
+            .prepare(`
+              SELECT points FROM point_rules
+              WHERE tenant_id = ? AND action = 'profile_complete' AND is_active = 1
+            `)
+            .bind(tenantId)
+            .first<any>()
+
+          if (profileCompleteRule && profileCompleteRule.points > 0) {
+            // 既にプロフィール完成ボーナスを獲得しているかチェック
+            const alreadyEarned = await db
+              .prepare(`
+                SELECT id FROM point_transactions
+                WHERE user_id = ? AND tenant_id = ? AND reason = 'profile_complete'
+              `)
+              .bind(userId, tenantId)
+              .first()
+
+            if (!alreadyEarned) {
+              // ポイント残高を取得または作成
+              let userPoints = await db
+                .prepare(`
+                  SELECT * FROM user_points WHERE user_id = ? AND tenant_id = ?
+                `)
+                .bind(userId, tenantId)
+                .first<any>()
+
+              if (!userPoints) {
+                await db
+                  .prepare(`
+                    INSERT INTO user_points (user_id, tenant_id, balance, total_earned, total_spent, created_at, updated_at)
+                    VALUES (?, ?, 0, 0, 0, datetime('now'), datetime('now'))
+                  `)
+                  .bind(userId, tenantId)
+                  .run()
+
+                userPoints = { balance: 0, total_earned: 0 }
+              }
+
+              // ポイント付与
+              const newBalance = (userPoints.balance || 0) + profileCompleteRule.points
+              const newTotalEarned = (userPoints.total_earned || 0) + profileCompleteRule.points
+
+              await db
+                .prepare(`
+                  UPDATE user_points
+                  SET balance = ?, total_earned = ?, updated_at = datetime('now')
+                  WHERE user_id = ? AND tenant_id = ?
+                `)
+                .bind(newBalance, newTotalEarned, userId, tenantId)
+                .run()
+
+              // トランザクション記録
+              await db
+                .prepare(`
+                  INSERT INTO point_transactions 
+                  (user_id, tenant_id, action_type, reason, points, balance_after, created_at)
+                  VALUES (?, ?, 'earn', 'profile_complete', ?, ?, datetime('now'))
+                `)
+                .bind(userId, tenantId, profileCompleteRule.points, newBalance)
+                .run()
+
+              profileCompletePoints = profileCompleteRule.points
+            }
+          }
+        }
+      }
+    } catch (profileCompleteError) {
+      console.error('[Profile Complete Points Error]', profileCompleteError)
+      // プロフィール完成ポイント付与に失敗してもプロフィール更新は継続
+    }
 
     return c.json({
       success: true,
       user,
-      message: 'Profile updated successfully'
+      message: profileCompletePoints > 0 
+        ? `プロフィールを更新しました（+${profileCompletePoints}ポイント）` 
+        : 'Profile updated successfully',
+      points_earned: profileCompletePoints
     })
   } catch (error) {
     console.error('[Update Profile Error]', error)
@@ -209,14 +294,159 @@ profile.post('/avatar', authMiddleware, async (c) => {
 
     // 更新後のユーザー情報を取得
     const user = await db
-      .prepare('SELECT id, email, nickname, avatar_url, bio, status, created_at, last_login_at FROM users WHERE id = ?')
+      .prepare('SELECT id, email, nickname, avatar_url, bio, birthday, status, created_at, last_login_at FROM users WHERE id = ?')
       .bind(userId)
       .first<any>()
+
+    // アバターアップロードポイント付与
+    let avatarUploadPoints = 0
+    try {
+      const tenantId = c.get('tenantId')
+      if (tenantId) {
+        // アバターアップロードルールを取得
+        const avatarUploadRule = await db
+          .prepare(`
+            SELECT points FROM point_rules
+            WHERE tenant_id = ? AND action = 'avatar_upload' AND is_active = 1
+          `)
+          .bind(tenantId)
+          .first<any>()
+
+        if (avatarUploadRule && avatarUploadRule.points > 0) {
+          // 既にアバターアップロードボーナスを獲得しているかチェック
+          const alreadyEarned = await db
+            .prepare(`
+              SELECT id FROM point_transactions
+              WHERE user_id = ? AND tenant_id = ? AND reason = 'avatar_upload'
+            `)
+            .bind(userId, tenantId)
+            .first()
+
+          if (!alreadyEarned) {
+            // ポイント残高を取得または作成
+            let userPoints = await db
+              .prepare(`
+                SELECT * FROM user_points WHERE user_id = ? AND tenant_id = ?
+              `)
+              .bind(userId, tenantId)
+              .first<any>()
+
+            if (!userPoints) {
+              await db
+                .prepare(`
+                  INSERT INTO user_points (user_id, tenant_id, balance, total_earned, total_spent, created_at, updated_at)
+                  VALUES (?, ?, 0, 0, 0, datetime('now'), datetime('now'))
+                `)
+                .bind(userId, tenantId)
+                .run()
+
+              userPoints = { balance: 0, total_earned: 0 }
+            }
+
+            // ポイント付与
+            const newBalance = (userPoints.balance || 0) + avatarUploadRule.points
+            const newTotalEarned = (userPoints.total_earned || 0) + avatarUploadRule.points
+
+            await db
+              .prepare(`
+                UPDATE user_points
+                SET balance = ?, total_earned = ?, updated_at = datetime('now')
+                WHERE user_id = ? AND tenant_id = ?
+              `)
+              .bind(newBalance, newTotalEarned, userId, tenantId)
+              .run()
+
+            // トランザクション記録
+            await db
+              .prepare(`
+                INSERT INTO point_transactions 
+                (user_id, tenant_id, action_type, reason, points, balance_after, created_at)
+                VALUES (?, ?, 'earn', 'avatar_upload', ?, ?, datetime('now'))
+              `)
+              .bind(userId, tenantId, avatarUploadRule.points, newBalance)
+              .run()
+
+            avatarUploadPoints = avatarUploadRule.points
+          }
+        }
+
+        // プロフィール完成度チェック（アバター追加で完成する場合）
+        if (user && user.nickname && user.bio && user.birthday) {
+          const profileCompleteRule = await db
+            .prepare(`
+              SELECT points FROM point_rules
+              WHERE tenant_id = ? AND action = 'profile_complete' AND is_active = 1
+            `)
+            .bind(tenantId)
+            .first<any>()
+
+          if (profileCompleteRule && profileCompleteRule.points > 0) {
+            const alreadyEarned = await db
+              .prepare(`
+                SELECT id FROM point_transactions
+                WHERE user_id = ? AND tenant_id = ? AND reason = 'profile_complete'
+              `)
+              .bind(userId, tenantId)
+              .first()
+
+            if (!alreadyEarned) {
+              let userPoints = await db
+                .prepare(`
+                  SELECT * FROM user_points WHERE user_id = ? AND tenant_id = ?
+                `)
+                .bind(userId, tenantId)
+                .first<any>()
+
+              if (!userPoints) {
+                await db
+                  .prepare(`
+                    INSERT INTO user_points (user_id, tenant_id, balance, total_earned, total_spent, created_at, updated_at)
+                    VALUES (?, ?, 0, 0, 0, datetime('now'), datetime('now'))
+                  `)
+                  .bind(userId, tenantId)
+                  .run()
+
+                userPoints = { balance: 0, total_earned: 0 }
+              }
+
+              const newBalance = (userPoints.balance || 0) + profileCompleteRule.points
+              const newTotalEarned = (userPoints.total_earned || 0) + profileCompleteRule.points
+
+              await db
+                .prepare(`
+                  UPDATE user_points
+                  SET balance = ?, total_earned = ?, updated_at = datetime('now')
+                  WHERE user_id = ? AND tenant_id = ?
+                `)
+                .bind(newBalance, newTotalEarned, userId, tenantId)
+                .run()
+
+              await db
+                .prepare(`
+                  INSERT INTO point_transactions 
+                  (user_id, tenant_id, action_type, reason, points, balance_after, created_at)
+                  VALUES (?, ?, 'earn', 'profile_complete', ?, ?, datetime('now'))
+                `)
+                .bind(userId, tenantId, profileCompleteRule.points, newBalance)
+                .run()
+
+              avatarUploadPoints += profileCompleteRule.points
+            }
+          }
+        }
+      }
+    } catch (avatarUploadError) {
+      console.error('[Avatar Upload Points Error]', avatarUploadError)
+      // アバターアップロードポイント付与に失敗してもアップロードは継続
+    }
 
     return c.json({
       success: true,
       user,
-      message: 'Avatar uploaded successfully'
+      message: avatarUploadPoints > 0 
+        ? `アバターをアップロードしました（+${avatarUploadPoints}ポイント）` 
+        : 'Avatar uploaded successfully',
+      points_earned: avatarUploadPoints
     })
   } catch (error) {
     console.error('[Upload Avatar Error]', error)

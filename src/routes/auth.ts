@@ -198,6 +198,94 @@ auth.post('/login', async (c) => {
       .bind(user.id)
       .run()
 
+    // デイリーログインポイント付与
+    try {
+      // テナントメンバーシップを先に取得（ポイント付与に必要）
+      const tempMembership = await db
+        .prepare(`
+          SELECT tm.tenant_id
+          FROM tenant_memberships tm
+          JOIN tenants t ON tm.tenant_id = t.id
+          WHERE tm.user_id = ? AND tm.status = 'active' AND t.status = 'active'
+          ORDER BY tm.joined_at DESC
+          LIMIT 1
+        `)
+        .bind(user.id)
+        .first<any>()
+
+      if (tempMembership) {
+        // デイリーログインルールを取得
+        const dailyLoginRule = await db
+          .prepare(`
+            SELECT points FROM point_rules
+            WHERE tenant_id = ? AND action = 'daily_login' AND is_active = 1
+          `)
+          .bind(tempMembership.tenant_id)
+          .first<any>()
+
+        if (dailyLoginRule && dailyLoginRule.points > 0) {
+          // 今日既にログインボーナスを獲得しているかチェック
+          const today = new Date().toISOString().split('T')[0] // YYYY-MM-DD
+          const alreadyEarned = await db
+            .prepare(`
+              SELECT id FROM point_transactions
+              WHERE user_id = ? AND tenant_id = ? AND reason = 'daily_login'
+                AND DATE(created_at) = ?
+            `)
+            .bind(user.id, tempMembership.tenant_id, today)
+            .first()
+
+          if (!alreadyEarned) {
+            // ポイント残高を取得または作成
+            let userPoints = await db
+              .prepare(`
+                SELECT * FROM user_points WHERE user_id = ? AND tenant_id = ?
+              `)
+              .bind(user.id, tempMembership.tenant_id)
+              .first<any>()
+
+            if (!userPoints) {
+              await db
+                .prepare(`
+                  INSERT INTO user_points (user_id, tenant_id, balance, total_earned, total_spent, created_at, updated_at)
+                  VALUES (?, ?, 0, 0, 0, datetime('now'), datetime('now'))
+                `)
+                .bind(user.id, tempMembership.tenant_id)
+                .run()
+
+              userPoints = { balance: 0, total_earned: 0 }
+            }
+
+            // ポイント付与
+            const newBalance = (userPoints.balance || 0) + dailyLoginRule.points
+            const newTotalEarned = (userPoints.total_earned || 0) + dailyLoginRule.points
+
+            await db
+              .prepare(`
+                UPDATE user_points
+                SET balance = ?, total_earned = ?, updated_at = datetime('now')
+                WHERE user_id = ? AND tenant_id = ?
+              `)
+              .bind(newBalance, newTotalEarned, user.id, tempMembership.tenant_id)
+              .run()
+
+            // トランザクション記録
+            await db
+              .prepare(`
+                INSERT INTO point_transactions 
+                (user_id, tenant_id, action_type, reason, points, balance_after, created_at)
+                VALUES (?, ?, 'earn', 'daily_login', ?, ?, datetime('now'))
+              `)
+              .bind(user.id, tempMembership.tenant_id, dailyLoginRule.points, newBalance)
+              .run()
+          }
+        }
+      }
+    } catch (dailyLoginError) {
+      console.error('[Daily Login Points Error]', dailyLoginError)
+      // デイリーログインポイント付与に失敗してもログインは継続
+    }
+
     // テナントメンバーシップを取得（最初のアクティブなもの）
     const membership = await db
       .prepare(`
