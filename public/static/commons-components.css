@@ -460,6 +460,117 @@
   .commons-main-content {
     padding: 1rem;
   }
+  
+  /* === Phase 1: 追加のモバイル最適化 === */
+  
+  /* ヘッダーロゴのサイズ調整 */
+  .commons-logo {
+    font-size: 16px;
+    padding: 10px 20px;
+  }
+  
+  /* ボタンのタップ領域拡大 */
+  .btn-commons-primary,
+  .btn-commons-secondary,
+  .btn-commons-ghost {
+    min-height: 44px;
+    padding: 14px 24px;
+    font-size: 16px;
+  }
+  
+  /* カードの余白とフォント調整 */
+  .commons-card {
+    padding: 20px;
+    font-size: 17px;
+    line-height: 1.7;
+  }
+  
+  .commons-card-title {
+    font-size: 22px;
+    margin-bottom: 12px;
+  }
+  
+  .commons-card-body {
+    font-size: 17px;
+    line-height: 1.7;
+  }
+  
+  /* ページコンテナの余白調整 */
+  .commons-page-container {
+    padding: 0;
+  }
+  
+  .commons-page-header {
+    margin-bottom: 24px;
+  }
+  
+  .commons-page-title {
+    font-size: 28px;
+    margin-bottom: 12px;
+  }
+  
+  .commons-page-description {
+    font-size: 17px;
+    line-height: 1.7;
+  }
+  
+  /* フッターの余白調整 */
+  .commons-footer {
+    padding: 2rem 1rem 1.5rem;
+  }
+  
+  .commons-footer-section h3 {
+    font-size: 18px;
+    margin-bottom: 12px;
+  }
+  
+  .commons-footer-link {
+    font-size: 15px;
+    padding: 8px 0;
+    display: block;
+  }
+  
+  /* モバイルナビゲーションの改善 */
+  .commons-mobile-nav-link {
+    font-size: 17px;
+    padding: 16px;
+    min-height: 56px;
+    display: flex;
+    align-items: center;
+  }
+  
+  .commons-mobile-nav-link i {
+    font-size: 20px;
+    margin-right: 12px;
+  }
+  
+  /* モーダルの調整 */
+  .modal-content {
+    padding: 1.5rem;
+    max-width: 95%;
+    font-size: 17px;
+  }
+  
+  /* 入力フィールドの改善 */
+  .input-field {
+    font-size: 16px;
+    padding: 12px 16px;
+    min-height: 44px;
+  }
+  
+  /* Toast通知の調整 */
+  .toast {
+    min-width: 280px;
+    max-width: 90%;
+    font-size: 15px;
+    padding: 14px 16px;
+  }
+  
+  /* バッジのサイズ調整 */
+  .badge {
+    font-size: 13px;
+    padding: 6px 12px;
+  }
 }
 
 /* ========================================

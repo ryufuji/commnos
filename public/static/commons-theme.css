@@ -138,3 +138,126 @@ body {
 .transition-fast { transition: all var(--transition-fast); }
 .transition-normal { transition: all var(--transition-normal); }
 .transition-slow { transition: all var(--transition-slow); }
+
+/* ========================================
+   モバイル最適化（Phase 1: クイック修正）
+   768px以下のデバイス向け
+======================================== */
+
+@media (max-width: 768px) {
+  :root {
+    /* === フォントサイズ：モバイルで読みやすく === */
+    --font-size-hero: 32px;               /* 56px → 32px（ヒーロー縮小） */
+    --font-size-xlarge: 28px;             /* 48px → 28px（大見出し縮小） */
+    --font-size-large: 24px;              /* 32px → 24px（中見出し縮小） */
+    --font-size-medium: 18px;             /* 20px → 18px（小見出し縮小） */
+    --font-size-regular: 17px;            /* 16px → 17px（本文拡大）*/
+    --font-size-small: 15px;              /* 14px → 15px（キャプション拡大） */
+    --font-size-xsmall: 13px;             /* 12px → 13px（極小拡大） */
+    
+    /* === 行間：モバイルで読みやすく === */
+    --line-height-tight: 1.3;             /* 1.2 → 1.3 */
+    --line-height-normal: 1.7;            /* 1.5 → 1.7 */
+    --line-height-relaxed: 1.9;           /* 1.8 → 1.9 */
+    
+    /* === スペーシング：タップしやすく === */
+    --spacing-xs: 12px;                   /* 8px → 12px */
+    --spacing-sm: 16px;                   /* 16px（維持） */
+    --spacing-md: 20px;                   /* 24px → 20px */
+    --spacing-lg: 28px;                   /* 32px → 28px */
+    --spacing-xl: 40px;                   /* 48px → 40px */
+    --spacing-xxl: 48px;                  /* 64px → 48px */
+    --spacing-xxxl: 64px;                 /* 96px → 64px */
+  }
+  
+  /* === 本文テキストの改善 === */
+  body {
+    font-size: var(--font-size-regular);
+    line-height: var(--line-height-normal);
+  }
+  
+  /* === 見出しの改善 === */
+  h1 { 
+    font-size: var(--font-size-xlarge);
+    line-height: var(--line-height-tight);
+    margin-bottom: var(--spacing-md);
+  }
+  
+  h2 { 
+    font-size: var(--font-size-large);
+    line-height: var(--line-height-tight);
+    margin-bottom: var(--spacing-sm);
+  }
+  
+  h3 { 
+    font-size: var(--font-size-medium);
+    line-height: 1.4;
+    margin-bottom: var(--spacing-sm);
+  }
+  
+  /* === 段落の改善 === */
+  p {
+    margin-bottom: var(--spacing-sm);
+    line-height: var(--line-height-normal);
+  }
+  
+  /* === タップ領域の拡大 === */
+  button, 
+  a.button,
+  .btn {
+    min-height: 44px;
+    min-width: 44px;
+    padding: 12px 20px;
+    font-size: var(--font-size-regular);
+  }
+  
+  /* === カードの余白調整 === */
+  .card,
+  .commons-card {
+    padding: var(--spacing-md);
+  }
+  
+  /* === リンクのタップ領域 === */
+  a {
+    padding: 4px 0;
+    display: inline-block;
+  }
+  
+  /* === フォームの改善 === */
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  textarea,
+  select {
+    font-size: 16px;                      /* iOS のズーム防止 */
+    min-height: 44px;
+    padding: 12px 16px;
+  }
+  
+  /* === テーブルの改善 === */
+  table {
+    font-size: var(--font-size-small);
+  }
+  
+  /* === 画像の最適化 === */
+  img {
+    max-width: 100%;
+    height: auto;
+  }
+}
+
+/* ========================================
+   タブレット最適化
+   769px〜1023pxのデバイス向け
+======================================== */
+
+@media (min-width: 769px) and (max-width: 1023px) {
+  :root {
+    /* タブレットはPC版とモバイル版の中間 */
+    --font-size-hero: 44px;               /* 中間サイズ */
+    --font-size-xlarge: 38px;
+    --font-size-large: 28px;
+    --font-size-medium: 19px;
+    --font-size-regular: 16px;            /* PC版と同じ */
+  }
+}
