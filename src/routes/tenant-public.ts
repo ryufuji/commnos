@@ -4898,19 +4898,13 @@ tenantPublic.get('/members/:memberId', async (c) => {
     '<html lang="ja" data-theme="light"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">' +
     '<title>' + nickname + ' - ' + tenant.name + '</title>' +
     '<script src=\"https://cdn.tailwindcss.com\"></script>' +
-        '<script src=\"/static/tailwind-config.js\"></script>' +
+    '<script src=\"/static/tailwind-config.js\"></script>' +
     '<link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">' +
+    '<link href="/static/commons-theme.css" rel="stylesheet">' +
+    '<link href="/static/commons-components.css" rel="stylesheet">' +
+    '<script src=\"https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js\"></script>' +
     '</head><body class="bg-gray-50 min-h-screen">' +
-    '<header class="bg-white shadow-sm sticky top-0 z-50">' +
-    '<div class="container mx-auto px-4 py-4">' +
-    '<div class="flex items-center justify-between">' +
-    '<a href="/tenant/home?subdomain=' + subdomain + '" class="text-2xl font-bold text-blue-600">' + tenant.name + '</a>' +
-    '<nav class="hidden md:flex items-center space-x-6">' +
-    '<a href="/tenant/home?subdomain=' + subdomain + '" class="text-gray-600 hover:text-blue-600"><i class="fas fa-home mr-1"></i>ホーム</a>' +
-    '<a href="/tenant/posts?subdomain=' + subdomain + '" class="text-gray-600 hover:text-blue-600"><i class="fas fa-newspaper mr-1"></i>投稿</a>' +
-    '<a href="/tenant/members?subdomain=' + subdomain + '" class="text-blue-600 font-semibold"><i class="fas fa-users mr-1"></i>メンバー</a>' +
-    '<a href="/login?subdomain=' + subdomain + '" class="text-gray-600 hover:text-blue-600"><i class="fas fa-sign-in-alt mr-1"></i>ログイン</a>' +
-    '</nav></div></div></header>' +
+    renderCommonHeader(tenant.name, subdomain, 'members') +
     '<main class="container mx-auto px-4 py-8">' +
     '<div class="bg-white rounded-lg shadow-lg p-8 mb-8">' +
     '<div class="flex flex-col md:flex-row items-center md:items-start gap-8">' +
@@ -4928,9 +4922,7 @@ tenantPublic.get('/members/:memberId', async (c) => {
     '<div class="mt-8 text-center">' +
     '<a href="/tenant/members?subdomain=' + subdomain + '" class="inline-block px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition">' +
     '<i class="fas fa-arrow-left mr-2"></i>会員一覧に戻る</a></div></main>' +
-    '<footer class="bg-white border-t mt-16">' +
-    '<div class="container mx-auto px-4 py-6 text-center text-gray-600">' +
-    '<p>&copy; 2025 ' + tenant.name + '. All rights reserved.</p></div></footer>' +
+    renderCommonFooter(tenant.name, subdomain) +
     '<script src="/static/app.js"></script>' +
     '<script>' +
     'const subdomain = "' + subdomain + '";' +
