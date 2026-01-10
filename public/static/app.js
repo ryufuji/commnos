@@ -3,6 +3,36 @@
 // ============================================
 
 // ============================================
+// Axios動的読み込み
+// ============================================
+let axiosReady = Promise.resolve();
+
+(function() {
+  if (typeof axios === 'undefined') {
+    console.warn('[AXIOS] axios not found, loading from CDN...');
+    
+    axiosReady = new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = 'https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js';
+      script.async = false;
+      document.head.appendChild(script);
+      
+      script.onload = function() {
+        console.log('[AXIOS] ✅ axios loaded successfully');
+        resolve();
+      };
+      
+      script.onerror = function() {
+        console.error('[AXIOS] ❌ Failed to load axios from CDN');
+        reject(new Error('Failed to load axios'));
+      };
+    });
+  } else {
+    console.log('[AXIOS] ✅ axios already loaded');
+  }
+})();
+
+// ============================================
 // デバッグログ設定
 // ============================================
 const DEBUG = true; // デバッグモードを有効化
@@ -643,6 +673,9 @@ function initNotificationDropdown() {
 
 // 通知データを読み込む
 async function loadNotifications() {
+  // axiosが利用可能になるまで待機
+  await axiosReady;
+  
   const notificationList = document.getElementById('notificationList');
   const token = localStorage.getItem('token');
 
@@ -773,6 +806,9 @@ async function loadNotifications() {
 
 // 未読数を更新
 async function updateUnreadCount() {
+  // axiosが利用可能になるまで待機
+  await axiosReady;
+  
   const token = localStorage.getItem('token');
   const notificationBadge = document.getElementById('notificationBadge');
 
