@@ -72,14 +72,25 @@ analytics.get('/overview', async (c) => {
 
     // アンケート統計
     console.log('[Analytics] Fetching survey stats...')
-    const surveyStats = await DB.prepare(`
-      SELECT 
-        COUNT(DISTINCT CASE WHEN s.type = 'join' THEN sr.user_id END) as join_responses,
-        COUNT(DISTINCT CASE WHEN s.type = 'leave' THEN sr.user_id END) as leave_responses
-      FROM survey_responses sr
-      JOIN surveys s ON sr.survey_id = s.id
-      WHERE s.tenant_id = ?
-    `).bind(tenantId).first() as any
+    let surveyStats = { join_responses: 0, leave_responses: 0 }
+    
+    try {
+      const result = await DB.prepare(`
+        SELECT 
+          COUNT(DISTINCT CASE WHEN s.type = 'join' THEN sr.user_id END) as join_responses,
+          COUNT(DISTINCT CASE WHEN s.type = 'leave' THEN sr.user_id END) as leave_responses
+        FROM surveys s
+        LEFT JOIN survey_responses sr ON s.id = sr.survey_id
+        WHERE s.tenant_id = ?
+      `).bind(tenantId).first() as any
+      
+      if (result) {
+        surveyStats = result
+      }
+    } catch (err) {
+      console.error('[Analytics] Survey stats error:', err)
+      // アンケート統計が取得できなくても続行
+    }
     console.log('[Analytics] Survey stats:', surveyStats)
 
     return c.json({
