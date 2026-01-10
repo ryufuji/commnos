@@ -9099,4 +9099,655 @@ tenantPublic.get('/member-plans-premium', async (c) => {
   `)
 })
 
+// ============================================
+// イベントカレンダーページ（一般会員向け）
+// ============================================
+tenantPublic.get('/events', async (c) => {
+  const { DB } = c.env
+  const subdomain = c.req.query('subdomain')
+  
+  if (!subdomain) {
+    return c.text('Subdomain is required', 400)
+  }
+  
+  // テナント情報を取得
+  const tenant = await DB.prepare(
+    'SELECT * FROM tenants WHERE subdomain = ? AND status = ?'
+  ).bind(subdomain, 'active').first() as any
+  
+  if (!tenant) {
+    return c.text('Tenant not found', 404)
+  }
+  
+  const tenantName = String(tenant.name || '')
+  const tenantSubtitle = String(tenant.subtitle || '')
+  
+  // 今月の開始日と終了日を計算
+  const now = new Date()
+  const year = now.getFullYear()
+  const month = now.getMonth()
+  const firstDay = new Date(year, month, 1)
+  const lastDay = new Date(year, month + 1, 0)
+  
+  // 今月以降のイベントを取得
+  const eventsResult = await DB.prepare(`
+    SELECT *
+    FROM events
+    WHERE tenant_id = ? AND is_published = 1
+    AND start_datetime >= datetime('now')
+    ORDER BY start_datetime ASC
+    LIMIT 50
+  `).bind(tenant.id).all()
+  
+  const events = eventsResult.results || []
+  
+  // 注目イベントを取得
+  const featuredResult = await DB.prepare(`
+    SELECT *
+    FROM events
+    WHERE tenant_id = ? AND is_published = 1 AND is_featured = 1
+    AND start_datetime >= datetime('now')
+    ORDER BY start_datetime ASC
+    LIMIT 3
+  `).bind(tenant.id).all()
+  
+  const featuredEvents = featuredResult.results || []
+  
+  return c.html(`<!DOCTYPE html>
+<html lang="ja" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>イベントカレンダー - ${tenantName}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="/static/commons-theme.css" rel="stylesheet">
+    <link href="/static/commons-components.css" rel="stylesheet">
+    <style>
+        .hero-gradient {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .calendar-day {
+            aspect-ratio: 1;
+            transition: all 0.2s ease;
+        }
+        .calendar-day:hover {
+            background: #f3f4f6;
+            transform: scale(1.05);
+        }
+        .calendar-day.has-event {
+            background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+        }
+        .calendar-day.has-event:hover {
+            background: linear-gradient(135deg, #fde68a 0%, #fbbf24 100%);
+        }
+        .event-card {
+            transition: all 0.3s ease;
+        }
+        .event-card:hover {
+            transform: translateY(-4px);
+        }
+        .event-badge {
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(8px);
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- ヒーローヘッダー -->
+    <div class="hero-gradient text-white">
+        <div class="max-w-7xl mx-auto px-4 py-8">
+            <div class="flex justify-between items-center mb-6">
+                <div class="flex items-center gap-4">
+                    <div class="w-16 h-16 bg-white/20 backdrop-blur rounded-full flex items-center justify-center">
+                        <i class="fas fa-calendar-alt text-3xl"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-3xl md:text-4xl font-bold">イベントカレンダー</h1>
+                        <p class="text-white/90 mt-1">${tenantName}</p>
+                    </div>
+                </div>
+                <!-- ユーザーメニュー -->
+                <div class="flex items-center gap-3">
+                    <a href="/tenant/notifications?subdomain=${subdomain}" class="relative p-3 bg-white/10 hover:bg-white/20 rounded-full transition">
+                        <i class="fas fa-bell text-xl"></i>
+                    </a>
+                    <button id="mobileMenuBtn" class="p-3 bg-white/10 hover:bg-white/20 rounded-full transition md:hidden">
+                        <i class="fas fa-bars text-xl"></i>
+                    </button>
+                    <a href="/login?subdomain=${subdomain}" class="hidden md:block px-6 py-2 bg-white text-purple-700 font-semibold rounded-full hover:bg-white/90 transition">
+                        ログイン
+                    </a>
+                </div>
+            </div>
+            
+            <!-- ナビゲーションタブ -->
+            <nav class="flex gap-2 md:gap-4 overflow-x-auto pb-2 scrollbar-hide">
+                <a href="/tenant/home?subdomain=${subdomain}" class="px-4 md:px-6 py-2 bg-white/10 hover:bg-white/20 rounded-full whitespace-nowrap transition">
+                    <i class="fas fa-home mr-2"></i>ホーム
+                </a>
+                <a href="/tenant/posts?subdomain=${subdomain}" class="px-4 md:px-6 py-2 bg-white/10 hover:bg-white/20 rounded-full whitespace-nowrap transition">
+                    <i class="fas fa-fire mr-2"></i>投稿
+                </a>
+                <a href="/tenant/events?subdomain=${subdomain}" class="px-4 md:px-6 py-2 bg-white rounded-full text-purple-700 font-semibold whitespace-nowrap shadow-lg">
+                    <i class="fas fa-calendar-alt mr-2"></i>イベント
+                </a>
+                <a href="/tenant/members?subdomain=${subdomain}" class="px-4 md:px-6 py-2 bg-white/10 hover:bg-white/20 rounded-full whitespace-nowrap transition">
+                    <i class="fas fa-users mr-2"></i>メンバー
+                </a>
+                <a href="/tenant/shop?subdomain=${subdomain}" class="px-4 md:px-6 py-2 bg-white/10 hover:bg-white/20 rounded-full whitespace-nowrap transition">
+                    <i class="fas fa-shopping-bag mr-2"></i>ショップ
+                </a>
+            </nav>
+        </div>
+    </div>
+
+    <!-- メインコンテンツ -->
+    <main class="max-w-7xl mx-auto px-4 py-8 -mt-8">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- メインコンテンツ -->
+            <div class="lg:col-span-2 space-y-6">
+                ${featuredEvents.length > 0 ? `
+                <!-- 注目イベント -->
+                <div class="bg-gradient-to-br from-yellow-50 to-orange-50 rounded-2xl shadow-sm p-6">
+                    <h2 class="text-2xl font-bold text-gray-900 mb-4 flex items-center">
+                        <span class="w-10 h-10 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center mr-3">
+                            <i class="fas fa-star text-white"></i>
+                        </span>
+                        注目イベント
+                    </h2>
+                    <div class="space-y-4" id="featuredEvents">
+                        <!-- JavaScriptで生成 -->
+                    </div>
+                </div>
+                ` : ''}
+                
+                <!-- イベント一覧 -->
+                <div class="bg-white rounded-2xl shadow-sm p-6">
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="text-2xl font-bold text-gray-900 flex items-center">
+                            <i class="fas fa-calendar-day text-purple-600 mr-3"></i>
+                            今後のイベント
+                        </h2>
+                        <div class="flex gap-2">
+                            <button id="listViewBtn" class="px-4 py-2 bg-purple-600 text-white rounded-lg font-semibold">
+                                <i class="fas fa-list mr-2"></i>リスト
+                            </button>
+                            <button id="calendarViewBtn" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition">
+                                <i class="fas fa-calendar mr-2"></i>カレンダー
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- リストビュー -->
+                    <div id="listView" class="space-y-4">
+                        <!-- JavaScriptで生成 -->
+                    </div>
+                    
+                    <!-- カレンダービュー -->
+                    <div id="calendarView" class="hidden">
+                        <div class="flex items-center justify-between mb-4">
+                            <button id="prevMonth" class="p-2 hover:bg-gray-100 rounded-lg transition">
+                                <i class="fas fa-chevron-left"></i>
+                            </button>
+                            <h3 id="currentMonth" class="text-xl font-bold"></h3>
+                            <button id="nextMonth" class="p-2 hover:bg-gray-100 rounded-lg transition">
+                                <i class="fas fa-chevron-right"></i>
+                            </button>
+                        </div>
+                        <div class="grid grid-cols-7 gap-2" id="calendar">
+                            <!-- JavaScriptで生成 -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- サイドバー -->
+            <div class="lg:col-span-1 space-y-6">
+                <!-- 統計情報 -->
+                <div class="bg-white rounded-2xl shadow-sm p-6">
+                    <h3 class="text-xl font-bold text-gray-900 mb-4">
+                        <i class="fas fa-chart-bar text-blue-600 mr-2"></i>統計情報
+                    </h3>
+                    <div class="space-y-4">
+                        <div class="text-center p-4 bg-gradient-to-br from-blue-50 to-purple-50 rounded-xl">
+                            <div class="text-3xl font-bold text-purple-600" id="totalEvents">${events.length}</div>
+                            <div class="text-gray-600 text-sm mt-1">今後のイベント</div>
+                        </div>
+                        <div class="text-center p-4 bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl">
+                            <div class="text-3xl font-bold text-green-600" id="thisMonthEvents">0</div>
+                            <div class="text-gray-600 text-sm mt-1">今月のイベント</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- イベントタイプ凡例 -->
+                <div class="bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl shadow-sm p-6">
+                    <h3 class="text-lg font-bold text-gray-900 mb-4">
+                        <i class="fas fa-tags text-purple-600 mr-2"></i>イベントタイプ
+                    </h3>
+                    <div class="space-y-2 text-sm">
+                        <div class="flex items-center gap-2">
+                            <div class="w-4 h-4 bg-red-500 rounded-full"></div>
+                            <span>ライブ・コンサート</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <div class="w-4 h-4 bg-blue-500 rounded-full"></div>
+                            <span>オンラインイベント</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <div class="w-4 h-4 bg-green-500 rounded-full"></div>
+                            <span>ファンミーティング</span>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <div class="w-4 h-4 bg-purple-500 rounded-full"></div>
+                            <span>その他</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- イベント詳細モーダル -->
+    <div id="eventModal" class="hidden fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div id="modalContent">
+                <!-- JavaScriptで動的に生成 -->
+            </div>
+        </div>
+    </div>
+
+    <!-- フッター -->
+    <footer class="bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900 text-white py-16 mt-20">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="text-center mb-8">
+                <div class="w-20 h-20 bg-white/10 backdrop-blur rounded-full mx-auto mb-4 flex items-center justify-center">
+                    <i class="fas fa-users text-4xl"></i>
+                </div>
+                <h2 class="text-3xl font-bold mb-2">${tenantName}</h2>
+                ${tenantSubtitle ? `<p class="text-gray-300 mb-4">${tenantSubtitle}</p>` : ''}
+            </div>
+            
+            <div class="flex justify-center gap-6 mb-8">
+                <a href="/tenant/posts?subdomain=${subdomain}" class="text-gray-300 hover:text-white transition">
+                    <i class="fas fa-newspaper mr-2"></i>投稿
+                </a>
+                <a href="/tenant/events?subdomain=${subdomain}" class="text-gray-300 hover:text-white transition">
+                    <i class="fas fa-calendar-alt mr-2"></i>イベント
+                </a>
+                <a href="/tenant/members?subdomain=${subdomain}" class="text-gray-300 hover:text-white transition">
+                    <i class="fas fa-users mr-2"></i>メンバー
+                </a>
+            </div>
+            
+            <div class="text-center border-t border-white/10 pt-8">
+                <p class="text-gray-400">&copy; ${new Date().getFullYear()} ${tenantName}. All rights reserved.</p>
+                <p class="text-gray-500 mt-2 text-sm flex items-center justify-center gap-2">
+                    <span>Powered by</span>
+                    <span class="font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">Commons</span>
+                </p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+    <script src="/static/app.js"></script>
+    <script>
+        const subdomain = '${subdomain}'
+        const eventsData = ${JSON.stringify(events)}
+        const featuredEventsData = ${JSON.stringify(featuredEvents)}
+        
+        // イベントタイプの色を取得
+        function getEventTypeColor(type) {
+            switch(type) {
+                case 'live': return 'bg-red-500'
+                case 'online': return 'bg-blue-500'
+                case 'meetup': return 'bg-green-500'
+                default: return 'bg-purple-500'
+            }
+        }
+        
+        // イベントタイプのラベルを取得
+        function getEventTypeLabel(type) {
+            switch(type) {
+                case 'live': return 'ライブ'
+                case 'online': return 'オンライン'
+                case 'meetup': return 'ミートアップ'
+                default: return 'イベント'
+            }
+        }
+        
+        // 日時をフォーマット
+        function formatEventDate(datetime) {
+            const date = new Date(datetime)
+            return date.toLocaleDateString('ja-JP', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            })
+        }
+        
+        // 注目イベントを表示
+        function renderFeaturedEvents() {
+            const container = document.getElementById('featuredEvents')
+            if (!container || featuredEventsData.length === 0) return
+            
+            container.innerHTML = featuredEventsData.map(event => {
+                const typeColor = getEventTypeColor(event.event_type)
+                const typeLabel = getEventTypeLabel(event.event_type)
+                
+                return \`
+                    <div class="event-card bg-white rounded-xl p-4 cursor-pointer hover:shadow-lg transition" onclick="showEventDetail(\${event.id})">
+                        <div class="flex gap-4">
+                            \${event.thumbnail_url ? \`
+                                <img src="\${event.thumbnail_url}" alt="\${event.title}" class="w-24 h-24 rounded-lg object-cover">
+                            \` : \`
+                                <div class="w-24 h-24 bg-gradient-to-br from-purple-400 to-pink-500 rounded-lg flex items-center justify-center">
+                                    <i class="fas fa-calendar-star text-3xl text-white"></i>
+                                </div>
+                            \`}
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center gap-2 mb-2">
+                                    <span class="\${typeColor} text-white text-xs px-2 py-1 rounded-full">\${typeLabel}</span>
+                                    \${event.is_member_only ? '<span class="bg-yellow-500 text-white text-xs px-2 py-1 rounded-full">会員限定</span>' : ''}
+                                </div>
+                                <h3 class="font-bold text-gray-900 mb-1 truncate">\${event.title}</h3>
+                                <p class="text-sm text-gray-600">
+                                    <i class="far fa-calendar mr-1"></i>\${formatEventDate(event.start_datetime)}
+                                </p>
+                                \${event.location_name ? \`<p class="text-sm text-gray-600 mt-1"><i class="fas fa-map-marker-alt mr-1"></i>\${event.location_name}</p>\` : ''}
+                            </div>
+                        </div>
+                    </div>
+                \`
+            }).join('')
+        }
+        
+        // イベントリストを表示
+        function renderEventsList() {
+            const container = document.getElementById('listView')
+            if (!container) return
+            
+            if (eventsData.length === 0) {
+                container.innerHTML = \`
+                    <div class="text-center py-12">
+                        <div class="w-20 h-20 bg-gray-100 rounded-full mx-auto mb-4 flex items-center justify-center">
+                            <i class="fas fa-calendar-times text-3xl text-gray-400"></i>
+                        </div>
+                        <p class="text-gray-600">今後のイベントはありません</p>
+                    </div>
+                \`
+                return
+            }
+            
+            container.innerHTML = eventsData.map(event => {
+                const typeColor = getEventTypeColor(event.event_type)
+                const typeLabel = getEventTypeLabel(event.event_type)
+                
+                return \`
+                    <div class="event-card bg-gradient-to-r from-gray-50 to-white rounded-xl p-6 cursor-pointer hover:shadow-lg transition" onclick="showEventDetail(\${event.id})">
+                        <div class="flex gap-4">
+                            \${event.thumbnail_url ? \`
+                                <img src="\${event.thumbnail_url}" alt="\${event.title}" class="w-32 h-32 rounded-lg object-cover">
+                            \` : \`
+                                <div class="w-32 h-32 bg-gradient-to-br from-blue-400 to-purple-500 rounded-lg flex items-center justify-center">
+                                    <i class="fas fa-calendar-day text-4xl text-white"></i>
+                                </div>
+                            \`}
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center gap-2 mb-2">
+                                    <span class="\${typeColor} text-white text-xs px-3 py-1 rounded-full font-semibold">\${typeLabel}</span>
+                                    \${event.is_featured ? '<span class="bg-yellow-500 text-white text-xs px-3 py-1 rounded-full font-semibold"><i class="fas fa-star mr-1"></i>注目</span>' : ''}
+                                    \${event.is_member_only ? '<span class="bg-purple-500 text-white text-xs px-3 py-1 rounded-full font-semibold">会員限定</span>' : ''}
+                                </div>
+                                <h3 class="text-xl font-bold text-gray-900 mb-2">\${event.title}</h3>
+                                <p class="text-gray-600 mb-3 line-clamp-2">\${event.description || ''}</p>
+                                <div class="flex flex-wrap gap-4 text-sm text-gray-600">
+                                    <div><i class="far fa-calendar text-purple-600 mr-2"></i>\${formatEventDate(event.start_datetime)}</div>
+                                    \${event.location_name ? \`<div><i class="fas fa-map-marker-alt text-red-600 mr-2"></i>\${event.location_name}</div>\` : ''}
+                                    \${event.max_participants ? \`<div><i class="fas fa-users text-blue-600 mr-2"></i>定員 \${event.max_participants}名</div>\` : ''}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                \`
+            }).join('')
+        }
+        
+        // イベント詳細を表示
+        function showEventDetail(eventId) {
+            const event = eventsData.find(e => e.id === eventId) || featuredEventsData.find(e => e.id === eventId)
+            if (!event) return
+            
+            const modal = document.getElementById('eventModal')
+            const content = document.getElementById('modalContent')
+            const typeColor = getEventTypeColor(event.event_type)
+            const typeLabel = getEventTypeLabel(event.event_type)
+            
+            content.innerHTML = \`
+                <div class="relative">
+                    \${event.thumbnail_url ? \`
+                        <img src="\${event.thumbnail_url}" alt="\${event.title}" class="w-full h-64 object-cover rounded-t-2xl">
+                    \` : \`
+                        <div class="w-full h-64 bg-gradient-to-br from-purple-400 to-pink-500 rounded-t-2xl flex items-center justify-center">
+                            <i class="fas fa-calendar-star text-8xl text-white opacity-50"></i>
+                        </div>
+                    \`}
+                    <button onclick="closeEventModal()" class="absolute top-4 right-4 w-10 h-10 bg-black/50 backdrop-blur text-white rounded-full hover:bg-black/70 transition">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                
+                <div class="p-8">
+                    <div class="flex flex-wrap gap-2 mb-4">
+                        <span class="\${typeColor} text-white text-sm px-4 py-2 rounded-full font-semibold">\${typeLabel}</span>
+                        \${event.is_featured ? '<span class="bg-yellow-500 text-white text-sm px-4 py-2 rounded-full font-semibold"><i class="fas fa-star mr-1"></i>注目</span>' : ''}
+                        \${event.is_member_only ? '<span class="bg-purple-500 text-white text-sm px-4 py-2 rounded-full font-semibold">会員限定</span>' : ''}
+                    </div>
+                    
+                    <h2 class="text-3xl font-bold text-gray-900 mb-4">\${event.title}</h2>
+                    
+                    <div class="space-y-4 mb-6">
+                        <div class="flex items-start gap-3">
+                            <i class="far fa-calendar text-purple-600 text-xl mt-1"></i>
+                            <div>
+                                <div class="font-semibold text-gray-900">開始</div>
+                                <div class="text-gray-600">\${formatEventDate(event.start_datetime)}</div>
+                            </div>
+                        </div>
+                        
+                        \${event.end_datetime ? \`
+                            <div class="flex items-start gap-3">
+                                <i class="far fa-calendar-check text-green-600 text-xl mt-1"></i>
+                                <div>
+                                    <div class="font-semibold text-gray-900">終了</div>
+                                    <div class="text-gray-600">\${formatEventDate(event.end_datetime)}</div>
+                                </div>
+                            </div>
+                        \` : ''}
+                        
+                        \${event.location_name ? \`
+                            <div class="flex items-start gap-3">
+                                <i class="fas fa-map-marker-alt text-red-600 text-xl mt-1"></i>
+                                <div>
+                                    <div class="font-semibold text-gray-900">場所</div>
+                                    <div class="text-gray-600">\${event.location_name}</div>
+                                    \${event.location_address ? \`<div class="text-sm text-gray-500 mt-1">\${event.location_address}</div>\` : ''}
+                                </div>
+                            </div>
+                        \` : ''}
+                        
+                        \${event.location_url ? \`
+                            <div class="flex items-start gap-3">
+                                <i class="fas fa-link text-blue-600 text-xl mt-1"></i>
+                                <div>
+                                    <div class="font-semibold text-gray-900">オンライン参加</div>
+                                    <a href="\${event.location_url}" target="_blank" class="text-blue-600 hover:underline">\${event.location_url}</a>
+                                </div>
+                            </div>
+                        \` : ''}
+                        
+                        \${event.max_participants ? \`
+                            <div class="flex items-start gap-3">
+                                <i class="fas fa-users text-blue-600 text-xl mt-1"></i>
+                                <div>
+                                    <div class="font-semibold text-gray-900">定員</div>
+                                    <div class="text-gray-600">\${event.max_participants}名</div>
+                                </div>
+                            </div>
+                        \` : ''}
+                        
+                        \${event.requires_ticket && event.ticket_price > 0 ? \`
+                            <div class="flex items-start gap-3">
+                                <i class="fas fa-ticket-alt text-green-600 text-xl mt-1"></i>
+                                <div>
+                                    <div class="font-semibold text-gray-900">参加費</div>
+                                    <div class="text-gray-600">¥\${event.ticket_price.toLocaleString()}</div>
+                                </div>
+                            </div>
+                        \` : ''}
+                    </div>
+                    
+                    \${event.description ? \`
+                        <div class="mb-6">
+                            <h3 class="text-xl font-bold text-gray-900 mb-3">詳細</h3>
+                            <p class="text-gray-700 leading-relaxed whitespace-pre-wrap">\${event.description}</p>
+                        </div>
+                    \` : ''}
+                    
+                    <div class="flex gap-3">
+                        \${event.ticket_url ? \`
+                            <a href="\${event.ticket_url}" target="_blank" class="flex-1 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-bold py-4 px-6 rounded-xl hover:shadow-lg transition text-center">
+                                <i class="fas fa-ticket-alt mr-2"></i>チケットを購入
+                            </a>
+                        \` : \`
+                            <button class="flex-1 bg-gradient-to-r from-purple-600 to-blue-600 text-white font-bold py-4 px-6 rounded-xl hover:shadow-lg transition">
+                                <i class="fas fa-calendar-check mr-2"></i>参加登録
+                            </button>
+                        \`}
+                        <button onclick="shareEvent(\${event.id})" class="px-6 py-4 bg-gray-100 text-gray-700 font-semibold rounded-xl hover:bg-gray-200 transition">
+                            <i class="fas fa-share-alt"></i>
+                        </button>
+                    </div>
+                </div>
+            \`
+            
+            modal.classList.remove('hidden')
+        }
+        
+        function closeEventModal() {
+            document.getElementById('eventModal').classList.add('hidden')
+        }
+        
+        function shareEvent(eventId) {
+            const url = window.location.origin + '/tenant/events?subdomain=' + subdomain + '#event-' + eventId
+            if (navigator.share) {
+                navigator.share({ url })
+            } else {
+                navigator.clipboard.writeText(url)
+                showToast('リンクをコピーしました', 'success')
+            }
+        }
+        
+        // ビュー切り替え
+        document.getElementById('listViewBtn')?.addEventListener('click', () => {
+            document.getElementById('listView').classList.remove('hidden')
+            document.getElementById('calendarView').classList.add('hidden')
+            document.getElementById('listViewBtn').className = 'px-4 py-2 bg-purple-600 text-white rounded-lg font-semibold'
+            document.getElementById('calendarViewBtn').className = 'px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition'
+        })
+        
+        document.getElementById('calendarViewBtn')?.addEventListener('click', () => {
+            document.getElementById('listView').classList.add('hidden')
+            document.getElementById('calendarView').classList.remove('hidden')
+            document.getElementById('listViewBtn').className = 'px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition'
+            document.getElementById('calendarViewBtn').className = 'px-4 py-2 bg-purple-600 text-white rounded-lg font-semibold'
+            renderCalendar()
+        })
+        
+        // カレンダー表示（簡易版）
+        let currentCalendarDate = new Date()
+        
+        function renderCalendar() {
+            const year = currentCalendarDate.getFullYear()
+            const month = currentCalendarDate.getMonth()
+            
+            document.getElementById('currentMonth').textContent = \`\${year}年\${month + 1}月\`
+            
+            const firstDay = new Date(year, month, 1).getDay()
+            const daysInMonth = new Date(year, month + 1, 0).getDate()
+            
+            const calendar = document.getElementById('calendar')
+            calendar.innerHTML = ''
+            
+            // 曜日ヘッダー
+            ['日', '月', '火', '水', '木', '金', '土'].forEach(day => {
+                const dayHeader = document.createElement('div')
+                dayHeader.className = 'text-center font-semibold text-gray-600 py-2'
+                dayHeader.textContent = day
+                calendar.appendChild(dayHeader)
+            })
+            
+            // 空白セル
+            for (let i = 0; i < firstDay; i++) {
+                calendar.appendChild(document.createElement('div'))
+            }
+            
+            // 日付セル
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dateStr = \`\${year}-\${String(month + 1).padStart(2, '0')}-\${String(day).padStart(2, '0')}\`
+                const hasEvent = eventsData.some(e => e.start_datetime.startsWith(dateStr))
+                
+                const dayCell = document.createElement('div')
+                dayCell.className = \`calendar-day flex items-center justify-center rounded-lg cursor-pointer font-semibold \${hasEvent ? 'has-event' : 'bg-white'}\`
+                dayCell.textContent = day
+                
+                if (hasEvent) {
+                    dayCell.onclick = () => {
+                        const dayEvents = eventsData.filter(e => e.start_datetime.startsWith(dateStr))
+                        if (dayEvents.length > 0) {
+                            showEventDetail(dayEvents[0].id)
+                        }
+                    }
+                }
+                
+                calendar.appendChild(dayCell)
+            }
+        }
+        
+        document.getElementById('prevMonth')?.addEventListener('click', () => {
+            currentCalendarDate.setMonth(currentCalendarDate.getMonth() - 1)
+            renderCalendar()
+        })
+        
+        document.getElementById('nextMonth')?.addEventListener('click', () => {
+            currentCalendarDate.setMonth(currentCalendarDate.getMonth() + 1)
+            renderCalendar()
+        })
+        
+        // 今月のイベント数を計算
+        function updateStats() {
+            const now = new Date()
+            const thisMonth = eventsData.filter(e => {
+                const eventDate = new Date(e.start_datetime)
+                return eventDate.getMonth() === now.getMonth() && eventDate.getFullYear() === now.getFullYear()
+            }).length
+            
+            const thisMonthEl = document.getElementById('thisMonthEvents')
+            if (thisMonthEl) thisMonthEl.textContent = thisMonth
+        }
+        
+        // 初期化
+        renderFeaturedEvents()
+        renderEventsList()
+        updateStats()
+    </script>
+</body>
+</html>
+  `)
+})
+
 export default tenantPublic

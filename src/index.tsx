@@ -39,6 +39,7 @@ import birthdayEmail from './routes/birthday-email' // 誕生日メール機能
 import analytics from './routes/analytics' // 統計ダッシュボード
 import points from './routes/points' // ポイントシステム
 import shop from './routes/shop' // Phase 7 - ショップシステム
+import events from './routes/events' // イベント管理
 
 const app = new Hono<AppContext>()
 
@@ -124,6 +125,9 @@ app.route('/api/points', points)
 
 // ショップシステムルート（Phase 7）
 app.route('/api/shop', shop)
+
+// イベント管理ルート
+app.route('/api/events', events)
 
 // --------------------------------------------
 // ルーティングロジック
