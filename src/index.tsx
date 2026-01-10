@@ -7356,23 +7356,23 @@ app.get('/shop-settings', (c) => {
                 <!-- タブ -->
                 <div class="mb-6 border-b border-gray-200">
                     <nav class="-mb-px flex space-x-8">
-                        <button id="legalTab" class="tab-button active" onclick="switchTab('legal')">
-                            <i class="fas fa-file-contract mr-2"></i>
-                            特定商取引法
+                        <button id="ordersTab" class="tab-button active" onclick="switchTab('orders')">
+                            <i class="fas fa-shopping-cart mr-2"></i>
+                            注文管理
                         </button>
                         <button id="productsTab" class="tab-button" onclick="switchTab('products')">
                             <i class="fas fa-box mr-2"></i>
                             商品管理
                         </button>
-                        <button id="ordersTab" class="tab-button" onclick="switchTab('orders')">
-                            <i class="fas fa-shopping-cart mr-2"></i>
-                            注文管理
+                        <button id="legalTab" class="tab-button" onclick="switchTab('legal')">
+                            <i class="fas fa-file-contract mr-2"></i>
+                            特定商取引法
                         </button>
                     </nav>
                 </div>
 
                 <!-- 特定商取引法タブ -->
-                <div id="legalContent" class="tab-content">
+                <div id="legalContent" class="tab-content hidden">
                     <div class="card p-6 mb-6 bg-yellow-50 border-yellow-200">
                         <div class="flex items-start">
                             <i class="fas fa-exclamation-triangle text-yellow-500 text-xl mr-3 mt-1"></i>
@@ -7940,7 +7940,7 @@ app.get('/shop-settings', (c) => {
                 </div>
 
                 <!-- 注文管理タブ -->
-                <div id="ordersContent" class="tab-content hidden">
+                <div id="ordersContent" class="tab-content">
                     <!-- 統計情報 -->
                     <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
                         <div class="card p-4">
