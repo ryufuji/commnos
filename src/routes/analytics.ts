@@ -74,8 +74,8 @@ analytics.get('/overview', async (c) => {
     console.log('[Analytics] Fetching survey stats...')
     const surveyStats = await DB.prepare(`
       SELECT 
-        COUNT(DISTINCT CASE WHEN s.survey_type = 'join' THEN sr.user_id END) as join_responses,
-        COUNT(DISTINCT CASE WHEN s.survey_type = 'leave' THEN sr.user_id END) as leave_responses
+        COUNT(DISTINCT CASE WHEN s.type = 'join' THEN sr.user_id END) as join_responses,
+        COUNT(DISTINCT CASE WHEN s.type = 'leave' THEN sr.user_id END) as leave_responses
       FROM survey_responses sr
       JOIN surveys s ON sr.survey_id = s.id
       WHERE s.tenant_id = ?
@@ -277,7 +277,7 @@ analytics.get('/surveys', async (c) => {
         (SELECT COUNT(*) FROM tenant_memberships WHERE tenant_id = ? AND status = 'active') as total_members
       FROM surveys s
       LEFT JOIN survey_responses sr ON s.id = sr.survey_id
-      WHERE s.tenant_id = ? AND s.survey_type = 'join' AND s.is_active = 1
+      WHERE s.tenant_id = ? AND s.type = 'join' AND s.is_active = 1
       GROUP BY s.id
       LIMIT 1
     `).bind(tenantId, tenantId).first() as any
@@ -291,7 +291,7 @@ analytics.get('/surveys', async (c) => {
         (SELECT COUNT(*) FROM tenant_memberships WHERE tenant_id = ? AND status = 'inactive') as total_exits
       FROM surveys s
       LEFT JOIN survey_responses sr ON s.id = sr.survey_id
-      WHERE s.tenant_id = ? AND s.survey_type = 'leave' AND s.is_active = 1
+      WHERE s.tenant_id = ? AND s.type = 'leave' AND s.is_active = 1
       GROUP BY s.id
       LIMIT 1
     `).bind(tenantId, tenantId).first() as any
