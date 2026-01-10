@@ -29,15 +29,22 @@ function debugLog(category, message, data = null) {
 function redirectOwnerToDashboard() {
   const token = localStorage.getItem('token')
   const userStr = localStorage.getItem('user')
+  const membershipStr = localStorage.getItem('membership')
   
   if (token && userStr) {
     try {
       const user = JSON.parse(userStr)
+      const membership = membershipStr ? JSON.parse(membershipStr) : null
+      
+      // user.role または membership.role をチェック
+      const role = user.role || membership?.role
       
       // オーナーまたは管理者の場合はダッシュボードにリダイレクト
-      if (user.role === 'owner' || user.role === 'admin') {
+      if (role === 'owner' || role === 'admin') {
         debugLog('REDIRECT', 'Owner/Admin accessing public page, redirecting to dashboard', {
-          role: user.role,
+          userRole: user.role,
+          membershipRole: membership?.role,
+          finalRole: role,
           currentUrl: window.location.href
         })
         window.location.href = '/dashboard'
@@ -56,8 +63,17 @@ const AppState = {
   token: localStorage.getItem('token'),
   user: JSON.parse(localStorage.getItem('user') || 'null'),
   tenant: JSON.parse(localStorage.getItem('tenant') || 'null'),
-  // membership は user オブジェクトから取得
+  // membership は localStorage から直接取得、または user オブジェクトから取得
   get membership() {
+    const membershipStr = localStorage.getItem('membership')
+    if (membershipStr) {
+      try {
+        return JSON.parse(membershipStr)
+      } catch (e) {
+        debugLog('ERROR', 'Failed to parse membership from localStorage', e)
+      }
+    }
+    // フォールバック: user オブジェクトから membership を構築
     return this.user ? {
       role: this.user.role,
       tenantId: this.user.tenantId,
