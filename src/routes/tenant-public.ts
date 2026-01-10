@@ -55,6 +55,9 @@ function renderCommonHeader(tenantName: string, subdomain: string, activePage: s
                 <a href="/tenant/members?subdomain=${subdomain}" class="commons-nav-link ${isActive('members')}">
                     <i class="fas fa-users mr-2"></i>メンバー
                 </a>
+                <a href="/tenant/chat?subdomain=${subdomain}" class="commons-nav-link ${isActive('chat')}">
+                    <i class="fas fa-comments mr-2"></i>チャット
+                </a>
                 <a href="/tenant/shop?subdomain=${subdomain}" class="commons-nav-link ${isActive('shop')}">
                     <i class="fas fa-shopping-bag mr-2"></i>ショップ
                 </a>
@@ -117,6 +120,10 @@ function renderCommonHeader(tenantName: string, subdomain: string, activePage: s
             <a href="/tenant/members?subdomain=${subdomain}" class="commons-mobile-nav-link ${isActive('members')}">
                 <i class="fas fa-users"></i>
                 <span>メンバー</span>
+            </a>
+            <a href="/tenant/chat?subdomain=${subdomain}" class="commons-mobile-nav-link ${isActive('chat')}">
+                <i class="fas fa-comments"></i>
+                <span>チャット</span>
             </a>
             <a href="/tenant/shop?subdomain=${subdomain}" class="commons-mobile-nav-link ${isActive('shop')}">
                 <i class="fas fa-shopping-bag"></i>
@@ -4836,21 +4843,6 @@ tenantPublic.get('/members/:memberId', async (c) => {
   
   const posts = postsResult.results || []
   
-  const statsResult = await DB.prepare(`
-    SELECT 
-      COUNT(DISTINCT p.id) as post_count,
-      COUNT(DISTINCT c.id) as comment_count,
-      COALESCE(SUM(p.view_count), 0) as total_views
-    FROM users u
-    LEFT JOIN posts p ON p.author_id = u.id AND p.tenant_id = ? AND p.status = ?
-    LEFT JOIN comments c ON c.user_id = u.id AND c.tenant_id = ?
-    WHERE u.id = ?
-  `).bind(tenant.id, 'published', tenant.id, memberId).first() as any
-  
-  const postCount = Number(statsResult?.post_count || 0)
-  const commentCount = Number(statsResult?.comment_count || 0)
-  const totalViews = Number(statsResult?.total_views || 0)
-  
   const nickname = String(member.nickname || '不明')
   const bio = String(member.bio || 'プロフィールが設定されていません')
   const avatarUrl = member.avatar_url ? String(member.avatar_url) : ''
@@ -4929,16 +4921,6 @@ tenantPublic.get('/members/:memberId', async (c) => {
     '<div class="flex flex-col md:flex-row items-center md:items-start gap-3 mb-4">' +
     '<h1 class="text-3xl font-bold" style="color: var(--commons-text-primary);">' + nickname + '</h1>' + roleBadgeHTML + '</div>' +
     '<p class="text-gray-600 mb-6 whitespace-pre-wrap">' + bio + '</p>' +
-    '<div class="grid grid-cols-3 gap-4 mb-6">' +
-    '<div class="text-center p-4 bg-blue-50 rounded-lg">' +
-    '<div class="text-2xl font-bold text-blue-600">' + postCount + '</div>' +
-    '<div class="text-sm text-gray-600">投稿</div></div>' +
-    '<div class="text-center p-4 bg-green-50 rounded-lg">' +
-    '<div class="text-2xl font-bold text-green-600">' + commentCount + '</div>' +
-    '<div class="text-sm text-gray-600">コメント</div></div>' +
-    '<div class="text-center p-4 bg-purple-50 rounded-lg">' +
-    '<div class="text-2xl font-bold style="color: var(--commons-primary)"">' + totalViews + '</div>' +
-    '<div class="text-sm text-gray-600">閲覧数</div></div></div>' +
     '<div class="text-sm text-gray-500"><i class="fas fa-calendar mr-2"></i>' + joinedDate + 'に参加</div>' +
     '</div></div></div>' +
     '<div class="bg-white rounded-lg shadow-lg p-8">' +
