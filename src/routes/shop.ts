@@ -1211,4 +1211,272 @@ shop.get('/orders/:id', authMiddleware, async (c) => {
   }
 })
 
+// ============================================
+// 管理者向け注文管理API
+// ============================================
+
+/**
+ * GET /api/shop/admin/orders
+ * 全注文一覧取得（管理者のみ）
+ */
+shop.get('/admin/orders', authMiddleware, requireRole('admin'), async (c) => {
+  const tenantId = c.get('tenantId')
+  const db = c.env.DB
+
+  try {
+    const status = c.req.query('status')
+    const paymentStatus = c.req.query('payment_status')
+    
+    let query = `
+      SELECT o.*, u.email, u.nickname
+      FROM shop_orders o
+      LEFT JOIN users u ON o.user_id = u.id
+      WHERE o.tenant_id = ?
+    `
+    const params: any[] = [tenantId]
+
+    if (status) {
+      query += ' AND o.order_status = ?'
+      params.push(status)
+    }
+
+    if (paymentStatus) {
+      query += ' AND o.payment_status = ?'
+      params.push(paymentStatus)
+    }
+
+    query += ' ORDER BY o.created_at DESC'
+
+    const orders = await db
+      .prepare(query)
+      .bind(...params)
+      .all()
+
+    return c.json({
+      success: true,
+      orders: orders.results || []
+    })
+  } catch (error) {
+    console.error('[Admin Get Orders Error]', error)
+    return c.json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to get orders'
+    }, 500)
+  }
+})
+
+/**
+ * GET /api/shop/admin/orders/:id
+ * 注文詳細取得（管理者のみ）
+ */
+shop.get('/admin/orders/:id', authMiddleware, requireRole('admin'), async (c) => {
+  const tenantId = c.get('tenantId')
+  const orderId = c.req.param('id')
+  const db = c.env.DB
+
+  try {
+    const order = await db
+      .prepare(`
+        SELECT o.*, u.email, u.nickname
+        FROM shop_orders o
+        LEFT JOIN users u ON o.user_id = u.id
+        WHERE o.id = ? AND o.tenant_id = ?
+      `)
+      .bind(orderId, tenantId)
+      .first()
+
+    if (!order) {
+      return c.json({
+        success: false,
+        error: '注文が見つかりません'
+      }, 404)
+    }
+
+    // 注文明細を取得
+    const items = await db
+      .prepare(`
+        SELECT * FROM shop_order_items
+        WHERE order_id = ?
+      `)
+      .bind(orderId)
+      .all()
+
+    return c.json({
+      success: true,
+      order: {
+        ...order,
+        items: items.results || []
+      }
+    })
+  } catch (error) {
+    console.error('[Admin Get Order Error]', error)
+    return c.json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to get order'
+    }, 500)
+  }
+})
+
+/**
+ * PUT /api/shop/admin/orders/:id/status
+ * 注文ステータス更新（管理者のみ）
+ */
+shop.put('/admin/orders/:id/status', authMiddleware, requireRole('admin'), async (c) => {
+  const tenantId = c.get('tenantId')
+  const orderId = c.req.param('id')
+  const db = c.env.DB
+
+  try {
+    const { order_status, payment_status, admin_note } = await c.req.json()
+
+    // 注文の存在確認
+    const order = await db
+      .prepare('SELECT id FROM shop_orders WHERE id = ? AND tenant_id = ?')
+      .bind(orderId, tenantId)
+      .first()
+
+    if (!order) {
+      return c.json({
+        success: false,
+        error: '注文が見つかりません'
+      }, 404)
+    }
+
+    // ステータスのバリデーション
+    const validOrderStatuses = ['pending', 'confirmed', 'shipped', 'delivered', 'cancelled']
+    const validPaymentStatuses = ['pending', 'completed', 'failed', 'refunded']
+
+    if (order_status && !validOrderStatuses.includes(order_status)) {
+      return c.json({
+        success: false,
+        error: '無効な注文ステータスです'
+      }, 400)
+    }
+
+    if (payment_status && !validPaymentStatuses.includes(payment_status)) {
+      return c.json({
+        success: false,
+        error: '無効な決済ステータスです'
+      }, 400)
+    }
+
+    // ステータス更新
+    const updates: string[] = []
+    const values: any[] = []
+
+    if (order_status !== undefined) {
+      updates.push('order_status = ?')
+      values.push(order_status)
+    }
+
+    if (payment_status !== undefined) {
+      updates.push('payment_status = ?')
+      values.push(payment_status)
+    }
+
+    if (admin_note !== undefined) {
+      updates.push('admin_note = ?')
+      values.push(admin_note)
+    }
+
+    updates.push('updated_at = CURRENT_TIMESTAMP')
+    values.push(orderId, tenantId)
+
+    await db
+      .prepare(`
+        UPDATE shop_orders
+        SET ${updates.join(', ')}
+        WHERE id = ? AND tenant_id = ?
+      `)
+      .bind(...values)
+      .run()
+
+    return c.json({
+      success: true,
+      message: 'ステータスを更新しました'
+    })
+  } catch (error) {
+    console.error('[Admin Update Order Status Error]', error)
+    return c.json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to update order status'
+    }, 500)
+  }
+})
+
+/**
+ * GET /api/shop/admin/stats
+ * 注文統計情報取得（管理者のみ）
+ */
+shop.get('/admin/stats', authMiddleware, requireRole('admin'), async (c) => {
+  const tenantId = c.get('tenantId')
+  const db = c.env.DB
+
+  try {
+    // 全注文数
+    const totalOrders = await db
+      .prepare(`
+        SELECT COUNT(*) as count FROM shop_orders WHERE tenant_id = ?
+      `)
+      .bind(tenantId)
+      .first<{ count: number }>()
+
+    // 処理待ち注文数
+    const pendingOrders = await db
+      .prepare(`
+        SELECT COUNT(*) as count FROM shop_orders 
+        WHERE tenant_id = ? AND order_status = 'pending'
+      `)
+      .bind(tenantId)
+      .first<{ count: number }>()
+
+    // 今月の売上
+    const thisMonth = await db
+      .prepare(`
+        SELECT SUM(total_amount) as total FROM shop_orders
+        WHERE tenant_id = ? 
+        AND payment_status = 'completed'
+        AND strftime('%Y-%m', created_at) = strftime('%Y-%m', 'now')
+      `)
+      .bind(tenantId)
+      .first<{ total: number | null }>()
+
+    // 総売上
+    const totalRevenue = await db
+      .prepare(`
+        SELECT SUM(total_amount) as total FROM shop_orders
+        WHERE tenant_id = ? AND payment_status = 'completed'
+      `)
+      .bind(tenantId)
+      .first<{ total: number | null }>()
+
+    // ステータス別注文数
+    const statusCounts = await db
+      .prepare(`
+        SELECT order_status, COUNT(*) as count FROM shop_orders
+        WHERE tenant_id = ?
+        GROUP BY order_status
+      `)
+      .bind(tenantId)
+      .all()
+
+    return c.json({
+      success: true,
+      stats: {
+        total_orders: totalOrders?.count || 0,
+        pending_orders: pendingOrders?.count || 0,
+        this_month_revenue: thisMonth?.total || 0,
+        total_revenue: totalRevenue?.total || 0,
+        status_counts: statusCounts.results || []
+      }
+    })
+  } catch (error) {
+    console.error('[Admin Get Stats Error]', error)
+    return c.json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to get stats'
+    }, 500)
+  }
+})
+
 export default shop

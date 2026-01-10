@@ -7918,8 +7918,107 @@ app.get('/shop-settings', (c) => {
 
                 <!-- 注文管理タブ -->
                 <div id="ordersContent" class="tab-content hidden">
+                    <!-- 統計情報 -->
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                        <div class="card p-4">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm text-gray-500 mb-1">全注文数</p>
+                                    <p class="text-2xl font-bold text-gray-900" id="statTotalOrders">0</p>
+                                </div>
+                                <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
+                                    <i class="fas fa-shopping-cart text-blue-600 text-xl"></i>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card p-4">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm text-gray-500 mb-1">処理待ち</p>
+                                    <p class="text-2xl font-bold text-yellow-600" id="statPendingOrders">0</p>
+                                </div>
+                                <div class="w-12 h-12 bg-yellow-100 rounded-full flex items-center justify-center">
+                                    <i class="fas fa-clock text-yellow-600 text-xl"></i>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card p-4">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm text-gray-500 mb-1">今月の売上</p>
+                                    <p class="text-2xl font-bold text-green-600" id="statMonthRevenue">¥0</p>
+                                </div>
+                                <div class="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                                    <i class="fas fa-yen-sign text-green-600 text-xl"></i>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="card p-4">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-sm text-gray-500 mb-1">総売上</p>
+                                    <p class="text-2xl font-bold text-purple-600" id="statTotalRevenue">¥0</p>
+                                </div>
+                                <div class="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
+                                    <i class="fas fa-chart-line text-purple-600 text-xl"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- フィルター＆注文一覧 -->
                     <div class="card p-6">
-                        <p class="text-gray-600">注文管理機能は開発中です</p>
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="font-semibold text-gray-900 text-lg">
+                                <i class="fas fa-list mr-2"></i>
+                                注文一覧
+                            </h3>
+                            
+                            <div class="flex items-center space-x-2">
+                                <select id="orderStatusFilter" onchange="loadOrders()" class="input-field py-2 text-sm">
+                                    <option value="">すべてのステータス</option>
+                                    <option value="pending">処理待ち</option>
+                                    <option value="confirmed">確認済み</option>
+                                    <option value="shipped">配送中</option>
+                                    <option value="delivered">配送完了</option>
+                                    <option value="cancelled">キャンセル</option>
+                                </select>
+                                
+                                <select id="paymentStatusFilter" onchange="loadOrders()" class="input-field py-2 text-sm">
+                                    <option value="">すべての決済状況</option>
+                                    <option value="pending">決済待ち</option>
+                                    <option value="completed">決済完了</option>
+                                    <option value="failed">決済失敗</option>
+                                    <option value="refunded">返金済み</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div id="ordersList" class="space-y-4">
+                            <div class="text-center py-8 text-gray-500">
+                                <i class="fas fa-spinner fa-spin text-2xl mb-2"></i>
+                                <p>読み込み中...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 注文詳細モーダル -->
+                <div id="orderDetailModal" class="modal hidden">
+                    <div class="modal-content max-w-4xl">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-xl font-bold">注文詳細</h3>
+                            <button onclick="closeOrderDetail()" class="text-gray-400 hover:text-gray-600">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                        
+                        <div id="orderDetailContent">
+                            <!-- 注文詳細がここに表示されます -->
+                        </div>
                     </div>
                 </div>
             </main>
@@ -8519,12 +8618,348 @@ app.get('/shop-settings', (c) => {
                 }
             })
 
+            // ============================================
+            // 注文管理機能
+            // ============================================
+            
+            let currentOrders = []
+            let currentOrderDetail = null
+            
+            const orderStatusLabels = {
+                pending: '処理待ち',
+                confirmed: '確認済み',
+                shipped: '配送中',
+                delivered: '配送完了',
+                cancelled: 'キャンセル'
+            }
+            
+            const orderStatusColors = {
+                pending: 'bg-yellow-100 text-yellow-800',
+                confirmed: 'bg-blue-100 text-blue-800',
+                shipped: 'bg-purple-100 text-purple-800',
+                delivered: 'bg-green-100 text-green-800',
+                cancelled: 'bg-red-100 text-red-800'
+            }
+            
+            const paymentStatusLabels = {
+                pending: '決済待ち',
+                completed: '決済完了',
+                failed: '決済失敗',
+                refunded: '返金済み'
+            }
+            
+            const paymentStatusColors = {
+                pending: 'text-yellow-600',
+                completed: 'text-green-600',
+                failed: 'text-red-600',
+                refunded: 'text-gray-600'
+            }
+            
+            async function loadOrderStats() {
+                try {
+                    const token = localStorage.getItem('token')
+                    const response = await axios.get('/api/shop/admin/stats', {
+                        headers: { 'Authorization': 'Bearer ' + token }
+                    })
+                    
+                    if (response.data.success) {
+                        const stats = response.data.stats
+                        document.getElementById('statTotalOrders').textContent = stats.total_orders
+                        document.getElementById('statPendingOrders').textContent = stats.pending_orders
+                        document.getElementById('statMonthRevenue').textContent = \`¥\${stats.this_month_revenue.toLocaleString()}\`
+                        document.getElementById('statTotalRevenue').textContent = \`¥\${stats.total_revenue.toLocaleString()}\`
+                    }
+                } catch (error) {
+                    console.error('Load order stats error:', error)
+                }
+            }
+            
+            async function loadOrders() {
+                try {
+                    const token = localStorage.getItem('token')
+                    const params = new URLSearchParams()
+                    
+                    const orderStatus = document.getElementById('orderStatusFilter')?.value
+                    const paymentStatus = document.getElementById('paymentStatusFilter')?.value
+                    
+                    if (orderStatus) params.append('status', orderStatus)
+                    if (paymentStatus) params.append('payment_status', paymentStatus)
+                    
+                    const response = await axios.get(\`/api/shop/admin/orders?\${params.toString()}\`, {
+                        headers: { 'Authorization': 'Bearer ' + token }
+                    })
+                    
+                    if (response.data.success) {
+                        currentOrders = response.data.orders
+                        displayOrders()
+                    }
+                } catch (error) {
+                    console.error('Load orders error:', error)
+                    const container = document.getElementById('ordersList')
+                    if (container) {
+                        container.innerHTML = \`
+                            <div class="text-center py-8 text-red-500">
+                                <i class="fas fa-exclamation-circle text-3xl mb-2"></i>
+                                <p>注文の読み込みに失敗しました</p>
+                            </div>
+                        \`
+                    }
+                }
+            }
+            
+            function displayOrders() {
+                const container = document.getElementById('ordersList')
+                
+                if (currentOrders.length === 0) {
+                    container.innerHTML = \`
+                        <div class="text-center py-12 text-gray-500">
+                            <i class="fas fa-shopping-cart text-4xl mb-3"></i>
+                            <p class="text-lg">注文はまだありません</p>
+                        </div>
+                    \`
+                    return
+                }
+                
+                container.innerHTML = currentOrders.map(order => \`
+                    <div class="p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors">
+                        <div class="flex items-start justify-between mb-3">
+                            <div class="flex-1">
+                                <div class="flex items-center space-x-3 mb-2">
+                                    <span class="font-mono font-semibold text-sm">\${order.order_number}</span>
+                                    <span class="px-2 py-1 rounded-full text-xs \${orderStatusColors[order.order_status]}">
+                                        \${orderStatusLabels[order.order_status]}
+                                    </span>
+                                    <span class="text-xs \${paymentStatusColors[order.payment_status]}">
+                                        <i class="fas fa-circle text-xs mr-1"></i>
+                                        \${paymentStatusLabels[order.payment_status]}
+                                    </span>
+                                </div>
+                                
+                                <div class="grid grid-cols-3 gap-4 text-sm">
+                                    <div>
+                                        <p class="text-gray-500 text-xs">顧客</p>
+                                        <p class="font-medium">\${order.nickname || order.email}</p>
+                                    </div>
+                                    <div>
+                                        <p class="text-gray-500 text-xs">注文日時</p>
+                                        <p>\${new Date(order.created_at).toLocaleString('ja-JP', { 
+                                            month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' 
+                                        })}</p>
+                                    </div>
+                                    <div>
+                                        <p class="text-gray-500 text-xs">金額</p>
+                                        <p class="font-bold text-blue-600">¥\${order.total_amount.toLocaleString()}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <button onclick="viewOrderDetail(\${order.id})" 
+                                    class="ml-4 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 text-sm">
+                                <i class="fas fa-eye mr-1"></i>
+                                詳細
+                            </button>
+                        </div>
+                        
+                        \${order.shipping_address ? \`
+                            <div class="text-xs text-gray-600 pt-3 border-t">
+                                <i class="fas fa-truck mr-1"></i>
+                                配送先: \${order.shipping_name}
+                            </div>
+                        \` : ''}
+                    </div>
+                \`).join('')
+            }
+            
+            async function viewOrderDetail(orderId) {
+                try {
+                    const token = localStorage.getItem('token')
+                    const response = await axios.get(\`/api/shop/admin/orders/\${orderId}\`, {
+                        headers: { 'Authorization': 'Bearer ' + token }
+                    })
+                    
+                    if (response.data.success) {
+                        currentOrderDetail = response.data.order
+                        displayOrderDetail()
+                        document.getElementById('orderDetailModal').classList.remove('hidden')
+                    }
+                } catch (error) {
+                    console.error('View order detail error:', error)
+                    showToast('注文詳細の取得に失敗しました', 'error')
+                }
+            }
+            
+            function displayOrderDetail() {
+                const order = currentOrderDetail
+                if (!order) return
+                
+                const container = document.getElementById('orderDetailContent')
+                
+                container.innerHTML = \`
+                    <div class="space-y-6">
+                        <!-- 注文情報 -->
+                        <div class="grid grid-cols-2 gap-6">
+                            <div>
+                                <h4 class="font-semibold text-gray-900 mb-3">注文情報</h4>
+                                <dl class="space-y-2 text-sm">
+                                    <div class="flex justify-between">
+                                        <dt class="text-gray-500">注文番号:</dt>
+                                        <dd class="font-mono font-semibold">\${order.order_number}</dd>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <dt class="text-gray-500">注文日時:</dt>
+                                        <dd>\${new Date(order.created_at).toLocaleString('ja-JP')}</dd>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <dt class="text-gray-500">顧客:</dt>
+                                        <dd>\${order.nickname || order.email}</dd>
+                                    </div>
+                                </dl>
+                            </div>
+                            
+                            <div>
+                                <h4 class="font-semibold text-gray-900 mb-3">ステータス</h4>
+                                <div class="space-y-3">
+                                    <div>
+                                        <label class="block text-xs text-gray-500 mb-1">注文ステータス</label>
+                                        <select id="orderStatusSelect" class="input-field py-2 text-sm">
+                                            <option value="pending" \${order.order_status === 'pending' ? 'selected' : ''}>処理待ち</option>
+                                            <option value="confirmed" \${order.order_status === 'confirmed' ? 'selected' : ''}>確認済み</option>
+                                            <option value="shipped" \${order.order_status === 'shipped' ? 'selected' : ''}>配送中</option>
+                                            <option value="delivered" \${order.order_status === 'delivered' ? 'selected' : ''}>配送完了</option>
+                                            <option value="cancelled" \${order.order_status === 'cancelled' ? 'selected' : ''}>キャンセル</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <div>
+                                        <label class="block text-xs text-gray-500 mb-1">決済ステータス</label>
+                                        <select id="paymentStatusSelect" class="input-field py-2 text-sm">
+                                            <option value="pending" \${order.payment_status === 'pending' ? 'selected' : ''}>決済待ち</option>
+                                            <option value="completed" \${order.payment_status === 'completed' ? 'selected' : ''}>決済完了</option>
+                                            <option value="failed" \${order.payment_status === 'failed' ? 'selected' : ''}>決済失敗</option>
+                                            <option value="refunded" \${order.payment_status === 'refunded' ? 'selected' : ''}>返金済み</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 配送先情報 -->
+                        \${order.shipping_address ? \`
+                            <div>
+                                <h4 class="font-semibold text-gray-900 mb-3">配送先情報</h4>
+                                <div class="p-4 bg-gray-50 rounded-lg text-sm">
+                                    <p class="font-medium mb-1">\${order.shipping_name}</p>
+                                    <p class="text-gray-600 mb-1">\${order.shipping_phone}</p>
+                                    <p class="text-gray-600 whitespace-pre-wrap">\${order.shipping_address}</p>
+                                </div>
+                            </div>
+                        \` : ''}
+                        
+                        <!-- 注文明細 -->
+                        <div>
+                            <h4 class="font-semibold text-gray-900 mb-3">注文明細</h4>
+                            <div class="space-y-2">
+                                \${order.items.map(item => \`
+                                    <div class="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                                        <div class="flex-1">
+                                            <p class="font-medium">\${item.product_name}</p>
+                                            <p class="text-sm text-gray-500">
+                                                ¥\${item.unit_price.toLocaleString()} × \${item.quantity}
+                                                \${item.product_type === 'ticket' && item.event_date ? \`
+                                                    <span class="ml-2">
+                                                        <i class="fas fa-calendar text-xs mr-1"></i>
+                                                        \${new Date(item.event_date).toLocaleString('ja-JP', { 
+                                                            month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' 
+                                                        })}
+                                                    </span>
+                                                \` : ''}
+                                            </p>
+                                        </div>
+                                        <p class="font-semibold">¥\${item.subtotal.toLocaleString()}</p>
+                                    </div>
+                                \`).join('')}
+                            </div>
+                            
+                            <div class="mt-4 pt-4 border-t space-y-2">
+                                <div class="flex justify-between text-sm">
+                                    <span class="text-gray-600">小計:</span>
+                                    <span>¥\${(order.total_amount - order.shipping_fee).toLocaleString()}</span>
+                                </div>
+                                <div class="flex justify-between text-sm">
+                                    <span class="text-gray-600">送料:</span>
+                                    <span>¥\${order.shipping_fee.toLocaleString()}</span>
+                                </div>
+                                <div class="flex justify-between text-lg font-bold pt-2 border-t">
+                                    <span>合計:</span>
+                                    <span class="text-blue-600">¥\${order.total_amount.toLocaleString()}</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 管理者メモ -->
+                        <div>
+                            <label class="block font-semibold text-gray-900 mb-2">管理者メモ</label>
+                            <textarea id="adminNoteText" rows="3" class="input-field" 
+                                      placeholder="この注文に関するメモを入力...">\${order.admin_note || ''}</textarea>
+                        </div>
+                        
+                        <!-- アクションボタン -->
+                        <div class="flex justify-end space-x-3 pt-4 border-t">
+                            <button onclick="closeOrderDetail()" class="btn-secondary">
+                                閉じる
+                            </button>
+                            <button onclick="updateOrderStatus()" class="btn-primary">
+                                <i class="fas fa-save mr-2"></i>
+                                更新
+                            </button>
+                        </div>
+                    </div>
+                \`
+            }
+            
+            async function updateOrderStatus() {
+                const order = currentOrderDetail
+                if (!order) return
+                
+                const orderStatus = document.getElementById('orderStatusSelect').value
+                const paymentStatus = document.getElementById('paymentStatusSelect').value
+                const adminNote = document.getElementById('adminNoteText').value
+                
+                try {
+                    const token = localStorage.getItem('token')
+                    const response = await axios.put(\`/api/shop/admin/orders/\${order.id}/status\`, {
+                        order_status: orderStatus,
+                        payment_status: paymentStatus,
+                        admin_note: adminNote
+                    }, {
+                        headers: { 'Authorization': 'Bearer ' + token }
+                    })
+                    
+                    if (response.data.success) {
+                        showToast(response.data.message, 'success')
+                        closeOrderDetail()
+                        await loadOrders()
+                        await loadOrderStats()
+                    }
+                } catch (error) {
+                    console.error('Update order status error:', error)
+                    showToast(error.response?.data?.error || 'ステータスの更新に失敗しました', 'error')
+                }
+            }
+            
+            function closeOrderDetail() {
+                document.getElementById('orderDetailModal').classList.add('hidden')
+                currentOrderDetail = null
+            }
+
             // 初期化
             document.addEventListener('DOMContentLoaded', () => {
                 loadStatus()
                 loadLegalInfo()
                 loadCategories()
                 loadProducts()
+                loadOrderStats()
+                loadOrders()
             })
         </script>
     </body>
