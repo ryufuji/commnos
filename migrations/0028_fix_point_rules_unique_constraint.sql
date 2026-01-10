@@ -3,6 +3,9 @@
 -- actionのグローバルUNIQUE制約を削除
 -- ============================================
 
+-- 外部キー制約を一時的に無効化
+PRAGMA foreign_keys = OFF;
+
 -- 1. 既存データをバックアップ
 CREATE TABLE IF NOT EXISTS point_rules_backup AS SELECT * FROM point_rules;
 
@@ -65,3 +68,6 @@ INSERT OR IGNORE INTO point_rules (tenant_id, action, points, note, is_active) V
   (2, 'event_participation', 50, 'イベント参加', 0),
   (2, 'invite_friend', 100, '友達を招待', 0),
   (2, 'invited_signup', 50, '招待された友達が登録', 0);
+
+-- 8. 外部キー制約を再有効化
+PRAGMA foreign_keys = ON;
