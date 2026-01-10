@@ -795,4 +795,420 @@ shop.delete('/products/:id', authMiddleware, requireRole('admin'), async (c) => 
   }
 })
 
+// ============================================
+// 会員向け商品表示API（購入フロー）
+// ============================================
+
+/**
+ * GET /api/shop/public/products
+ * 公開中の商品一覧取得（会員向け）
+ */
+shop.get('/public/products', authMiddleware, async (c) => {
+  const tenantId = c.get('tenantId')
+  const db = c.env.DB
+
+  try {
+    const categoryId = c.req.query('category_id')
+    const type = c.req.query('type')
+    const search = c.req.query('search')
+
+    let query = `
+      SELECT p.*, c.name as category_name
+      FROM shop_products p
+      LEFT JOIN shop_categories c ON p.category_id = c.id
+      WHERE p.tenant_id = ? AND p.is_active = 1
+    `
+    const params: any[] = [tenantId]
+
+    // 販売期間チェック
+    const now = new Date().toISOString()
+    query += ` AND (p.sale_start_date IS NULL OR p.sale_start_date <= ?)`
+    params.push(now)
+    query += ` AND (p.sale_end_date IS NULL OR p.sale_end_date >= ?)`
+    params.push(now)
+
+    if (categoryId) {
+      query += ' AND p.category_id = ?'
+      params.push(categoryId)
+    }
+
+    if (type) {
+      query += ' AND p.type = ?'
+      params.push(type)
+    }
+
+    if (search) {
+      query += ' AND (p.name LIKE ? OR p.description LIKE ?)'
+      const searchPattern = `%${search}%`
+      params.push(searchPattern, searchPattern)
+    }
+
+    query += ' ORDER BY p.created_at DESC'
+
+    const products = await db
+      .prepare(query)
+      .bind(...params)
+      .all()
+
+    // 在庫状況を計算
+    const productsWithStock = (products.results || []).map((product: any) => ({
+      ...product,
+      is_available: product.is_unlimited_stock === 1 || product.stock_quantity > 0
+    }))
+
+    return c.json({
+      success: true,
+      products: productsWithStock
+    })
+  } catch (error) {
+    console.error('[Get Public Products Error]', error)
+    return c.json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to get products'
+    }, 500)
+  }
+})
+
+/**
+ * GET /api/shop/public/products/:id
+ * 商品詳細取得（会員向け）
+ */
+shop.get('/public/products/:id', authMiddleware, async (c) => {
+  const tenantId = c.get('tenantId')
+  const productId = c.req.param('id')
+  const db = c.env.DB
+
+  try {
+    const product = await db
+      .prepare(`
+        SELECT p.*, c.name as category_name
+        FROM shop_products p
+        LEFT JOIN shop_categories c ON p.category_id = c.id
+        WHERE p.id = ? AND p.tenant_id = ? AND p.is_active = 1
+      `)
+      .bind(productId, tenantId)
+      .first()
+
+    if (!product) {
+      return c.json({
+        success: false,
+        error: '商品が見つかりません'
+      }, 404)
+    }
+
+    // 販売期間チェック
+    const now = new Date()
+    const saleStartDate = product.sale_start_date ? new Date(product.sale_start_date) : null
+    const saleEndDate = product.sale_end_date ? new Date(product.sale_end_date) : null
+
+    const isOnSale = (!saleStartDate || saleStartDate <= now) && (!saleEndDate || saleEndDate >= now)
+
+    if (!isOnSale) {
+      return c.json({
+        success: false,
+        error: 'この商品は現在販売期間外です'
+      }, 400)
+    }
+
+    // 在庫状況を計算
+    const productWithStock = {
+      ...product,
+      is_available: product.is_unlimited_stock === 1 || product.stock_quantity > 0
+    }
+
+    return c.json({
+      success: true,
+      product: productWithStock
+    })
+  } catch (error) {
+    console.error('[Get Public Product Error]', error)
+    return c.json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to get product'
+    }, 500)
+  }
+})
+
+/**
+ * GET /api/shop/public/categories
+ * 公開中のカテゴリ一覧取得（会員向け）
+ */
+shop.get('/public/categories', authMiddleware, async (c) => {
+  const tenantId = c.get('tenantId')
+  const db = c.env.DB
+
+  try {
+    // 商品が1つ以上あるカテゴリのみ取得
+    const categories = await db
+      .prepare(`
+        SELECT c.*, COUNT(p.id) as product_count
+        FROM shop_categories c
+        LEFT JOIN shop_products p ON c.id = p.category_id AND p.is_active = 1
+        WHERE c.tenant_id = ?
+        GROUP BY c.id
+        HAVING product_count > 0
+        ORDER BY c.display_order ASC, c.created_at DESC
+      `)
+      .bind(tenantId)
+      .all()
+
+    return c.json({
+      success: true,
+      categories: categories.results || []
+    })
+  } catch (error) {
+    console.error('[Get Public Categories Error]', error)
+    return c.json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to get categories'
+    }, 500)
+  }
+})
+
+// ============================================
+// 注文管理API
+// ============================================
+
+/**
+ * POST /api/shop/orders
+ * 注文作成（Stripe決済前の仮注文）
+ */
+shop.post('/orders', authMiddleware, async (c) => {
+  const tenantId = c.get('tenantId')
+  const userId = c.get('userId')
+  const db = c.env.DB
+
+  try {
+    const { items, shipping_address, shipping_name, shipping_phone } = await c.req.json()
+
+    if (!items || items.length === 0) {
+      return c.json({
+        success: false,
+        error: '商品が選択されていません'
+      }, 400)
+    }
+
+    // 商品情報を取得
+    let totalAmount = 0
+    let shippingFee = 0
+    const orderItems = []
+    let requiresShipping = false
+
+    for (const item of items) {
+      const product = await db
+        .prepare(`
+          SELECT * FROM shop_products 
+          WHERE id = ? AND tenant_id = ? AND is_active = 1
+        `)
+        .bind(item.product_id, tenantId)
+        .first()
+
+      if (!product) {
+        return c.json({
+          success: false,
+          error: `商品ID ${item.product_id} が見つかりません`
+        }, 404)
+      }
+
+      // 在庫チェック
+      if (product.is_unlimited_stock !== 1 && product.stock_quantity < item.quantity) {
+        return c.json({
+          success: false,
+          error: `${product.name}の在庫が不足しています`
+        }, 400)
+      }
+
+      // 購入上限チェック
+      if (product.max_purchase_per_person && item.quantity > product.max_purchase_per_person) {
+        return c.json({
+          success: false,
+          error: `${product.name}の購入上限は${product.max_purchase_per_person}個です`
+        }, 400)
+      }
+
+      const subtotal = product.price * item.quantity
+      totalAmount += subtotal
+
+      if (product.requires_shipping === 1) {
+        requiresShipping = true
+      }
+
+      orderItems.push({
+        product_id: product.id,
+        product_name: product.name,
+        product_type: product.type,
+        quantity: item.quantity,
+        unit_price: product.price,
+        subtotal: subtotal,
+        event_date: product.event_date,
+        event_location: product.event_location
+      })
+    }
+
+    // 配送が必要な場合、配送先チェック
+    if (requiresShipping) {
+      if (!shipping_address || !shipping_name || !shipping_phone) {
+        return c.json({
+          success: false,
+          error: '配送先情報が必要です'
+        }, 400)
+      }
+      // 送料計算（簡易版: 一律500円）
+      shippingFee = 500
+    }
+
+    const finalAmount = totalAmount + shippingFee
+
+    // 注文番号生成
+    const orderNumber = `ORD-${Date.now()}-${Math.random().toString(36).substring(2, 8).toUpperCase()}`
+
+    // 注文作成
+    const orderResult = await db
+      .prepare(`
+        INSERT INTO shop_orders (
+          tenant_id, user_id, order_number, total_amount, shipping_fee,
+          payment_status, order_status, shipping_address, shipping_name, shipping_phone
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `)
+      .bind(
+        tenantId,
+        userId,
+        orderNumber,
+        finalAmount,
+        shippingFee,
+        'pending', // 決済待ち
+        'pending', // 注文処理待ち
+        shipping_address || null,
+        shipping_name || null,
+        shipping_phone || null
+      )
+      .run()
+
+    const orderId = orderResult.meta.last_row_id
+
+    // 注文明細作成
+    for (const item of orderItems) {
+      await db
+        .prepare(`
+          INSERT INTO shop_order_items (
+            order_id, product_id, product_name, product_type, quantity,
+            unit_price, subtotal, event_date, event_location
+          ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `)
+        .bind(
+          orderId,
+          item.product_id,
+          item.product_name,
+          item.product_type,
+          item.quantity,
+          item.unit_price,
+          item.subtotal,
+          item.event_date || null,
+          item.event_location || null
+        )
+        .run()
+    }
+
+    return c.json({
+      success: true,
+      message: '注文を作成しました',
+      order: {
+        id: orderId,
+        order_number: orderNumber,
+        total_amount: finalAmount,
+        shipping_fee: shippingFee
+      }
+    })
+  } catch (error) {
+    console.error('[Create Order Error]', error)
+    return c.json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to create order'
+    }, 500)
+  }
+})
+
+/**
+ * GET /api/shop/orders
+ * 注文履歴取得（会員向け）
+ */
+shop.get('/orders', authMiddleware, async (c) => {
+  const tenantId = c.get('tenantId')
+  const userId = c.get('userId')
+  const db = c.env.DB
+
+  try {
+    const orders = await db
+      .prepare(`
+        SELECT * FROM shop_orders
+        WHERE tenant_id = ? AND user_id = ?
+        ORDER BY created_at DESC
+      `)
+      .bind(tenantId, userId)
+      .all()
+
+    return c.json({
+      success: true,
+      orders: orders.results || []
+    })
+  } catch (error) {
+    console.error('[Get Orders Error]', error)
+    return c.json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to get orders'
+    }, 500)
+  }
+})
+
+/**
+ * GET /api/shop/orders/:id
+ * 注文詳細取得（会員向け）
+ */
+shop.get('/orders/:id', authMiddleware, async (c) => {
+  const tenantId = c.get('tenantId')
+  const userId = c.get('userId')
+  const orderId = c.req.param('id')
+  const db = c.env.DB
+
+  try {
+    const order = await db
+      .prepare(`
+        SELECT * FROM shop_orders
+        WHERE id = ? AND tenant_id = ? AND user_id = ?
+      `)
+      .bind(orderId, tenantId, userId)
+      .first()
+
+    if (!order) {
+      return c.json({
+        success: false,
+        error: '注文が見つかりません'
+      }, 404)
+    }
+
+    // 注文明細を取得
+    const items = await db
+      .prepare(`
+        SELECT * FROM shop_order_items
+        WHERE order_id = ?
+      `)
+      .bind(orderId)
+      .all()
+
+    return c.json({
+      success: true,
+      order: {
+        ...order,
+        items: items.results || []
+      }
+    })
+  } catch (error) {
+    console.error('[Get Order Error]', error)
+    return c.json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to get order'
+    }, 500)
+  }
+})
+
 export default shop

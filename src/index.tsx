@@ -8533,6 +8533,1135 @@ app.get('/shop-settings', (c) => {
 })
 
 // ============================================
+// 会員向けショップページ (/tenant/shop)
+// ============================================
+app.get('/tenant/shop', (c) => {
+  const subdomain = c.req.query('subdomain')
+  
+  return c.html(`
+    <!DOCTYPE html>
+    <html lang="ja" data-theme="light">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>ショップ - Commons</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+        <link href="/static/tailwind-config.js" rel="stylesheet">
+        <link href="/static/commons-theme.css" rel="stylesheet">
+        <link href="/static/commons-components.css" rel="stylesheet">
+    </head>
+    <body class="bg-gray-50">
+        <div class="min-h-screen flex flex-col">
+            <!-- Header -->
+            <header class="bg-white border-b border-gray-200 sticky top-0 z-40">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-4">
+                            <a href="/tenant/home?subdomain=${subdomain}" class="text-gray-600 hover:text-gray-900">
+                                <i class="fas fa-arrow-left"></i>
+                            </a>
+                            <h1 class="text-2xl font-bold text-gray-900">
+                                <i class="fas fa-shopping-bag text-blue-600 mr-2"></i>
+                                ショップ
+                            </h1>
+                        </div>
+                        
+                        <div class="flex items-center space-x-4">
+                            <button onclick="showCart()" class="relative p-2 text-gray-600 hover:text-gray-900">
+                                <i class="fas fa-shopping-cart text-xl"></i>
+                                <span id="cartBadge" class="hidden absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                                    0
+                                </span>
+                            </button>
+                            <a href="/tenant/shop/orders?subdomain=${subdomain}" class="p-2 text-gray-600 hover:text-gray-900">
+                                <i class="fas fa-receipt text-xl"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Main Content -->
+            <main class="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                <!-- フィルター -->
+                <div class="card p-6 mb-6">
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div class="md:col-span-2">
+                            <div class="relative">
+                                <input type="text" id="searchInput" 
+                                       placeholder="商品を検索..." 
+                                       class="input-field pl-10"
+                                       onkeyup="handleSearch()">
+                                <i class="fas fa-search absolute left-3 top-3.5 text-gray-400"></i>
+                            </div>
+                        </div>
+                        
+                        <select id="categoryFilter" onchange="loadProducts()" class="input-field">
+                            <option value="">すべてのカテゴリ</option>
+                        </select>
+                        
+                        <select id="typeFilter" onchange="loadProducts()" class="input-field">
+                            <option value="">すべてのタイプ</option>
+                            <option value="physical">物販</option>
+                            <option value="ticket">チケット</option>
+                            <option value="digital">デジタル</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- 商品一覧 -->
+                <div id="productsContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                    <div class="col-span-full text-center py-12 text-gray-500">
+                        <i class="fas fa-spinner fa-spin text-3xl mb-3"></i>
+                        <p>商品を読み込み中...</p>
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        <!-- カートモーダル -->
+        <div id="cartModal" class="modal hidden">
+            <div class="modal-content max-w-2xl">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-xl font-bold">
+                        <i class="fas fa-shopping-cart mr-2"></i>
+                        カート
+                    </h3>
+                    <button onclick="closeCart()" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                
+                <div id="cartItems" class="space-y-4 mb-6">
+                    <!-- カートアイテムがここに表示されます -->
+                </div>
+                
+                <div class="border-t pt-4 mb-6">
+                    <div class="flex justify-between text-lg font-semibold mb-2">
+                        <span>小計:</span>
+                        <span id="cartSubtotal">¥0</span>
+                    </div>
+                    <div class="flex justify-between text-sm text-gray-600 mb-2">
+                        <span>送料:</span>
+                        <span id="cartShipping">¥0</span>
+                    </div>
+                    <div class="flex justify-between text-xl font-bold text-blue-600">
+                        <span>合計:</span>
+                        <span id="cartTotal">¥0</span>
+                    </div>
+                </div>
+                
+                <div class="flex space-x-3">
+                    <button onclick="closeCart()" class="flex-1 btn-secondary">
+                        買い物を続ける
+                    </button>
+                    <button onclick="proceedToCheckout()" class="flex-1 btn-primary">
+                        <i class="fas fa-credit-card mr-2"></i>
+                        購入手続きへ
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+        <script src="/static/app.js"></script>
+        <script>
+            const subdomain = '${subdomain}'
+            let cart = JSON.parse(localStorage.getItem(\`cart_\${subdomain}\`) || '[]')
+            let categories = []
+            let products = []
+            
+            // 商品タイプのラベルとアイコン
+            const typeLabels = {
+                physical: '物販',
+                ticket: 'チケット',
+                digital: 'デジタル'
+            }
+            
+            const typeIcons = {
+                physical: 'fa-box',
+                ticket: 'fa-ticket-alt',
+                digital: 'fa-file-download'
+            }
+            
+            async function loadCategories() {
+                try {
+                    const token = localStorage.getItem('token')
+                    const response = await axios.get('/api/shop/public/categories', {
+                        headers: { 'Authorization': 'Bearer ' + token }
+                    })
+                    
+                    if (response.data.success) {
+                        categories = response.data.categories
+                        const select = document.getElementById('categoryFilter')
+                        categories.forEach(cat => {
+                            const option = document.createElement('option')
+                            option.value = cat.id
+                            option.textContent = \`\${cat.name} (\${cat.product_count})\`
+                            select.appendChild(option)
+                        })
+                    }
+                } catch (error) {
+                    console.error('Load categories error:', error)
+                }
+            }
+            
+            async function loadProducts() {
+                try {
+                    const token = localStorage.getItem('token')
+                    const params = new URLSearchParams()
+                    
+                    const categoryId = document.getElementById('categoryFilter').value
+                    const type = document.getElementById('typeFilter').value
+                    const search = document.getElementById('searchInput').value
+                    
+                    if (categoryId) params.append('category_id', categoryId)
+                    if (type) params.append('type', type)
+                    if (search) params.append('search', search)
+                    
+                    const response = await axios.get(\`/api/shop/public/products?\${params.toString()}\`, {
+                        headers: { 'Authorization': 'Bearer ' + token }
+                    })
+                    
+                    if (response.data.success) {
+                        products = response.data.products
+                        displayProducts()
+                    }
+                } catch (error) {
+                    console.error('Load products error:', error)
+                    if (error.response?.status === 401) {
+                        window.location.href = '/login'
+                    }
+                }
+            }
+            
+            function displayProducts() {
+                const container = document.getElementById('productsContainer')
+                
+                if (products.length === 0) {
+                    container.innerHTML = \`
+                        <div class="col-span-full text-center py-12 text-gray-500">
+                            <i class="fas fa-box-open text-4xl mb-3"></i>
+                            <p class="text-lg">商品が見つかりませんでした</p>
+                        </div>
+                    \`
+                    return
+                }
+                
+                container.innerHTML = products.map(product => \`
+                    <div class="card overflow-hidden hover:shadow-lg transition-shadow cursor-pointer" 
+                         onclick="viewProduct(\${product.id})">
+                        \${product.image_url ? \`
+                            <div class="aspect-square bg-gray-200 overflow-hidden">
+                                <img src="\${product.image_url}" alt="\${product.name}" 
+                                     class="w-full h-full object-cover">
+                            </div>
+                        \` : \`
+                            <div class="aspect-square bg-gray-100 flex items-center justify-center">
+                                <i class="fas \${typeIcons[product.type]} text-5xl text-gray-300"></i>
+                            </div>
+                        \`}
+                        
+                        <div class="p-4">
+                            <div class="flex items-start justify-between mb-2">
+                                <h3 class="font-semibold text-gray-900 line-clamp-2 flex-1">
+                                    \${product.name}
+                                </h3>
+                            </div>
+                            
+                            <div class="flex items-center justify-between mb-3">
+                                <span class="text-xs text-gray-500">
+                                    <i class="fas \${typeIcons[product.type]} mr-1"></i>
+                                    \${typeLabels[product.type]}
+                                </span>
+                                <span class="font-bold text-lg text-blue-600">¥\${product.price.toLocaleString()}</span>
+                            </div>
+                            
+                            \${product.type === 'ticket' && product.event_date ? \`
+                                <div class="text-xs text-gray-500 mb-3">
+                                    <i class="fas fa-calendar mr-1"></i>
+                                    \${new Date(product.event_date).toLocaleString('ja-JP', { 
+                                        month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit'
+                                    })}
+                                </div>
+                            \` : ''}
+                            
+                            <div class="flex items-center justify-between pt-3 border-t">
+                                <span class="text-xs \${product.is_available ? 'text-green-600' : 'text-red-600'}">
+                                    <i class="fas \${product.is_available ? 'fa-check-circle' : 'fa-times-circle'} mr-1"></i>
+                                    \${product.is_available ? '在庫あり' : '売り切れ'}
+                                </span>
+                                \${product.is_available ? \`
+                                    <button onclick="addToCart(event, \${product.id})" 
+                                            class="text-blue-600 hover:text-blue-800 font-medium text-sm">
+                                        <i class="fas fa-cart-plus mr-1"></i>
+                                        カートに追加
+                                    </button>
+                                \` : ''}
+                            </div>
+                        </div>
+                    </div>
+                \`).join('')
+            }
+            
+            function handleSearch() {
+                clearTimeout(window.searchTimeout)
+                window.searchTimeout = setTimeout(() => {
+                    loadProducts()
+                }, 500)
+            }
+            
+            function viewProduct(productId) {
+                window.location.href = \`/tenant/shop/product?subdomain=\${subdomain}&id=\${productId}\`
+            }
+            
+            function addToCart(event, productId) {
+                event.stopPropagation()
+                
+                const product = products.find(p => p.id === productId)
+                if (!product || !product.is_available) return
+                
+                const existingItem = cart.find(item => item.product_id === productId)
+                
+                if (existingItem) {
+                    existingItem.quantity++
+                } else {
+                    cart.push({
+                        product_id: productId,
+                        name: product.name,
+                        price: product.price,
+                        type: product.type,
+                        image_url: product.image_url,
+                        requires_shipping: product.requires_shipping,
+                        max_purchase: product.max_purchase_per_person,
+                        quantity: 1
+                    })
+                }
+                
+                saveCart()
+                updateCartBadge()
+                showToast('カートに追加しました', 'success')
+            }
+            
+            function showCart() {
+                document.getElementById('cartModal').classList.remove('hidden')
+                displayCart()
+            }
+            
+            function closeCart() {
+                document.getElementById('cartModal').classList.add('hidden')
+            }
+            
+            function displayCart() {
+                const container = document.getElementById('cartItems')
+                
+                if (cart.length === 0) {
+                    container.innerHTML = \`
+                        <div class="text-center py-8 text-gray-500">
+                            <i class="fas fa-shopping-cart text-4xl mb-3"></i>
+                            <p>カートは空です</p>
+                        </div>
+                    \`
+                    document.getElementById('cartSubtotal').textContent = '¥0'
+                    document.getElementById('cartShipping').textContent = '¥0'
+                    document.getElementById('cartTotal').textContent = '¥0'
+                    return
+                }
+                
+                let subtotal = 0
+                let requiresShipping = false
+                
+                container.innerHTML = cart.map((item, index) => {
+                    const itemTotal = item.price * item.quantity
+                    subtotal += itemTotal
+                    if (item.requires_shipping) requiresShipping = true
+                    
+                    return \`
+                        <div class="flex items-center space-x-4 p-4 bg-gray-50 rounded-lg">
+                            \${item.image_url ? \`
+                                <img src="\${item.image_url}" alt="\${item.name}" 
+                                     class="w-16 h-16 object-cover rounded">
+                            \` : \`
+                                <div class="w-16 h-16 bg-gray-200 rounded flex items-center justify-center">
+                                    <i class="fas \${typeIcons[item.type]} text-gray-400"></i>
+                                </div>
+                            \`}
+                            
+                            <div class="flex-1">
+                                <h4 class="font-medium">\${item.name}</h4>
+                                <p class="text-sm text-gray-500">¥\${item.price.toLocaleString()}</p>
+                            </div>
+                            
+                            <div class="flex items-center space-x-2">
+                                <button onclick="updateCartQuantity(\${index}, -1)" 
+                                        class="w-8 h-8 rounded-full bg-white border hover:bg-gray-100">
+                                    <i class="fas fa-minus text-xs"></i>
+                                </button>
+                                <span class="w-8 text-center font-medium">\${item.quantity}</span>
+                                <button onclick="updateCartQuantity(\${index}, 1)" 
+                                        class="w-8 h-8 rounded-full bg-white border hover:bg-gray-100">
+                                    <i class="fas fa-plus text-xs"></i>
+                                </button>
+                            </div>
+                            
+                            <div class="text-right">
+                                <p class="font-semibold">¥\${itemTotal.toLocaleString()}</p>
+                                <button onclick="removeFromCart(\${index})" 
+                                        class="text-red-600 hover:text-red-800 text-sm">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    \`
+                }).join('')
+                
+                const shippingFee = requiresShipping ? 500 : 0
+                const total = subtotal + shippingFee
+                
+                document.getElementById('cartSubtotal').textContent = \`¥\${subtotal.toLocaleString()}\`
+                document.getElementById('cartShipping').textContent = \`¥\${shippingFee.toLocaleString()}\`
+                document.getElementById('cartTotal').textContent = \`¥\${total.toLocaleString()}\`
+            }
+            
+            function updateCartQuantity(index, delta) {
+                const item = cart[index]
+                const newQuantity = item.quantity + delta
+                
+                if (newQuantity <= 0) {
+                    removeFromCart(index)
+                    return
+                }
+                
+                if (item.max_purchase && newQuantity > item.max_purchase) {
+                    showToast(\`購入上限は\${item.max_purchase}個です\`, 'error')
+                    return
+                }
+                
+                item.quantity = newQuantity
+                saveCart()
+                displayCart()
+                updateCartBadge()
+            }
+            
+            function removeFromCart(index) {
+                cart.splice(index, 1)
+                saveCart()
+                displayCart()
+                updateCartBadge()
+                showToast('カートから削除しました', 'success')
+            }
+            
+            function saveCart() {
+                localStorage.setItem(\`cart_\${subdomain}\`, JSON.stringify(cart))
+            }
+            
+            function updateCartBadge() {
+                const badge = document.getElementById('cartBadge')
+                const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0)
+                
+                if (totalItems > 0) {
+                    badge.textContent = totalItems
+                    badge.classList.remove('hidden')
+                } else {
+                    badge.classList.add('hidden')
+                }
+            }
+            
+            function proceedToCheckout() {
+                if (cart.length === 0) {
+                    showToast('カートに商品がありません', 'error')
+                    return
+                }
+                
+                window.location.href = \`/tenant/shop/checkout?subdomain=\${subdomain}\`
+            }
+            
+            // 初期化
+            document.addEventListener('DOMContentLoaded', async () => {
+                updateCartBadge()
+                await loadCategories()
+                await loadProducts()
+            })
+        </script>
+    </body>
+    </html>
+  `)
+})
+
+// ============================================
+// 商品詳細ページ (/tenant/shop/product)
+// ============================================
+app.get('/tenant/shop/product', (c) => {
+  const subdomain = c.req.query('subdomain')
+  const productId = c.req.query('id')
+  
+  return c.html(`
+    <!DOCTYPE html>
+    <html lang="ja" data-theme="light">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>商品詳細 - Commons</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+        <link href="/static/tailwind-config.js" rel="stylesheet">
+        <link href="/static/commons-theme.css" rel="stylesheet">
+        <link href="/static/commons-components.css" rel="stylesheet">
+    </head>
+    <body class="bg-gray-50">
+        <div class="min-h-screen flex flex-col">
+            <!-- Header -->
+            <header class="bg-white border-b border-gray-200">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+                    <div class="flex items-center">
+                        <a href="/tenant/shop?subdomain=${subdomain}" class="text-gray-600 hover:text-gray-900 mr-4">
+                            <i class="fas fa-arrow-left"></i>
+                        </a>
+                        <h1 class="text-xl font-bold text-gray-900">商品詳細</h1>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Main Content -->
+            <main class="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                <div id="productDetail" class="card p-8">
+                    <div class="text-center py-12 text-gray-500">
+                        <i class="fas fa-spinner fa-spin text-3xl mb-3"></i>
+                        <p>商品情報を読み込み中...</p>
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+        <script src="/static/app.js"></script>
+        <script>
+            const subdomain = '${subdomain}'
+            const productId = '${productId}'
+            
+            const typeLabels = {
+                physical: '物販',
+                ticket: 'チケット',
+                digital: 'デジタル'
+            }
+            
+            async function loadProduct() {
+                try {
+                    const token = localStorage.getItem('token')
+                    const response = await axios.get(\`/api/shop/public/products/\${productId}\`, {
+                        headers: { 'Authorization': 'Bearer ' + token }
+                    })
+                    
+                    if (response.data.success) {
+                        displayProduct(response.data.product)
+                    }
+                } catch (error) {
+                    console.error('Load product error:', error)
+                    const container = document.getElementById('productDetail')
+                    container.innerHTML = \`
+                        <div class="text-center py-12 text-red-500">
+                            <i class="fas fa-exclamation-circle text-4xl mb-3"></i>
+                            <p class="text-lg">\${error.response?.data?.error || '商品情報の取得に失敗しました'}</p>
+                            <a href="/tenant/shop?subdomain=\${subdomain}" class="btn-primary mt-4">
+                                ショップに戻る
+                            </a>
+                        </div>
+                    \`
+                }
+            }
+            
+            function displayProduct(product) {
+                const container = document.getElementById('productDetail')
+                
+                container.innerHTML = \`
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <!-- 商品画像 -->
+                        <div>
+                            \${product.image_url ? \`
+                                <img src="\${product.image_url}" alt="\${product.name}" 
+                                     class="w-full rounded-lg shadow-lg">
+                            \` : \`
+                                <div class="w-full aspect-square bg-gray-100 rounded-lg flex items-center justify-center">
+                                    <i class="fas fa-image text-6xl text-gray-300"></i>
+                                </div>
+                            \`}
+                        </div>
+                        
+                        <!-- 商品情報 -->
+                        <div>
+                            <div class="mb-4">
+                                <span class="px-3 py-1 bg-blue-100 text-blue-800 text-sm rounded-full">
+                                    \${typeLabels[product.type]}
+                                </span>
+                                \${product.category_name ? \`
+                                    <span class="ml-2 px-3 py-1 bg-gray-100 text-gray-800 text-sm rounded-full">
+                                        \${product.category_name}
+                                    </span>
+                                \` : ''}
+                            </div>
+                            
+                            <h1 class="text-3xl font-bold text-gray-900 mb-4">\${product.name}</h1>
+                            
+                            <div class="text-4xl font-bold text-blue-600 mb-6">
+                                ¥\${product.price.toLocaleString()}
+                            </div>
+                            
+                            \${product.description ? \`
+                                <div class="mb-6">
+                                    <h3 class="font-semibold text-gray-900 mb-2">商品説明</h3>
+                                    <p class="text-gray-600 whitespace-pre-wrap">\${product.description}</p>
+                                </div>
+                            \` : ''}
+                            
+                            \${product.type === 'ticket' ? \`
+                                <div class="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                                    <h3 class="font-semibold text-gray-900 mb-3">
+                                        <i class="fas fa-calendar-alt mr-2"></i>
+                                        イベント情報
+                                    </h3>
+                                    \${product.event_date ? \`
+                                        <p class="text-gray-700 mb-2">
+                                            <i class="fas fa-clock mr-2"></i>
+                                            <strong>日時:</strong> \${new Date(product.event_date).toLocaleString('ja-JP', {
+                                                year: 'numeric', month: 'long', day: 'numeric',
+                                                hour: '2-digit', minute: '2-digit'
+                                            })}
+                                        </p>
+                                    \` : ''}
+                                    \${product.event_location ? \`
+                                        <p class="text-gray-700 mb-2">
+                                            <i class="fas fa-map-marker-alt mr-2"></i>
+                                            <strong>会場:</strong> \${product.event_location}
+                                        </p>
+                                    \` : ''}
+                                    \${product.event_description ? \`
+                                        <p class="text-gray-700">
+                                            <strong>詳細:</strong> \${product.event_description}
+                                        </p>
+                                    \` : ''}
+                                </div>
+                            \` : ''}
+                            
+                            <div class="mb-6 space-y-2 text-sm text-gray-600">
+                                <p>
+                                    <i class="fas fa-cubes mr-2"></i>
+                                    <strong>在庫:</strong> 
+                                    <span class="\${product.is_available ? 'text-green-600' : 'text-red-600'}">
+                                        \${product.is_available ? 
+                                            (product.is_unlimited_stock ? '無制限' : \`残り\${product.stock_quantity}個\`) : 
+                                            '売り切れ'
+                                        }
+                                    </span>
+                                </p>
+                                
+                                \${product.max_purchase_per_person ? \`
+                                    <p>
+                                        <i class="fas fa-user mr-2"></i>
+                                        <strong>購入上限:</strong> お一人様\${product.max_purchase_per_person}個まで
+                                    </p>
+                                \` : ''}
+                                
+                                \${product.requires_shipping ? \`
+                                    <p>
+                                        <i class="fas fa-truck mr-2"></i>
+                                        <strong>配送:</strong> 必要（送料500円）
+                                    </p>
+                                \` : ''}
+                            </div>
+                            
+                            <div class="flex space-x-4">
+                                \${product.is_available ? \`
+                                    <button onclick="addToCart()" class="flex-1 btn-primary text-lg py-4">
+                                        <i class="fas fa-cart-plus mr-2"></i>
+                                        カートに追加
+                                    </button>
+                                \` : \`
+                                    <button disabled class="flex-1 bg-gray-300 text-gray-600 rounded-lg py-4 text-lg cursor-not-allowed">
+                                        <i class="fas fa-times-circle mr-2"></i>
+                                        売り切れ
+                                    </button>
+                                \`}
+                            </div>
+                        </div>
+                    </div>
+                \`
+                
+                window.currentProduct = product
+            }
+            
+            function addToCart() {
+                const product = window.currentProduct
+                if (!product || !product.is_available) return
+                
+                let cart = JSON.parse(localStorage.getItem(\`cart_\${subdomain}\`) || '[]')
+                const existingItem = cart.find(item => item.product_id === product.id)
+                
+                if (existingItem) {
+                    existingItem.quantity++
+                } else {
+                    cart.push({
+                        product_id: product.id,
+                        name: product.name,
+                        price: product.price,
+                        type: product.type,
+                        image_url: product.image_url,
+                        requires_shipping: product.requires_shipping,
+                        max_purchase: product.max_purchase_per_person,
+                        quantity: 1
+                    })
+                }
+                
+                localStorage.setItem(\`cart_\${subdomain}\`, JSON.stringify(cart))
+                showToast('カートに追加しました', 'success')
+                
+                setTimeout(() => {
+                    window.location.href = \`/tenant/shop?subdomain=\${subdomain}\`
+                }, 1000)
+            }
+            
+            document.addEventListener('DOMContentLoaded', loadProduct)
+        </script>
+    </body>
+    </html>
+  `)
+})
+
+// ============================================
+// 購入手続きページ (/tenant/shop/checkout)
+// ============================================
+app.get('/tenant/shop/checkout', (c) => {
+  const subdomain = c.req.query('subdomain')
+  
+  return c.html(`
+    <!DOCTYPE html>
+    <html lang="ja" data-theme="light">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>購入手続き - Commons</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+        <link href="/static/tailwind-config.js" rel="stylesheet">
+        <link href="/static/commons-theme.css" rel="stylesheet">
+        <link href="/static/commons-components.css" rel="stylesheet">
+    </head>
+    <body class="bg-gray-50">
+        <div class="min-h-screen flex flex-col">
+            <!-- Header -->
+            <header class="bg-white border-b border-gray-200">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+                    <div class="flex items-center">
+                        <a href="/tenant/shop?subdomain=${subdomain}" class="text-gray-600 hover:text-gray-900 mr-4">
+                            <i class="fas fa-arrow-left"></i>
+                        </a>
+                        <h1 class="text-xl font-bold text-gray-900">購入手続き</h1>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Main Content -->
+            <main class="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <!-- 注文情報入力 -->
+                    <div class="md:col-span-2">
+                        <div class="card p-6 mb-6">
+                            <h2 class="text-xl font-bold mb-4">
+                                <i class="fas fa-truck mr-2"></i>
+                                配送先情報
+                            </h2>
+                            
+                            <div id="shippingForm" class="space-y-4">
+                                <p class="text-gray-500 text-sm">配送が必要な商品はありません</p>
+                            </div>
+                        </div>
+                        
+                        <div class="card p-6">
+                            <h2 class="text-xl font-bold mb-4">
+                                <i class="fas fa-credit-card mr-2"></i>
+                                お支払い方法
+                            </h2>
+                            
+                            <div class="p-4 bg-blue-50 border border-blue-200 rounded-lg mb-4">
+                                <p class="text-sm text-blue-800">
+                                    <i class="fas fa-info-circle mr-2"></i>
+                                    現在はクレジットカード決済のみ対応しています
+                                </p>
+                            </div>
+                            
+                            <button onclick="proceedToPayment()" class="w-full btn-primary text-lg py-4">
+                                <i class="fas fa-lock mr-2"></i>
+                                お支払いへ進む
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- 注文サマリー -->
+                    <div class="md:col-span-1">
+                        <div class="card p-6 sticky top-4">
+                            <h2 class="text-xl font-bold mb-4">注文内容</h2>
+                            
+                            <div id="orderSummary" class="space-y-3 mb-6">
+                                <!-- カート内容がここに表示されます -->
+                            </div>
+                            
+                            <div class="border-t pt-4 space-y-2">
+                                <div class="flex justify-between text-sm">
+                                    <span class="text-gray-600">小計:</span>
+                                    <span id="summarySubtotal">¥0</span>
+                                </div>
+                                <div class="flex justify-between text-sm">
+                                    <span class="text-gray-600">送料:</span>
+                                    <span id="summaryShipping">¥0</span>
+                                </div>
+                                <div class="flex justify-between text-lg font-bold pt-2 border-t">
+                                    <span>合計:</span>
+                                    <span class="text-blue-600" id="summaryTotal">¥0</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+        <script src="/static/app.js"></script>
+        <script>
+            const subdomain = '${subdomain}'
+            let cart = []
+            let requiresShipping = false
+            
+            function loadCart() {
+                cart = JSON.parse(localStorage.getItem(\`cart_\${subdomain}\`) || '[]')
+                
+                if (cart.length === 0) {
+                    window.location.href = \`/tenant/shop?subdomain=\${subdomain}\`
+                    return
+                }
+                
+                requiresShipping = cart.some(item => item.requires_shipping)
+                
+                displayOrderSummary()
+                displayShippingForm()
+            }
+            
+            function displayOrderSummary() {
+                const container = document.getElementById('orderSummary')
+                let subtotal = 0
+                
+                container.innerHTML = cart.map(item => {
+                    const itemTotal = item.price * item.quantity
+                    subtotal += itemTotal
+                    
+                    return \`
+                        <div class="flex items-center space-x-3 pb-3 border-b">
+                            \${item.image_url ? \`
+                                <img src="\${item.image_url}" alt="\${item.name}" 
+                                     class="w-12 h-12 object-cover rounded">
+                            \` : \`
+                                <div class="w-12 h-12 bg-gray-200 rounded flex items-center justify-center">
+                                    <i class="fas fa-box text-gray-400 text-xs"></i>
+                                </div>
+                            \`}
+                            
+                            <div class="flex-1">
+                                <p class="font-medium text-sm">\${item.name}</p>
+                                <p class="text-xs text-gray-500">数量: \${item.quantity}</p>
+                            </div>
+                            
+                            <p class="font-semibold text-sm">¥\${itemTotal.toLocaleString()}</p>
+                        </div>
+                    \`
+                }).join('')
+                
+                const shippingFee = requiresShipping ? 500 : 0
+                const total = subtotal + shippingFee
+                
+                document.getElementById('summarySubtotal').textContent = \`¥\${subtotal.toLocaleString()}\`
+                document.getElementById('summaryShipping').textContent = \`¥\${shippingFee.toLocaleString()}\`
+                document.getElementById('summaryTotal').textContent = \`¥\${total.toLocaleString()}\`
+            }
+            
+            function displayShippingForm() {
+                const container = document.getElementById('shippingForm')
+                
+                if (!requiresShipping) {
+                    container.innerHTML = \`
+                        <div class="p-4 bg-gray-50 rounded-lg text-center text-gray-500">
+                            <i class="fas fa-box-open text-2xl mb-2"></i>
+                            <p>配送が必要な商品はありません</p>
+                        </div>
+                    \`
+                    return
+                }
+                
+                container.innerHTML = \`
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            お名前 <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" id="shippingName" required
+                               class="input-field"
+                               placeholder="山田 太郎">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            電話番号 <span class="text-red-500">*</span>
+                        </label>
+                        <input type="tel" id="shippingPhone" required
+                               class="input-field"
+                               placeholder="090-1234-5678">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            郵便番号 <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" id="shippingPostal" required
+                               class="input-field"
+                               placeholder="123-4567">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            住所 <span class="text-red-500">*</span>
+                        </label>
+                        <textarea id="shippingAddress" required rows="3"
+                                  class="input-field"
+                                  placeholder="東京都渋谷区1-2-3&#10;アパート名101号室"></textarea>
+                    </div>
+                \`
+            }
+            
+            async function proceedToPayment() {
+                const token = localStorage.getItem('token')
+                if (!token) {
+                    window.location.href = '/login'
+                    return
+                }
+                
+                // 配送情報のバリデーション
+                let shippingData = {}
+                if (requiresShipping) {
+                    const name = document.getElementById('shippingName')?.value
+                    const phone = document.getElementById('shippingPhone')?.value
+                    const postal = document.getElementById('shippingPostal')?.value
+                    const address = document.getElementById('shippingAddress')?.value
+                    
+                    if (!name || !phone || !postal || !address) {
+                        showToast('配送先情報をすべて入力してください', 'error')
+                        return
+                    }
+                    
+                    shippingData = {
+                        shipping_name: name,
+                        shipping_phone: phone,
+                        shipping_address: \`〒\${postal}\\n\${address}\`
+                    }
+                }
+                
+                try {
+                    const response = await axios.post('/api/shop/orders', {
+                        items: cart.map(item => ({
+                            product_id: item.product_id,
+                            quantity: item.quantity
+                        })),
+                        ...shippingData
+                    }, {
+                        headers: { 'Authorization': 'Bearer ' + token }
+                    })
+                    
+                    if (response.data.success) {
+                        // カートをクリア
+                        localStorage.removeItem(\`cart_\${subdomain}\`)
+                        
+                        // 注文完了ページへ
+                        showToast('ご注文ありがとうございます！', 'success')
+                        
+                        setTimeout(() => {
+                            window.location.href = \`/tenant/shop/orders?subdomain=\${subdomain}\`
+                        }, 1500)
+                    }
+                } catch (error) {
+                    console.error('Order error:', error)
+                    showToast(error.response?.data?.error || '注文の作成に失敗しました', 'error')
+                }
+            }
+            
+            document.addEventListener('DOMContentLoaded', loadCart)
+        </script>
+    </body>
+    </html>
+  `)
+})
+
+// ============================================
+// 注文履歴ページ (/tenant/shop/orders)
+// ============================================
+app.get('/tenant/shop/orders', (c) => {
+  const subdomain = c.req.query('subdomain')
+  
+  return c.html(`
+    <!DOCTYPE html>
+    <html lang="ja" data-theme="light">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>注文履歴 - Commons</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+        <link href="/static/tailwind-config.js" rel="stylesheet">
+        <link href="/static/commons-theme.css" rel="stylesheet">
+        <link href="/static/commons-components.css" rel="stylesheet">
+    </head>
+    <body class="bg-gray-50">
+        <div class="min-h-screen flex flex-col">
+            <!-- Header -->
+            <header class="bg-white border-b border-gray-200">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+                    <div class="flex items-center">
+                        <a href="/tenant/shop?subdomain=${subdomain}" class="text-gray-600 hover:text-gray-900 mr-4">
+                            <i class="fas fa-arrow-left"></i>
+                        </a>
+                        <h1 class="text-xl font-bold text-gray-900">
+                            <i class="fas fa-receipt mr-2"></i>
+                            注文履歴
+                        </h1>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Main Content -->
+            <main class="flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                <div id="ordersContainer">
+                    <div class="text-center py-12 text-gray-500">
+                        <i class="fas fa-spinner fa-spin text-3xl mb-3"></i>
+                        <p>注文履歴を読み込み中...</p>
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+        <script src="/static/app.js"></script>
+        <script>
+            const subdomain = '${subdomain}'
+            
+            const statusLabels = {
+                pending: '処理待ち',
+                confirmed: '確認済み',
+                shipped: '配送中',
+                delivered: '配送完了',
+                cancelled: 'キャンセル'
+            }
+            
+            const statusColors = {
+                pending: 'bg-yellow-100 text-yellow-800',
+                confirmed: 'bg-blue-100 text-blue-800',
+                shipped: 'bg-purple-100 text-purple-800',
+                delivered: 'bg-green-100 text-green-800',
+                cancelled: 'bg-red-100 text-red-800'
+            }
+            
+            const paymentStatusLabels = {
+                pending: '決済待ち',
+                completed: '決済完了',
+                failed: '決済失敗',
+                refunded: '返金済み'
+            }
+            
+            async function loadOrders() {
+                try {
+                    const token = localStorage.getItem('token')
+                    const response = await axios.get('/api/shop/orders', {
+                        headers: { 'Authorization': 'Bearer ' + token }
+                    })
+                    
+                    if (response.data.success) {
+                        displayOrders(response.data.orders)
+                    }
+                } catch (error) {
+                    console.error('Load orders error:', error)
+                    const container = document.getElementById('ordersContainer')
+                    container.innerHTML = \`
+                        <div class="text-center py-12 text-red-500">
+                            <i class="fas fa-exclamation-circle text-4xl mb-3"></i>
+                            <p>注文履歴の取得に失敗しました</p>
+                        </div>
+                    \`
+                }
+            }
+            
+            function displayOrders(orders) {
+                const container = document.getElementById('ordersContainer')
+                
+                if (orders.length === 0) {
+                    container.innerHTML = \`
+                        <div class="card p-12 text-center text-gray-500">
+                            <i class="fas fa-receipt text-5xl mb-4"></i>
+                            <p class="text-lg mb-4">注文履歴はありません</p>
+                            <a href="/tenant/shop?subdomain=\${subdomain}" class="btn-primary">
+                                ショップで買い物をする
+                            </a>
+                        </div>
+                    \`
+                    return
+                }
+                
+                container.innerHTML = orders.map(order => \`
+                    <div class="card p-6 mb-4 hover:shadow-lg transition-shadow">
+                        <div class="flex items-start justify-between mb-4">
+                            <div>
+                                <p class="text-sm text-gray-500">注文番号</p>
+                                <p class="font-mono font-semibold">\${order.order_number}</p>
+                            </div>
+                            <div class="text-right">
+                                <span class="px-3 py-1 rounded-full text-sm \${statusColors[order.order_status]}">
+                                    \${statusLabels[order.order_status]}
+                                </span>
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-2 gap-4 mb-4 text-sm">
+                            <div>
+                                <p class="text-gray-500">注文日時</p>
+                                <p>\${new Date(order.created_at).toLocaleString('ja-JP')}</p>
+                            </div>
+                            <div>
+                                <p class="text-gray-500">決済状況</p>
+                                <p>\${paymentStatusLabels[order.payment_status]}</p>
+                            </div>
+                        </div>
+                        
+                        <div class="flex items-center justify-between pt-4 border-t">
+                            <div>
+                                <p class="text-sm text-gray-500">合計金額</p>
+                                <p class="text-2xl font-bold text-blue-600">¥\${order.total_amount.toLocaleString()}</p>
+                            </div>
+                            <button onclick="viewOrderDetail(\${order.id})" class="btn-secondary">
+                                <i class="fas fa-eye mr-2"></i>
+                                詳細を見る
+                            </button>
+                        </div>
+                    </div>
+                \`).join('')
+            }
+            
+            async function viewOrderDetail(orderId) {
+                // TODO: 注文詳細モーダルまたはページを実装
+                showToast('注文詳細機能は近日実装予定です', 'info')
+            }
+            
+            document.addEventListener('DOMContentLoaded', loadOrders)
+        </script>
+    </body>
+    </html>
+  `)
+})
+
+// ============================================
 // ヘルスチェックAPI
 // ============================================
 app.get('/health', (c) => {
