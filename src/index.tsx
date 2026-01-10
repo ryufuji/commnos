@@ -4923,20 +4923,8 @@ app.get('/analytics/members', (c) => {
                     }
                 })
 
-                // 月次推移
-                const monthlyTrend = memberData.monthly_trend || []
-                let trendHtml = ''
-                monthlyTrend.forEach(trend => {
-                    trendHtml += \`
-                        <div class="flex justify-between items-center">
-                            <span class="text-sm text-gray-600">\${trend.month}</span>
-                            <span class="font-semibold text-gray-900">\${trend.count}人</span>
-                        </div>
-                    \`
-                })
-                document.getElementById('monthlyTrend').innerHTML = trendHtml || '<p class="text-gray-500 text-sm">データがありません</p>'
-
                 // 月次推移折れ線グラフ
+                const monthlyTrend = memberData.monthly_trend || []
                 if (trendChart) trendChart.destroy()
                 const trendCtx = document.getElementById('monthlyTrendChart').getContext('2d')
                 trendChart = new Chart(trendCtx, {
