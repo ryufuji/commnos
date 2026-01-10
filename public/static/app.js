@@ -422,9 +422,169 @@ window.addEventListener('DOMContentLoaded', () => {
     title: document.title
   });
 
+  // ヘッダーのログイン状態を更新
+  updateHeaderLoginState();
+  
   // モバイルメニューの初期化
   initMobileMenu();
 });
+
+// ============================================
+// ヘッダーのログイン状態管理
+// ============================================
+function updateHeaderLoginState() {
+  const token = localStorage.getItem('token');
+  const userStr = localStorage.getItem('user');
+  const membershipStr = localStorage.getItem('membership');
+  
+  debugLog('HEADER_UPDATE', 'Updating header login state', {
+    hasToken: !!token,
+    hasUser: !!userStr,
+    hasMembership: !!membershipStr
+  });
+
+  if (!token || !userStr) {
+    debugLog('HEADER_UPDATE', 'User not logged in, keeping login button');
+    return;
+  }
+
+  try {
+    const user = JSON.parse(userStr);
+    const membership = membershipStr ? JSON.parse(membershipStr) : null;
+    const role = user.role || membership?.role;
+    const nickname = user.nickname || user.email?.split('@')[0] || 'ユーザー';
+
+    debugLog('HEADER_UPDATE', 'User logged in, updating UI', {
+      nickname,
+      role,
+      userId: user.id
+    });
+
+    // URLSearchParams から subdomain を取得
+    const urlParams = new URLSearchParams(window.location.search);
+    const subdomain = urlParams.get('subdomain') || 'test';
+
+    // デスクトップのログインボタンを置き換え
+    const desktopLoginBtn = document.querySelector('.commons-header-actions a[href*="/login"]');
+    if (desktopLoginBtn && desktopLoginBtn.textContent.includes('ログイン')) {
+      const userMenuHtml = `
+        <div class="relative" id="userMenuContainer">
+          <button id="userMenuBtn" class="flex items-center gap-2 px-4 py-2 rounded-full transition hover:bg-gray-100" style="color: var(--commons-text-primary);">
+            <div class="w-8 h-8 rounded-full flex items-center justify-center" style="background: var(--commons-primary); color: white;">
+              <i class="fas fa-user"></i>
+            </div>
+            <span class="hidden md:inline font-semibold">${nickname}</span>
+            <i class="fas fa-chevron-down text-sm"></i>
+          </button>
+          <div id="userMenuDropdown" class="hidden absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-xl border border-gray-100 py-2 z-50">
+            <div class="px-4 py-3 border-b border-gray-100">
+              <p class="font-semibold" style="color: var(--commons-text-primary);">${nickname}</p>
+              <p class="text-sm" style="color: var(--commons-text-secondary);">${user.email || ''}</p>
+              ${role === 'owner' || role === 'admin' ? `<span class="inline-block mt-2 px-2 py-1 text-xs font-semibold rounded" style="background: var(--commons-accent-yellow); color: var(--commons-text-primary);">${role === 'owner' ? 'オーナー' : '管理者'}</span>` : ''}
+            </div>
+            <a href="/tenant/mypage?subdomain=${subdomain}" class="block px-4 py-2 hover:bg-gray-50 transition" style="color: var(--commons-text-primary);">
+              <i class="fas fa-user mr-2" style="color: var(--commons-primary);"></i>マイページ
+            </a>
+            <a href="/tenant/notifications?subdomain=${subdomain}" class="block px-4 py-2 hover:bg-gray-50 transition" style="color: var(--commons-text-primary);">
+              <i class="fas fa-bell mr-2" style="color: var(--commons-primary);"></i>通知
+            </a>
+            ${role === 'owner' || role === 'admin' ? `
+            <a href="/dashboard" class="block px-4 py-2 hover:bg-gray-50 transition" style="color: var(--commons-text-primary);">
+              <i class="fas fa-tachometer-alt mr-2" style="color: var(--commons-primary);"></i>ダッシュボード
+            </a>
+            ` : ''}
+            <div class="border-t border-gray-100 my-2"></div>
+            <button id="logoutBtn" class="w-full text-left px-4 py-2 hover:bg-gray-50 transition" style="color: var(--commons-text-secondary);">
+              <i class="fas fa-sign-out-alt mr-2"></i>ログアウト
+            </button>
+          </div>
+        </div>
+      `;
+      
+      desktopLoginBtn.outerHTML = userMenuHtml;
+      
+      // ユーザーメニューのトグル機能を追加
+      setTimeout(() => {
+        const userMenuBtn = document.getElementById('userMenuBtn');
+        const userMenuDropdown = document.getElementById('userMenuDropdown');
+        
+        if (userMenuBtn && userMenuDropdown) {
+          userMenuBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            userMenuDropdown.classList.toggle('hidden');
+          });
+          
+          // 外側クリックでメニューを閉じる
+          document.addEventListener('click', (e) => {
+            if (!document.getElementById('userMenuContainer')?.contains(e.target as Node)) {
+              userMenuDropdown.classList.add('hidden');
+            }
+          });
+          
+          // ログアウト機能
+          const logoutBtn = document.getElementById('logoutBtn');
+          if (logoutBtn) {
+            logoutBtn.addEventListener('click', () => {
+              localStorage.removeItem('token');
+              localStorage.removeItem('user');
+              localStorage.removeItem('membership');
+              localStorage.removeItem('tenant');
+              window.location.href = `/tenant/home?subdomain=${subdomain}`;
+            });
+          }
+        }
+      }, 100);
+    }
+
+    // モバイルメニューのログインボタンを置き換え
+    const mobileLoginLink = document.querySelector('.commons-mobile-nav a[href*="/login"]');
+    if (mobileLoginLink && mobileLoginLink.textContent.includes('ログイン')) {
+      const mobileUserMenuHtml = `
+        <div class="border-t border-gray-100 mt-4 pt-4">
+          <div class="px-4 py-3 bg-gray-50 rounded-lg mb-2">
+            <p class="font-semibold" style="color: var(--commons-text-primary);">${nickname}</p>
+            <p class="text-sm" style="color: var(--commons-text-secondary);">${user.email || ''}</p>
+            ${role === 'owner' || role === 'admin' ? `<span class="inline-block mt-2 px-2 py-1 text-xs font-semibold rounded" style="background: var(--commons-accent-yellow); color: var(--commons-text-primary);">${role === 'owner' ? 'オーナー' : '管理者'}</span>` : ''}
+          </div>
+          <a href="/tenant/mypage?subdomain=${subdomain}" class="commons-mobile-nav-link">
+            <i class="fas fa-user"></i>
+            <span>マイページ</span>
+          </a>
+          ${role === 'owner' || role === 'admin' ? `
+          <a href="/dashboard" class="commons-mobile-nav-link">
+            <i class="fas fa-tachometer-alt"></i>
+            <span>ダッシュボード</span>
+          </a>
+          ` : ''}
+          <button id="mobileLogoutBtn" class="commons-mobile-nav-link w-full text-left" style="color: var(--commons-text-secondary);">
+            <i class="fas fa-sign-out-alt"></i>
+            <span>ログアウト</span>
+          </button>
+        </div>
+      `;
+      
+      mobileLoginLink.outerHTML = mobileUserMenuHtml;
+      
+      // モバイルログアウト機能
+      setTimeout(() => {
+        const mobileLogoutBtn = document.getElementById('mobileLogoutBtn');
+        if (mobileLogoutBtn) {
+          mobileLogoutBtn.addEventListener('click', () => {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            localStorage.removeItem('membership');
+            localStorage.removeItem('tenant');
+            window.location.href = `/tenant/home?subdomain=${subdomain}`;
+          });
+        }
+      }, 100);
+    }
+    
+    debugLog('HEADER_UPDATE', 'Header updated successfully with user menu');
+  } catch (error) {
+    debugLog('ERROR', 'Failed to update header login state', error);
+  }
+}
 
 // ============================================
 // モバイルメニュー管理
