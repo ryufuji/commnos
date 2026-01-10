@@ -6217,6 +6217,17 @@ app.get('/points-management', (c) => {
                                 <p class="text-sm text-gray-700 mb-2">
                                     会員のアクションに対して付与するポイント数を設定できます。
                                 </p>
+                                <ul class="text-sm text-gray-700 list-disc list-inside space-y-1">
+                                    <li><strong>有効</strong>：会員がアクションを実行すると自動的にポイントが付与されます</li>
+                                    <li><strong>無効</strong>：ポイント付与を停止します（既存のポイントには影響しません）</li>
+                                    <li>ポイント数を0に設定すると、ルールは有効でもポイントは付与されません</li>
+                                    <li>各ルールをクリックして、ポイント数と有効/無効を編集できます</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="rulesList" class="space-y-6"></div>
+                </div>
                                 <ul class="text-sm text-gray-600 space-y-1 list-disc list-inside">
                                     <li>ポイント数を0にすると付与されません</li>
                                     <li>無効にすると一時的にポイント付与を停止できます</li>
@@ -6350,6 +6361,16 @@ app.get('/points-management', (c) => {
                 '高度な機能': ['subscription', 'active_commenter', 'super_active', 'event_participation', 'invite_friend', 'invited_signup']
             }
 
+            // 自動付与実装済みのアクション
+            const implementedActions = [
+                'signup',           // 会員登録（承認時）
+                'daily_login',      // デイリーログイン
+                'post_view',        // 記事閲覧
+                'comment_create',   // コメント投稿
+                'profile_complete', // プロフィール完成
+                'avatar_upload'     // アバターアップロード
+            ]
+
             function switchTab(tab) {
                 // タブボタンの切り替え
                 document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'))
@@ -6413,13 +6434,16 @@ app.get('/points-management', (c) => {
                     
                     categoryRules.forEach(rule => {
                         const ruleCard = document.createElement('div')
-                        ruleCard.className = 'border border-gray-200 rounded-lg p-4 hover:border-yellow-300 transition-colors'
+                        const isImplemented = implementedActions.includes(rule.action)
+                        const cardBorder = rule.is_active ? 'border-green-300 bg-green-50' : 'border-gray-200'
+                        ruleCard.className = \`border rounded-lg p-4 hover:shadow-md transition-all \${cardBorder}\`
                         ruleCard.innerHTML = \`
                             <div class="flex items-center justify-between mb-3">
                                 <div class="flex-1">
-                                    <div class="flex items-center space-x-2 mb-1">
+                                    <div class="flex items-center space-x-2 mb-1 flex-wrap">
                                         <h5 class="font-semibold text-gray-900">\${actionLabels[rule.action] || rule.action}</h5>
-                                        <span class="\${rule.is_active ? 'badge-success' : 'badge-secondary'} text-xs">\${rule.is_active ? '有効' : '無効'}</span>
+                                        <span class="\${rule.is_active ? 'badge-success' : 'badge-secondary'} text-xs">\${rule.is_active ? '✓ 有効' : '無効'}</span>
+                                        \${isImplemented ? '<span class="badge-info text-xs">自動付与</span>' : '<span class="bg-gray-200 text-gray-600 px-2 py-1 rounded text-xs">手動のみ</span>'}
                                     </div>
                                     <p class="text-xs text-gray-600">\${rule.note || ''}</p>
                                 </div>
@@ -6429,7 +6453,7 @@ app.get('/points-management', (c) => {
                             </div>
                             <button onclick="editRule('\${rule.action}')" class="btn-secondary w-full text-sm">
                                 <i class="fas fa-edit mr-1"></i>
-                                編集
+                                ポイント数と有効/無効を編集
                             </button>
                         \`
                         categoryContainer.appendChild(ruleCard)
@@ -6454,13 +6478,16 @@ app.get('/points-management', (c) => {
                     
                     uncategorizedRules.forEach(rule => {
                         const ruleCard = document.createElement('div')
-                        ruleCard.className = 'border border-gray-200 rounded-lg p-4 hover:border-yellow-300 transition-colors'
+                        const isImplemented = implementedActions.includes(rule.action)
+                        const cardBorder = rule.is_active ? 'border-green-300 bg-green-50' : 'border-gray-200'
+                        ruleCard.className = \`border rounded-lg p-4 hover:shadow-md transition-all \${cardBorder}\`
                         ruleCard.innerHTML = \`
                             <div class="flex items-center justify-between mb-3">
                                 <div class="flex-1">
-                                    <div class="flex items-center space-x-2 mb-1">
+                                    <div class="flex items-center space-x-2 mb-1 flex-wrap">
                                         <h5 class="font-semibold text-gray-900">\${rule.action}</h5>
-                                        <span class="\${rule.is_active ? 'badge-success' : 'badge-secondary'} text-xs">\${rule.is_active ? '有効' : '無効'}</span>
+                                        <span class="\${rule.is_active ? 'badge-success' : 'badge-secondary'} text-xs">\${rule.is_active ? '✓ 有効' : '無効'}</span>
+                                        \${isImplemented ? '<span class="badge-info text-xs">自動付与</span>' : '<span class="bg-gray-200 text-gray-600 px-2 py-1 rounded text-xs">手動のみ</span>'}
                                     </div>
                                     <p class="text-xs text-gray-600">\${rule.note || ''}</p>
                                 </div>
@@ -6470,7 +6497,7 @@ app.get('/points-management', (c) => {
                             </div>
                             <button onclick="editRule('\${rule.action}')" class="btn-secondary w-full text-sm">
                                 <i class="fas fa-edit mr-1"></i>
-                                編集
+                                ポイント数と有効/無効を編集
                             </button>
                         \`
                         categoryContainer.appendChild(ruleCard)
@@ -6484,7 +6511,12 @@ app.get('/points-management', (c) => {
                 const rule = currentRules.find(r => r.action === action)
                 if (!rule) return
 
-                const points = prompt(\`\${actionLabels[action]}のポイント数を入力してください：\`, rule.points)
+                const isImplemented = implementedActions.includes(action)
+                const implementNote = isImplemented 
+                    ? '\\n\\n【自動付与】このルールは会員のアクション時に自動的にポイント付与されます。\\n無効にすると自動付与が停止されます。' 
+                    : '\\n\\n【手動付与のみ】このルールは管理画面から手動でのみ付与できます。'
+
+                const points = prompt(\`\${actionLabels[action] || action}のポイント数を入力してください：\${implementNote}\`, rule.points)
                 if (points === null) return
 
                 const pointsNum = parseInt(points)
@@ -6493,7 +6525,7 @@ app.get('/points-management', (c) => {
                     return
                 }
 
-                const isActive = confirm('このルールを有効にしますか？\\n\\nOK = 有効\\nキャンセル = 無効')
+                const isActive = confirm('このルールを有効にしますか？\\n\\n✓ OK = 有効（ポイント付与が実行されます）\\n✗ キャンセル = 無効（ポイント付与が停止されます）')
 
                 try {
                     const token = localStorage.getItem('token')
@@ -6506,7 +6538,7 @@ app.get('/points-management', (c) => {
                     })
 
                     if (response.data.success) {
-                        showToast('ルールを更新しました', 'success')
+                        showToast(\`ルールを更新しました（\${isActive ? '有効' : '無効'}）\`, 'success')
                         loadRules()
                     }
                 } catch (error) {
