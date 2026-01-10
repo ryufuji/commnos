@@ -7566,8 +7566,353 @@ app.get('/shop-settings', (c) => {
 
                 <!-- 商品管理タブ -->
                 <div id="productsContent" class="tab-content hidden">
+                    <!-- カテゴリ管理セクション -->
+                    <div class="card p-6 mb-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="font-semibold text-gray-900 text-lg">
+                                <i class="fas fa-folder mr-2"></i>
+                                カテゴリ管理
+                            </h3>
+                            <button onclick="openCategoryModal()" class="btn-primary">
+                                <i class="fas fa-plus mr-2"></i>
+                                カテゴリ追加
+                            </button>
+                        </div>
+                        
+                        <div id="categoriesList" class="space-y-2">
+                            <div class="text-center py-8 text-gray-500">
+                                <i class="fas fa-spinner fa-spin text-2xl mb-2"></i>
+                                <p>読み込み中...</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 商品一覧セクション -->
                     <div class="card p-6">
-                        <p class="text-gray-600">商品管理機能は開発中です</p>
+                        <div class="flex items-center justify-between mb-4">
+                            <div class="flex items-center space-x-4">
+                                <h3 class="font-semibold text-gray-900 text-lg">
+                                    <i class="fas fa-box mr-2"></i>
+                                    商品一覧
+                                </h3>
+                                
+                                <!-- フィルター -->
+                                <div class="flex items-center space-x-2">
+                                    <select id="categoryFilter" onchange="loadProducts()" 
+                                            class="input-field py-1.5 text-sm">
+                                        <option value="">すべてのカテゴリ</option>
+                                    </select>
+                                    
+                                    <select id="typeFilter" onchange="loadProducts()" 
+                                            class="input-field py-1.5 text-sm">
+                                        <option value="">すべてのタイプ</option>
+                                        <option value="physical">物販</option>
+                                        <option value="ticket">チケット</option>
+                                        <option value="digital">デジタル</option>
+                                    </select>
+                                    
+                                    <select id="statusFilter" onchange="loadProducts()" 
+                                            class="input-field py-1.5 text-sm">
+                                        <option value="">すべてのステータス</option>
+                                        <option value="active">公開中</option>
+                                        <option value="inactive">非公開</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <button onclick="openProductModal()" class="btn-primary">
+                                <i class="fas fa-plus mr-2"></i>
+                                商品追加
+                            </button>
+                        </div>
+                        
+                        <div id="productsList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            <div class="col-span-full text-center py-8 text-gray-500">
+                                <i class="fas fa-spinner fa-spin text-2xl mb-2"></i>
+                                <p>読み込み中...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- カテゴリモーダル -->
+                <div id="categoryModal" class="modal hidden">
+                    <div class="modal-content max-w-md">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-xl font-bold" id="categoryModalTitle">カテゴリ追加</h3>
+                            <button onclick="closeCategoryModal()" class="text-gray-400 hover:text-gray-600">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                        
+                        <form id="categoryForm" class="space-y-4">
+                            <input type="hidden" id="categoryId">
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    カテゴリ名 <span class="text-red-500">*</span>
+                                </label>
+                                <input type="text" id="categoryName" required
+                                       class="input-field"
+                                       placeholder="例: チケット">
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    説明
+                                </label>
+                                <textarea id="categoryDescription" rows="3"
+                                          class="input-field"
+                                          placeholder="カテゴリの説明（任意）"></textarea>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">
+                                    表示順
+                                </label>
+                                <input type="number" id="categoryDisplayOrder"
+                                       class="input-field"
+                                       value="0"
+                                       min="0">
+                                <p class="text-xs text-gray-500 mt-1">数字が小さいほど上位に表示されます</p>
+                            </div>
+                            
+                            <div class="flex justify-end space-x-3">
+                                <button type="button" onclick="closeCategoryModal()" class="btn-secondary">
+                                    キャンセル
+                                </button>
+                                <button type="submit" class="btn-primary">
+                                    <i class="fas fa-save mr-2"></i>
+                                    保存
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- 商品モーダル -->
+                <div id="productModal" class="modal hidden">
+                    <div class="modal-content max-w-3xl">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-xl font-bold" id="productModalTitle">商品追加</h3>
+                            <button onclick="closeProductModal()" class="text-gray-400 hover:text-gray-600">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                        
+                        <form id="productForm" class="space-y-6">
+                            <input type="hidden" id="productId">
+                            
+                            <!-- 基本情報 -->
+                            <div class="space-y-4">
+                                <h4 class="font-semibold text-gray-900">基本情報</h4>
+                                
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div class="md:col-span-2">
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                                            商品名 <span class="text-red-500">*</span>
+                                        </label>
+                                        <input type="text" id="productName" required
+                                               class="input-field"
+                                               placeholder="例: イベント参加チケット">
+                                    </div>
+                                    
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                                            商品タイプ <span class="text-red-500">*</span>
+                                        </label>
+                                        <select id="productType" required onchange="handleTypeChange()"
+                                                class="input-field">
+                                            <option value="">選択してください</option>
+                                            <option value="physical">物販（配送あり）</option>
+                                            <option value="ticket">チケット（イベント参加）</option>
+                                            <option value="digital">デジタル商品</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                                            価格（円） <span class="text-red-500">*</span>
+                                        </label>
+                                        <input type="number" id="productPrice" required min="0"
+                                               class="input-field"
+                                               placeholder="0">
+                                    </div>
+                                    
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                                            カテゴリ
+                                        </label>
+                                        <select id="productCategory" class="input-field">
+                                            <option value="">未分類</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                                            ステータス
+                                        </label>
+                                        <select id="productActive" class="input-field">
+                                            <option value="1">公開</option>
+                                            <option value="0">非公開</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <div class="md:col-span-2">
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                                            説明
+                                        </label>
+                                        <textarea id="productDescription" rows="4"
+                                                  class="input-field"
+                                                  placeholder="商品の詳細説明"></textarea>
+                                    </div>
+                                    
+                                    <div class="md:col-span-2">
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                                            画像URL
+                                        </label>
+                                        <input type="url" id="productImageUrl"
+                                               class="input-field"
+                                               placeholder="https://example.com/image.jpg">
+                                        <p class="text-xs text-gray-500 mt-1">商品のサムネイル画像URL</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- 在庫設定 -->
+                            <div class="space-y-4">
+                                <h4 class="font-semibold text-gray-900">在庫設定</h4>
+                                
+                                <div class="flex items-center space-x-4">
+                                    <label class="flex items-center">
+                                        <input type="checkbox" id="productUnlimitedStock" onchange="handleStockChange()"
+                                               class="mr-2">
+                                        <span class="text-sm">無制限</span>
+                                    </label>
+                                </div>
+                                
+                                <div id="stockQuantityField">
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                                        在庫数
+                                    </label>
+                                    <input type="number" id="productStockQuantity" min="0"
+                                           class="input-field"
+                                           placeholder="0">
+                                </div>
+                            </div>
+                            
+                            <!-- チケット専用フィールド -->
+                            <div id="ticketFields" class="space-y-4 hidden">
+                                <h4 class="font-semibold text-gray-900">イベント情報（チケット専用）</h4>
+                                
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                                            イベント日時 <span class="text-red-500">*</span>
+                                        </label>
+                                        <input type="datetime-local" id="productEventDate"
+                                               class="input-field">
+                                    </div>
+                                    
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                                            イベント会場
+                                        </label>
+                                        <input type="text" id="productEventLocation"
+                                               class="input-field"
+                                               placeholder="例: 東京国際フォーラム">
+                                    </div>
+                                    
+                                    <div class="md:col-span-2">
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                                            イベント詳細
+                                        </label>
+                                        <textarea id="productEventDescription" rows="3"
+                                                  class="input-field"
+                                                  placeholder="イベントの詳細情報"></textarea>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- 配送設定 -->
+                            <div id="shippingFields" class="space-y-4 hidden">
+                                <h4 class="font-semibold text-gray-900">配送設定（物販専用）</h4>
+                                
+                                <div class="flex items-center space-x-4">
+                                    <label class="flex items-center">
+                                        <input type="checkbox" id="productRequiresShipping"
+                                               class="mr-2" checked>
+                                        <span class="text-sm">配送が必要</span>
+                                    </label>
+                                </div>
+                                
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-700 mb-2">
+                                        配送情報
+                                    </label>
+                                    <textarea id="productShippingInfo" rows="2"
+                                              class="input-field"
+                                              placeholder="配送に関する注意事項"></textarea>
+                                </div>
+                            </div>
+                            
+                            <!-- 販売期間 -->
+                            <div class="space-y-4">
+                                <h4 class="font-semibold text-gray-900">販売期間（任意）</h4>
+                                
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                                            販売開始日時
+                                        </label>
+                                        <input type="datetime-local" id="productSaleStartDate"
+                                               class="input-field">
+                                    </div>
+                                    
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                                            販売終了日時
+                                        </label>
+                                        <input type="datetime-local" id="productSaleEndDate"
+                                               class="input-field">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- その他設定 -->
+                            <div class="space-y-4">
+                                <h4 class="font-semibold text-gray-900">その他設定</h4>
+                                
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                                            1人あたりの購入上限
+                                        </label>
+                                        <input type="number" id="productMaxPurchase" min="1"
+                                               class="input-field"
+                                               placeholder="制限なし">
+                                    </div>
+                                    
+                                    <div class="flex items-center space-x-4 pt-6">
+                                        <label class="flex items-center">
+                                            <input type="checkbox" id="productMemberOnly"
+                                                   class="mr-2">
+                                            <span class="text-sm">会員限定</span>
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="flex justify-end space-x-3 pt-4 border-t">
+                                <button type="button" onclick="closeProductModal()" class="btn-secondary">
+                                    キャンセル
+                                </button>
+                                <button type="submit" class="btn-primary">
+                                    <i class="fas fa-save mr-2"></i>
+                                    保存
+                                </button>
+                            </div>
+                        </form>
                     </div>
                 </div>
 
@@ -7707,10 +8052,479 @@ app.get('/shop-settings', (c) => {
                 }
             })
 
+            // ============================================
+            // カテゴリ管理機能
+            // ============================================
+            
+            let currentCategories = []
+            
+            async function loadCategories() {
+                try {
+                    const token = localStorage.getItem('token')
+                    const response = await axios.get('/api/shop/categories', {
+                        headers: { 'Authorization': 'Bearer ' + token }
+                    })
+                    
+                    if (response.data.success) {
+                        currentCategories = response.data.categories
+                        displayCategories()
+                        updateCategorySelects()
+                    }
+                } catch (error) {
+                    console.error('Load categories error:', error)
+                }
+            }
+            
+            function displayCategories() {
+                const container = document.getElementById('categoriesList')
+                
+                if (currentCategories.length === 0) {
+                    container.innerHTML = \`
+                        <div class="text-center py-8 text-gray-500">
+                            <i class="fas fa-folder-open text-4xl mb-2"></i>
+                            <p>カテゴリが登録されていません</p>
+                            <button onclick="openCategoryModal()" class="btn-primary mt-4">
+                                <i class="fas fa-plus mr-2"></i>
+                                最初のカテゴリを作成
+                            </button>
+                        </div>
+                    \`
+                    return
+                }
+                
+                container.innerHTML = currentCategories.map(cat => \`
+                    <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100">
+                        <div class="flex items-center space-x-3">
+                            <div class="text-gray-400">
+                                <i class="fas fa-grip-vertical"></i>
+                            </div>
+                            <div>
+                                <div class="font-medium">\${cat.name}</div>
+                                \${cat.description ? \`<div class="text-sm text-gray-500">\${cat.description}</div>\` : ''}
+                            </div>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <span class="text-xs text-gray-500">順序: \${cat.display_order}</span>
+                            <button onclick="editCategory(\${cat.id})" class="text-blue-600 hover:text-blue-800 p-2">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button onclick="deleteCategory(\${cat.id}, '\${cat.name}')" class="text-red-600 hover:text-red-800 p-2">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                \`).join('')
+            }
+            
+            function updateCategorySelects() {
+                const selects = ['categoryFilter', 'productCategory']
+                selects.forEach(selectId => {
+                    const select = document.getElementById(selectId)
+                    if (select) {
+                        const currentValue = select.value
+                        const isFilter = selectId === 'categoryFilter'
+                        
+                        select.innerHTML = isFilter 
+                            ? '<option value="">すべてのカテゴリ</option>' 
+                            : '<option value="">未分類</option>'
+                        
+                        currentCategories.forEach(cat => {
+                            const option = document.createElement('option')
+                            option.value = cat.id
+                            option.textContent = cat.name
+                            select.appendChild(option)
+                        })
+                        
+                        if (currentValue) select.value = currentValue
+                    }
+                })
+            }
+            
+            function openCategoryModal(categoryId = null) {
+                document.getElementById('categoryModal').classList.remove('hidden')
+                
+                if (categoryId) {
+                    const category = currentCategories.find(c => c.id === categoryId)
+                    if (category) {
+                        document.getElementById('categoryModalTitle').textContent = 'カテゴリ編集'
+                        document.getElementById('categoryId').value = category.id
+                        document.getElementById('categoryName').value = category.name
+                        document.getElementById('categoryDescription').value = category.description || ''
+                        document.getElementById('categoryDisplayOrder').value = category.display_order
+                    }
+                } else {
+                    document.getElementById('categoryModalTitle').textContent = 'カテゴリ追加'
+                    document.getElementById('categoryForm').reset()
+                    document.getElementById('categoryId').value = ''
+                }
+            }
+            
+            function closeCategoryModal() {
+                document.getElementById('categoryModal').classList.add('hidden')
+                document.getElementById('categoryForm').reset()
+            }
+            
+            async function editCategory(categoryId) {
+                openCategoryModal(categoryId)
+            }
+            
+            async function deleteCategory(categoryId, categoryName) {
+                if (!confirm(\`カテゴリ「\${categoryName}」を削除しますか？\\n\\n※このカテゴリに商品が登録されている場合は削除できません。\`)) {
+                    return
+                }
+                
+                try {
+                    const token = localStorage.getItem('token')
+                    const response = await axios.delete(\`/api/shop/categories/\${categoryId}\`, {
+                        headers: { 'Authorization': 'Bearer ' + token }
+                    })
+                    
+                    if (response.data.success) {
+                        showToast(response.data.message, 'success')
+                        await loadCategories()
+                        await loadProducts()
+                    }
+                } catch (error) {
+                    console.error('Delete category error:', error)
+                    showToast(error.response?.data?.error || 'カテゴリの削除に失敗しました', 'error')
+                }
+            }
+            
+            document.getElementById('categoryForm').addEventListener('submit', async (e) => {
+                e.preventDefault()
+                
+                const token = localStorage.getItem('token')
+                const categoryId = document.getElementById('categoryId').value
+                const data = {
+                    name: document.getElementById('categoryName').value,
+                    description: document.getElementById('categoryDescription').value,
+                    display_order: parseInt(document.getElementById('categoryDisplayOrder').value) || 0
+                }
+                
+                try {
+                    let response
+                    if (categoryId) {
+                        response = await axios.put(\`/api/shop/categories/\${categoryId}\`, data, {
+                            headers: { 'Authorization': 'Bearer ' + token }
+                        })
+                    } else {
+                        response = await axios.post('/api/shop/categories', data, {
+                            headers: { 'Authorization': 'Bearer ' + token }
+                        })
+                    }
+                    
+                    if (response.data.success) {
+                        showToast(response.data.message, 'success')
+                        closeCategoryModal()
+                        await loadCategories()
+                    }
+                } catch (error) {
+                    console.error('Save category error:', error)
+                    showToast(error.response?.data?.error || 'カテゴリの保存に失敗しました', 'error')
+                }
+            })
+
+            // ============================================
+            // 商品管理機能
+            // ============================================
+            
+            let currentProducts = []
+            
+            async function loadProducts() {
+                try {
+                    const token = localStorage.getItem('token')
+                    const params = new URLSearchParams()
+                    
+                    const categoryFilter = document.getElementById('categoryFilter')?.value
+                    const typeFilter = document.getElementById('typeFilter')?.value
+                    const statusFilter = document.getElementById('statusFilter')?.value
+                    
+                    if (categoryFilter) params.append('category_id', categoryFilter)
+                    if (typeFilter) params.append('type', typeFilter)
+                    if (statusFilter) params.append('status', statusFilter)
+                    
+                    const response = await axios.get(\`/api/shop/products?\${params.toString()}\`, {
+                        headers: { 'Authorization': 'Bearer ' + token }
+                    })
+                    
+                    if (response.data.success) {
+                        currentProducts = response.data.products
+                        displayProducts()
+                    }
+                } catch (error) {
+                    console.error('Load products error:', error)
+                }
+            }
+            
+            function displayProducts() {
+                const container = document.getElementById('productsList')
+                
+                if (currentProducts.length === 0) {
+                    container.innerHTML = \`
+                        <div class="col-span-full text-center py-8 text-gray-500">
+                            <i class="fas fa-box-open text-4xl mb-2"></i>
+                            <p>商品が登録されていません</p>
+                            <button onclick="openProductModal()" class="btn-primary mt-4">
+                                <i class="fas fa-plus mr-2"></i>
+                                最初の商品を作成
+                            </button>
+                        </div>
+                    \`
+                    return
+                }
+                
+                const typeLabels = {
+                    physical: '物販',
+                    ticket: 'チケット',
+                    digital: 'デジタル'
+                }
+                
+                const typeIcons = {
+                    physical: 'fa-box',
+                    ticket: 'fa-ticket-alt',
+                    digital: 'fa-file-download'
+                }
+                
+                container.innerHTML = currentProducts.map(product => \`
+                    <div class="card overflow-hidden hover:shadow-lg transition-shadow">
+                        \${product.image_url ? \`
+                            <div class="aspect-video bg-gray-200 overflow-hidden">
+                                <img src="\${product.image_url}" alt="\${product.name}" 
+                                     class="w-full h-full object-cover">
+                            </div>
+                        \` : \`
+                            <div class="aspect-video bg-gray-100 flex items-center justify-center">
+                                <i class="fas \${typeIcons[product.type] || 'fa-box'} text-4xl text-gray-300"></i>
+                            </div>
+                        \`}
+                        
+                        <div class="p-4">
+                            <div class="flex items-start justify-between mb-2">
+                                <h4 class="font-semibold text-gray-900 line-clamp-2 flex-1">\${product.name}</h4>
+                                <span class="ml-2 px-2 py-1 rounded text-xs font-medium \${product.is_active ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}">
+                                    \${product.is_active ? '公開中' : '非公開'}
+                                </span>
+                            </div>
+                            
+                            <div class="space-y-2 mb-4">
+                                <div class="flex items-center justify-between text-sm">
+                                    <span class="text-gray-500">
+                                        <i class="fas \${typeIcons[product.type]} mr-1"></i>
+                                        \${typeLabels[product.type]}
+                                    </span>
+                                    <span class="font-bold text-lg text-blue-600">¥\${product.price.toLocaleString()}</span>
+                                </div>
+                                
+                                \${product.category_name ? \`
+                                    <div class="text-sm text-gray-500">
+                                        <i class="fas fa-folder mr-1"></i>
+                                        \${product.category_name}
+                                    </div>
+                                \` : ''}
+                                
+                                <div class="text-sm text-gray-500">
+                                    <i class="fas fa-cubes mr-1"></i>
+                                    在庫: \${product.is_unlimited_stock ? '無制限' : product.stock_quantity}
+                                </div>
+                                
+                                \${product.type === 'ticket' && product.event_date ? \`
+                                    <div class="text-sm text-gray-500">
+                                        <i class="fas fa-calendar mr-1"></i>
+                                        \${new Date(product.event_date).toLocaleString('ja-JP', { 
+                                            year: 'numeric', month: '2-digit', day: '2-digit', 
+                                            hour: '2-digit', minute: '2-digit' 
+                                        })}
+                                    </div>
+                                \` : ''}
+                            </div>
+                            
+                            <div class="flex items-center space-x-2 pt-4 border-t">
+                                <button onclick="editProduct(\${product.id})" class="flex-1 btn-secondary text-sm py-2">
+                                    <i class="fas fa-edit mr-1"></i>
+                                    編集
+                                </button>
+                                <button onclick="deleteProduct(\${product.id}, '\${product.name.replace(/'/g, "\\\\'")})" class="btn-secondary text-sm py-2 px-3 text-red-600 hover:bg-red-50">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                \`).join('')
+            }
+            
+            function openProductModal(productId = null) {
+                document.getElementById('productModal').classList.remove('hidden')
+                
+                if (productId) {
+                    const product = currentProducts.find(p => p.id === productId)
+                    if (product) {
+                        document.getElementById('productModalTitle').textContent = '商品編集'
+                        document.getElementById('productId').value = product.id
+                        document.getElementById('productName').value = product.name
+                        document.getElementById('productDescription').value = product.description || ''
+                        document.getElementById('productPrice').value = product.price
+                        document.getElementById('productCategory').value = product.category_id || ''
+                        document.getElementById('productType').value = product.type
+                        document.getElementById('productImageUrl').value = product.image_url || ''
+                        document.getElementById('productStockQuantity').value = product.stock_quantity
+                        document.getElementById('productUnlimitedStock').checked = product.is_unlimited_stock === 1
+                        document.getElementById('productActive').value = product.is_active ? '1' : '0'
+                        
+                        if (product.event_date) {
+                            document.getElementById('productEventDate').value = product.event_date.slice(0, 16)
+                        }
+                        document.getElementById('productEventLocation').value = product.event_location || ''
+                        document.getElementById('productEventDescription').value = product.event_description || ''
+                        
+                        document.getElementById('productRequiresShipping').checked = product.requires_shipping === 1
+                        document.getElementById('productShippingInfo').value = product.shipping_info || ''
+                        
+                        if (product.sale_start_date) {
+                            document.getElementById('productSaleStartDate').value = product.sale_start_date.slice(0, 16)
+                        }
+                        if (product.sale_end_date) {
+                            document.getElementById('productSaleEndDate').value = product.sale_end_date.slice(0, 16)
+                        }
+                        
+                        document.getElementById('productMaxPurchase').value = product.max_purchase_per_person || ''
+                        document.getElementById('productMemberOnly').checked = product.is_member_only === 1
+                        
+                        handleTypeChange()
+                        handleStockChange()
+                    }
+                } else {
+                    document.getElementById('productModalTitle').textContent = '商品追加'
+                    document.getElementById('productForm').reset()
+                    document.getElementById('productId').value = ''
+                    document.getElementById('productActive').value = '1'
+                    handleTypeChange()
+                    handleStockChange()
+                }
+            }
+            
+            function closeProductModal() {
+                document.getElementById('productModal').classList.add('hidden')
+                document.getElementById('productForm').reset()
+            }
+            
+            function handleTypeChange() {
+                const type = document.getElementById('productType').value
+                const ticketFields = document.getElementById('ticketFields')
+                const shippingFields = document.getElementById('shippingFields')
+                const eventDateInput = document.getElementById('productEventDate')
+                
+                if (type === 'ticket') {
+                    ticketFields.classList.remove('hidden')
+                    shippingFields.classList.add('hidden')
+                    eventDateInput.required = true
+                } else if (type === 'physical') {
+                    ticketFields.classList.add('hidden')
+                    shippingFields.classList.remove('hidden')
+                    eventDateInput.required = false
+                } else {
+                    ticketFields.classList.add('hidden')
+                    shippingFields.classList.add('hidden')
+                    eventDateInput.required = false
+                }
+            }
+            
+            function handleStockChange() {
+                const unlimited = document.getElementById('productUnlimitedStock').checked
+                const stockField = document.getElementById('stockQuantityField')
+                const stockInput = document.getElementById('productStockQuantity')
+                
+                if (unlimited) {
+                    stockField.classList.add('hidden')
+                    stockInput.required = false
+                } else {
+                    stockField.classList.remove('hidden')
+                    stockInput.required = true
+                }
+            }
+            
+            async function editProduct(productId) {
+                openProductModal(productId)
+            }
+            
+            async function deleteProduct(productId, productName) {
+                if (!confirm(\`商品「\${productName}」を削除しますか？\\n\\n※注文履歴がある商品は削除できません。\`)) {
+                    return
+                }
+                
+                try {
+                    const token = localStorage.getItem('token')
+                    const response = await axios.delete(\`/api/shop/products/\${productId}\`, {
+                        headers: { 'Authorization': 'Bearer ' + token }
+                    })
+                    
+                    if (response.data.success) {
+                        showToast(response.data.message, 'success')
+                        await loadProducts()
+                    }
+                } catch (error) {
+                    console.error('Delete product error:', error)
+                    showToast(error.response?.data?.error || '商品の削除に失敗しました', 'error')
+                }
+            }
+            
+            document.getElementById('productForm').addEventListener('submit', async (e) => {
+                e.preventDefault()
+                
+                const token = localStorage.getItem('token')
+                const productId = document.getElementById('productId').value
+                const type = document.getElementById('productType').value
+                
+                const data = {
+                    name: document.getElementById('productName').value,
+                    description: document.getElementById('productDescription').value,
+                    price: parseFloat(document.getElementById('productPrice').value),
+                    category_id: document.getElementById('productCategory').value || null,
+                    type: type,
+                    image_url: document.getElementById('productImageUrl').value || null,
+                    stock_quantity: document.getElementById('productUnlimitedStock').checked ? 0 : parseInt(document.getElementById('productStockQuantity').value) || 0,
+                    is_unlimited_stock: document.getElementById('productUnlimitedStock').checked,
+                    is_active: document.getElementById('productActive').value === '1',
+                    requires_shipping: type === 'physical' ? document.getElementById('productRequiresShipping').checked : false,
+                    shipping_info: type === 'physical' ? document.getElementById('productShippingInfo').value || null : null,
+                    event_date: type === 'ticket' ? document.getElementById('productEventDate').value || null : null,
+                    event_location: type === 'ticket' ? document.getElementById('productEventLocation').value || null : null,
+                    event_description: type === 'ticket' ? document.getElementById('productEventDescription').value || null : null,
+                    sale_start_date: document.getElementById('productSaleStartDate').value || null,
+                    sale_end_date: document.getElementById('productSaleEndDate').value || null,
+                    max_purchase_per_person: parseInt(document.getElementById('productMaxPurchase').value) || null,
+                    is_member_only: document.getElementById('productMemberOnly').checked,
+                    member_plan_id: null
+                }
+                
+                try {
+                    let response
+                    if (productId) {
+                        response = await axios.put(\`/api/shop/products/\${productId}\`, data, {
+                            headers: { 'Authorization': 'Bearer ' + token }
+                        })
+                    } else {
+                        response = await axios.post('/api/shop/products', data, {
+                            headers: { 'Authorization': 'Bearer ' + token }
+                        })
+                    }
+                    
+                    if (response.data.success) {
+                        showToast(response.data.message, 'success')
+                        closeProductModal()
+                        await loadProducts()
+                    }
+                } catch (error) {
+                    console.error('Save product error:', error)
+                    showToast(error.response?.data?.error || '商品の保存に失敗しました', 'error')
+                }
+            })
+
             // 初期化
             document.addEventListener('DOMContentLoaded', () => {
                 loadStatus()
                 loadLegalInfo()
+                loadCategories()
+                loadProducts()
             })
         </script>
     </body>
