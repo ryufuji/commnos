@@ -1529,28 +1529,12 @@ tenantPublic.get('/home', async (c) => {
     ${renderCommonHeader(tenantName, subdomain, 'home')}
 
     <!-- ヒーローセクション -->
-    <section style="background: linear-gradient(135deg, var(--commons-primary) 0%, var(--commons-primary-dark) 100%); color: white; padding: 80px 24px 60px;">
+    <section style="background: linear-gradient(135deg, var(--commons-primary) 0%, var(--commons-primary-dark) 100%); color: white; padding: 40px 24px 32px;">
         <div style="max-width: 1280px; margin: 0 auto; text-align: center;">
-            <h1 style="font-size: var(--font-size-hero); font-weight: var(--font-weight-bold); line-height: var(--line-height-tight); margin-bottom: 24px;">
+            <h1 style="font-size: var(--font-size-hero); font-weight: var(--font-weight-bold); line-height: var(--line-height-tight); margin-bottom: 12px;">
                 ${tenantName}
             </h1>
-            ${tenantSubtitle ? `<p style="font-size: var(--font-size-medium); color: rgba(255,255,255,0.9); margin-bottom: 48px;">${tenantSubtitle}</p>` : ''}
-            
-            <!-- 統計カード -->
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 24px; max-width: 800px; margin: 0 auto;">
-                <div style="background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); padding: 32px; border-radius: var(--radius-lg); text-align: center;">
-                    <div style="font-size: 48px; font-weight: var(--font-weight-bold); margin-bottom: 8px;">${memberCount}</div>
-                    <div style="font-size: var(--font-size-small); opacity: 0.9;">メンバー</div>
-                </div>
-                <div style="background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); padding: 32px; border-radius: var(--radius-lg); text-align: center;">
-                    <div style="font-size: 48px; font-weight: var(--font-weight-bold); margin-bottom: 8px;">${postCount}</div>
-                    <div style="font-size: var(--font-size-small); opacity: 0.9;">投稿</div>
-                </div>
-                <div style="background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); padding: 32px; border-radius: var(--radius-lg); text-align: center;">
-                    <div style="font-size: 48px; font-weight: var(--font-weight-bold); margin-bottom: 8px;">${eventCount}</div>
-                    <div style="font-size: var(--font-size-small); opacity: 0.9;">イベント</div>
-                </div>
-            </div>
+            ${tenantSubtitle ? `<p style="font-size: var(--font-size-medium); color: rgba(255,255,255,0.9);">${tenantSubtitle}</p>` : ''}
         </div>
     </section>
 
@@ -3375,24 +3359,12 @@ tenantPublic.get('/posts', async (c) => {
     ${renderCommonHeader(tenantName, subdomain, 'posts')}
 
     <!-- ページヘッダー -->
-    <section style="background: linear-gradient(135deg, var(--commons-primary) 0%, var(--commons-primary-dark) 100%); color: white; padding: 64px 24px 48px;">
+    <section style="background: linear-gradient(135deg, var(--commons-primary) 0%, var(--commons-primary-dark) 100%); color: white; padding: 40px 24px 32px;">
         <div style="max-width: 1280px; margin: 0 auto;">
-            <h1 style="font-size: var(--font-size-xlarge); font-weight: var(--font-weight-bold); margin-bottom: 16px;">
+            <h1 style="font-size: var(--font-size-xlarge); font-weight: var(--font-weight-bold); margin-bottom: 12px;">
                 <i class="fas fa-newspaper" style="margin-right: 16px;"></i>投稿一覧
             </h1>
             <p style="font-size: var(--font-size-medium); opacity: 0.9;">${tenantName}の最新コンテンツ</p>
-            
-            <!-- 統計 -->
-            <div style="display: flex; gap: 32px; margin-top: 32px; flex-wrap: wrap;">
-                <div>
-                    <div style="font-size: 32px; font-weight: var(--font-weight-bold);">${totalPosts}</div>
-                    <div style="font-size: var(--font-size-small); opacity: 0.9;">総投稿数</div>
-                </div>
-                <div>
-                    <div style="font-size: 32px; font-weight: var(--font-weight-bold);">${page} / ${totalPages || 1}</div>
-                    <div style="font-size: var(--font-size-small); opacity: 0.9;">ページ</div>
-                </div>
-            </div>
         </div>
     </section>
 
