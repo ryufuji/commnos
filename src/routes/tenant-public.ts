@@ -6743,16 +6743,6 @@ tenantPublic.get('/plans', async (c) => {
                         placeholder="例: 100（空欄の場合は無制限）">
                 </div>
 
-                <!-- ストレージ上限 -->
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">
-                        ストレージ上限（GB）
-                    </label>
-                    <input type="number" id="planStorageLimit" min="1"
-                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500"
-                        placeholder="例: 10">
-                </div>
-
                 <!-- ボタン -->
                 <div class="flex gap-3 pt-4">
                     <button type="button" onclick="closePlanModal()" class="flex-1 btn-ghost">
@@ -6917,7 +6907,6 @@ tenantPublic.get('/plans', async (c) => {
             document.getElementById('planDescription').value = plan.description || ''
             document.getElementById('planPrice').value = plan.price
             document.getElementById('planMemberLimit').value = plan.member_limit || ''
-            document.getElementById('planStorageLimit').value = plan.storage_limit ? Math.round(plan.storage_limit / 1024 / 1024 / 1024) : ''
             
             updateTenantRevenue(plan.price)
             document.getElementById('planModal').classList.remove('hidden')
@@ -6948,14 +6937,12 @@ tenantPublic.get('/plans', async (c) => {
             const description = document.getElementById('planDescription').value
             const price = parseInt(document.getElementById('planPrice').value)
             const memberLimit = document.getElementById('planMemberLimit').value
-            const storageLimit = document.getElementById('planStorageLimit').value
 
             const data = {
                 name,
                 description: description || null,
                 price,
-                member_limit: memberLimit ? parseInt(memberLimit) : null,
-                storage_limit: storageLimit ? parseInt(storageLimit) * 1024 * 1024 * 1024 : null
+                member_limit: memberLimit ? parseInt(memberLimit) : null
             }
 
             try {
