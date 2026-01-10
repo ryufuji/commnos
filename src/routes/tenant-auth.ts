@@ -15,7 +15,7 @@ const tenantAuth = new Hono<AppContext>()
 // ============================================
 tenantAuth.post('/register', async (c) => {
   const { DB } = c.env
-  const { email, password, nickname, subdomain } = await c.req.json()
+  const { email, password, nickname, subdomain, survey_responses } = await c.req.json()
 
   try {
     // Validation
@@ -107,6 +107,18 @@ tenantAuth.post('/register', async (c) => {
       // Rollback user creation
       await DB.prepare(`DELETE FROM users WHERE id = ?`).bind(userId).run()
       throw new Error('会員申請の送信に失敗しました')
+    }
+
+    // アンケート回答を保存
+    if (survey_responses && Array.isArray(survey_responses) && survey_responses.length > 0) {
+      for (const response of survey_responses) {
+        await DB.prepare(`
+          INSERT INTO survey_responses (survey_id, question_id, user_id, answer, created_at)
+          SELECT sq.survey_id, sq.id, ?, ?, datetime('now')
+          FROM survey_questions sq
+          WHERE sq.id = ?
+        `).bind(userId, response.answer, response.question_id).run()
+      }
     }
 
     return c.json({

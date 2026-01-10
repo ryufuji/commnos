@@ -19,10 +19,15 @@ const members = new Hono<AppContext>()
  * 会員申請
  */
 members.post('/apply', tenantMiddleware, async (c) => {
-  const { email, password, nickname } = await c.req.json<{
+  const { email, password, nickname, survey_responses } = await c.req.json<{
     email: string
     password: string
     nickname: string
+    survey_responses?: Array<{
+      survey_id: number
+      question_id: number
+      answer: string | number | string[]
+    }>
   }>()
 
   if (!email || !password || !nickname) {
@@ -93,6 +98,23 @@ members.post('/apply', tenantMiddleware, async (c) => {
       `)
       .bind(tenantId, userId, 'member', 'pending')
       .run()
+
+    // アンケート回答を保存
+    if (survey_responses && survey_responses.length > 0) {
+      for (const response of survey_responses) {
+        await db.prepare(`
+          INSERT INTO survey_responses 
+          (survey_id, question_id, user_id, tenant_id, response_type, answer)
+          VALUES (?, ?, ?, ?, 'join', ?)
+        `).bind(
+          response.survey_id,
+          response.question_id,
+          userId,
+          tenantId,
+          typeof response.answer === 'object' ? JSON.stringify(response.answer) : String(response.answer)
+        ).run()
+      }
+    }
 
     // テナント情報取得（メール送信用）
     const tenant = await db

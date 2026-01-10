@@ -620,6 +620,24 @@ tenantPublic.get('/register', async (c) => {
   const tenantName = String(tenant.name || '')
   const tenantSubtitle = String(tenant.subtitle || '')
   
+  // アクティブな入会時アンケートを取得
+  const survey = await c.env.DB.prepare(`
+    SELECT * FROM surveys 
+    WHERE tenant_id = ? AND survey_type = 'join' AND is_active = 1
+    ORDER BY created_at DESC
+    LIMIT 1
+  `).bind(tenant.id).first()
+  
+  let surveyQuestions: any[] = []
+  if (survey) {
+    const questions = await c.env.DB.prepare(`
+      SELECT * FROM survey_questions 
+      WHERE survey_id = ? 
+      ORDER BY question_order ASC
+    `).bind(survey.id).all()
+    surveyQuestions = questions.results || []
+  }
+  
   return c.html(`<!DOCTYPE html>
 <html lang="ja" data-theme="light">
 <head>
@@ -961,6 +979,140 @@ tenantPublic.get('/register', async (c) => {
                     <p style="font-size: 12px; color: var(--commons-text-secondary); margin-top: 4px;">最大500文字</p>
                 </div>
 
+                ${surveyQuestions.length > 0 ? `
+                    <!-- アンケート -->
+                    <div style="margin-top: 32px; padding-top: 32px; border-top: 2px solid var(--commons-border-light);">
+                        <h3 style="font-size: 18px; font-weight: 700; color: var(--commons-text-primary); margin-bottom: 16px;">
+                            <i class="fas fa-clipboard-list mr-2"></i>${survey.title || 'アンケート'}
+                        </h3>
+                        ${survey.description ? `
+                            <p style="font-size: 14px; color: var(--commons-text-secondary); margin-bottom: 24px;">
+                                ${survey.description}
+                            </p>
+                        ` : ''}
+                        
+                        ${surveyQuestions.map((q: any) => {
+                            const requiredMark = q.is_required ? '<span style="color: #ef4444;">*</span>' : ''
+                            const questionId = `survey_q_${q.id}`
+                            
+                            if (q.question_type === 'text') {
+                                return `
+                                    <div class="form-group">
+                                        <label for="${questionId}" class="form-label">
+                                            ${q.question_text} ${requiredMark}
+                                        </label>
+                                        <input 
+                                            type="text" 
+                                            id="${questionId}" 
+                                            name="${questionId}"
+                                            ${q.is_required ? 'required' : ''}
+                                            class="form-input"
+                                            placeholder="${q.placeholder || ''}"
+                                        >
+                                    </div>
+                                `
+                            } else if (q.question_type === 'textarea') {
+                                return `
+                                    <div class="form-group">
+                                        <label for="${questionId}" class="form-label">
+                                            ${q.question_text} ${requiredMark}
+                                        </label>
+                                        <textarea 
+                                            id="${questionId}" 
+                                            name="${questionId}"
+                                            rows="3"
+                                            ${q.is_required ? 'required' : ''}
+                                            class="form-input"
+                                            style="resize: vertical;"
+                                            placeholder="${q.placeholder || ''}"
+                                        ></textarea>
+                                    </div>
+                                `
+                            } else if (q.question_type === 'radio') {
+                                const options = q.options ? JSON.parse(q.options) : []
+                                return `
+                                    <div class="form-group">
+                                        <label class="form-label">
+                                            ${q.question_text} ${requiredMark}
+                                        </label>
+                                        <div style="margin-top: 8px;">
+                                            ${options.map((opt: string, idx: number) => `
+                                                <div style="margin-bottom: 8px;">
+                                                    <label style="display: flex; align-items: center; cursor: pointer;">
+                                                        <input 
+                                                            type="radio" 
+                                                            name="${questionId}" 
+                                                            value="${opt}"
+                                                            ${q.is_required ? 'required' : ''}
+                                                            style="margin-right: 8px;"
+                                                        >
+                                                        <span style="color: var(--commons-text-primary);">${opt}</span>
+                                                    </label>
+                                                </div>
+                                            `).join('')}
+                                        </div>
+                                    </div>
+                                `
+                            } else if (q.question_type === 'checkbox') {
+                                const options = q.options ? JSON.parse(q.options) : []
+                                return `
+                                    <div class="form-group">
+                                        <label class="form-label">
+                                            ${q.question_text} ${requiredMark}
+                                        </label>
+                                        <div style="margin-top: 8px;">
+                                            ${options.map((opt: string, idx: number) => `
+                                                <div style="margin-bottom: 8px;">
+                                                    <label style="display: flex; align-items: center; cursor: pointer;">
+                                                        <input 
+                                                            type="checkbox" 
+                                                            name="${questionId}" 
+                                                            value="${opt}"
+                                                            ${q.is_required && idx === 0 ? 'required' : ''}
+                                                            style="margin-right: 8px;"
+                                                        >
+                                                        <span style="color: var(--commons-text-primary);">${opt}</span>
+                                                    </label>
+                                                </div>
+                                            `).join('')}
+                                        </div>
+                                    </div>
+                                `
+                            } else if (q.question_type === 'scale') {
+                                const scaleMin = q.scale_min || 1
+                                const scaleMax = q.scale_max || 5
+                                const scaleOptions = Array.from({length: scaleMax - scaleMin + 1}, (_, i) => scaleMin + i)
+                                return `
+                                    <div class="form-group">
+                                        <label class="form-label">
+                                            ${q.question_text} ${requiredMark}
+                                        </label>
+                                        <div style="margin-top: 8px; display: flex; gap: 12px; flex-wrap: wrap;">
+                                            ${scaleOptions.map((val: number) => `
+                                                <label style="display: flex; align-items: center; cursor: pointer;">
+                                                    <input 
+                                                        type="radio" 
+                                                        name="${questionId}" 
+                                                        value="${val}"
+                                                        ${q.is_required ? 'required' : ''}
+                                                        style="margin-right: 4px;"
+                                                    >
+                                                    <span style="color: var(--commons-text-primary);">${val}</span>
+                                                </label>
+                                            `).join('')}
+                                        </div>
+                                        <div style="display: flex; justify-content: space-between; margin-top: 8px; font-size: 12px; color: var(--commons-text-secondary);">
+                                            <span>${q.scale_label_min || ''}</span>
+                                            <span>${q.scale_label_max || ''}</span>
+                                        </div>
+                                    </div>
+                                `
+                            }
+                            return ''
+                        }).join('')}
+                    </div>
+                ` : ''}
+
                 <button 
                     type="submit" 
                     id="submitBtn"
@@ -1002,6 +1154,10 @@ tenantPublic.get('/register', async (c) => {
         const registerForm = document.getElementById('registerForm')
         const submitBtn = document.getElementById('submitBtn')
         
+        // Survey data
+        const surveyId = ${survey ? survey.id : 'null'}
+        const surveyQuestions = ${JSON.stringify(surveyQuestions)}
+        
         registerForm?.addEventListener('submit', async (e) => {
             e.preventDefault()
             
@@ -1028,6 +1184,37 @@ tenantPublic.get('/register', async (c) => {
                 return
             }
             
+            // アンケート回答を収集
+            let surveyResponses = []
+            if (surveyId && surveyQuestions.length > 0) {
+                for (const question of surveyQuestions) {
+                    const questionId = 'survey_q_' + question.id
+                    let answer = null
+                    
+                    if (question.question_type === 'checkbox') {
+                        // チェックボックス: 複数選択
+                        const checkboxes = document.querySelectorAll('input[name="' + questionId + '"]:checked')
+                        const values = Array.from(checkboxes).map(cb => cb.value)
+                        answer = values.join(', ')
+                    } else {
+                        // その他: 単一値
+                        const element = document.querySelector('input[name="' + questionId + '"], textarea[name="' + questionId + '"]')
+                        answer = element ? element.value : null
+                    }
+                    
+                    // 必須チェック
+                    if (question.is_required && (!answer || answer.trim() === '')) {
+                        showToast('アンケートの必須項目を入力してください: ' + question.question_text, 'error')
+                        return
+                    }
+                    
+                    surveyResponses.push({
+                        question_id: question.id,
+                        answer: answer
+                    })
+                }
+            }
+            
             try {
                 submitBtn.disabled = true
                 submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>送信中...'
@@ -1037,7 +1224,8 @@ tenantPublic.get('/register', async (c) => {
                     nickname: nickname.trim(),
                     email: email.trim(),
                     password: password,
-                    bio: bio?.trim() || null
+                    bio: bio?.trim() || null,
+                    survey_responses: surveyResponses
                 })
                 
                 if (response.data.success) {
