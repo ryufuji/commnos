@@ -22,8 +22,11 @@ analytics.get('/overview', async (c) => {
   const { DB } = c.env
   const tenantId = c.get('tenantId')
 
+  console.log('[Analytics Overview] tenantId:', tenantId)
+
   try {
     // 会員統計
+    console.log('[Analytics] Fetching member stats...')
     const memberStats = await DB.prepare(`
       SELECT 
         COUNT(CASE WHEN status = 'active' THEN 1 END) as total_members,
@@ -33,8 +36,10 @@ analytics.get('/overview', async (c) => {
       FROM tenant_memberships
       WHERE tenant_id = ?
     `).bind(tenantId).first() as any
+    console.log('[Analytics] Member stats:', memberStats)
 
     // 投稿統計
+    console.log('[Analytics] Fetching post stats...')
     const postStats = await DB.prepare(`
       SELECT 
         COUNT(CASE WHEN status = 'published' THEN 1 END) as published_posts,
@@ -44,23 +49,29 @@ analytics.get('/overview', async (c) => {
       FROM posts
       WHERE tenant_id = ?
     `).bind(tenantId).first() as any
+    console.log('[Analytics] Post stats:', postStats)
 
     // いいね・コメント統計
+    console.log('[Analytics] Fetching engagement stats...')
     const engagementStats = await DB.prepare(`
       SELECT 
         (SELECT COUNT(*) FROM post_likes WHERE post_id IN (SELECT id FROM posts WHERE tenant_id = ?)) as total_likes,
         (SELECT COUNT(*) FROM comments WHERE tenant_id = ?) as total_comments
     `).bind(tenantId, tenantId).first() as any
+    console.log('[Analytics] Engagement stats:', engagementStats)
 
     // サブスクリプション統計
+    console.log('[Analytics] Fetching subscription stats...')
     const subscriptionStats = await DB.prepare(`
       SELECT 
         COUNT(*) as active_subscriptions
       FROM tenant_memberships
       WHERE tenant_id = ? AND status = 'active' AND stripe_subscription_id IS NOT NULL
     `).bind(tenantId).first() as any
+    console.log('[Analytics] Subscription stats:', subscriptionStats)
 
     // アンケート統計
+    console.log('[Analytics] Fetching survey stats...')
     const surveyStats = await DB.prepare(`
       SELECT 
         COUNT(DISTINCT CASE WHEN s.survey_type = 'join' THEN sr.user_id END) as join_responses,
@@ -69,6 +80,7 @@ analytics.get('/overview', async (c) => {
       JOIN surveys s ON sr.survey_id = s.id
       WHERE s.tenant_id = ?
     `).bind(tenantId).first() as any
+    console.log('[Analytics] Survey stats:', surveyStats)
 
     return c.json({
       success: true,
@@ -100,7 +112,13 @@ analytics.get('/overview', async (c) => {
     })
   } catch (error: any) {
     console.error('[Analytics Overview Error]', error)
-    return c.json({ success: false, message: error.message }, 500)
+    console.error('[Analytics Overview Error Stack]', error.stack)
+    return c.json({ 
+      success: false, 
+      message: error.message || 'Failed to fetch analytics data',
+      error: error.toString(),
+      stack: error.stack
+    }, 500)
   }
 })
 
