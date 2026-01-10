@@ -6297,11 +6297,57 @@ app.get('/points-management', (c) => {
             let currentRules = []
 
             const actionLabels = {
-                'site_visit': 'サイト訪問（1日1回）',
+                // 基本アクション
                 'signup': '会員登録',
-                'subscription': 'サブスクリプション登録',
+                'daily_login': 'デイリーログイン',
                 'post_view': '記事閲覧（1日1回）',
-                'comment_create': 'コメント投稿'
+                'comment_create': 'コメント投稿',
+                
+                // いいね関連
+                'post_like': '投稿にいいね',
+                'comment_like': 'コメントにいいね',
+                'received_post_like': '投稿にいいねされた',
+                'received_comment_like': 'コメントにいいねされた',
+                
+                // コメント関連
+                'comment_reply': 'コメントに返信',
+                'received_comment': '自分の投稿にコメントされた',
+                
+                // プロフィール関連
+                'profile_complete': 'プロフィール完成',
+                'avatar_upload': 'アバター画像アップロード',
+                
+                // 連続ログイン
+                'login_streak_7': '7日連続ログイン',
+                'login_streak_30': '30日連続ログイン',
+                
+                // その他
+                'post_share': '投稿をシェア',
+                'post_bookmark': '投稿をブックマーク',
+                'first_comment': '初めてのコメント',
+                'first_like': '初めてのいいね',
+                'birthday_bonus': '誕生日ボーナス',
+                'anniversary': '会員登録記念日',
+                'survey_complete': 'アンケート回答',
+                'feedback_submit': 'フィードバック送信',
+                
+                // 管理者が有効化するもの
+                'subscription': 'サブスクリプション登録',
+                'active_commenter': '月間10コメント達成',
+                'super_active': '月間50コメント達成',
+                'event_participation': 'イベント参加',
+                'invite_friend': '友達を招待',
+                'invited_signup': '招待された友達が登録'
+            }
+
+            const actionCategories = {
+                '基本アクション': ['signup', 'daily_login', 'post_view', 'comment_create'],
+                'いいね': ['post_like', 'comment_like', 'received_post_like', 'received_comment_like'],
+                'コメント': ['comment_reply', 'received_comment', 'first_comment'],
+                'プロフィール': ['profile_complete', 'avatar_upload'],
+                '連続ログイン': ['login_streak_7', 'login_streak_30'],
+                'その他': ['post_share', 'post_bookmark', 'first_like', 'birthday_bonus', 'anniversary', 'survey_complete', 'feedback_submit'],
+                '高度な機能': ['subscription', 'active_commenter', 'super_active', 'event_participation', 'invite_friend', 'invited_signup']
             }
 
             function switchTab(tab) {
@@ -6349,32 +6395,89 @@ app.get('/points-management', (c) => {
                 const container = document.getElementById('rulesList')
                 container.innerHTML = ''
 
-                currentRules.forEach(rule => {
-                    const ruleCard = document.createElement('div')
-                    ruleCard.className = 'border border-gray-200 rounded-lg p-4 hover:border-yellow-300 transition-colors'
-                    ruleCard.innerHTML = \`
-                        <div class="flex items-center justify-between">
-                            <div class="flex-1">
-                                <div class="flex items-center space-x-3 mb-2">
-                                    <h4 class="font-semibold text-gray-900">\${actionLabels[rule.action] || rule.action}</h4>
-                                    <span class="\${rule.is_active ? 'badge-success' : 'badge-secondary'}">\${rule.is_active ? '有効' : '無効'}</span>
+                // カテゴリ別に表示
+                Object.entries(actionCategories).forEach(([category, actions]) => {
+                    const categoryRules = currentRules.filter(rule => actions.includes(rule.action))
+                    
+                    if (categoryRules.length === 0) return
+
+                    // カテゴリヘッダー
+                    const categoryHeader = document.createElement('div')
+                    categoryHeader.className = 'mb-3'
+                    categoryHeader.innerHTML = \`<h4 class="font-semibold text-gray-900 text-lg">\${category}</h4>\`
+                    container.appendChild(categoryHeader)
+
+                    // カテゴリ内のルール
+                    const categoryContainer = document.createElement('div')
+                    categoryContainer.className = 'grid grid-cols-1 md:grid-cols-2 gap-4 mb-6'
+                    
+                    categoryRules.forEach(rule => {
+                        const ruleCard = document.createElement('div')
+                        ruleCard.className = 'border border-gray-200 rounded-lg p-4 hover:border-yellow-300 transition-colors'
+                        ruleCard.innerHTML = \`
+                            <div class="flex items-center justify-between mb-3">
+                                <div class="flex-1">
+                                    <div class="flex items-center space-x-2 mb-1">
+                                        <h5 class="font-semibold text-gray-900">\${actionLabels[rule.action] || rule.action}</h5>
+                                        <span class="\${rule.is_active ? 'badge-success' : 'badge-secondary'} text-xs">\${rule.is_active ? '有効' : '無効'}</span>
+                                    </div>
+                                    <p class="text-xs text-gray-600">\${rule.note || ''}</p>
                                 </div>
-                                <p class="text-sm text-gray-600">\${rule.note || ''}</p>
-                            </div>
-                            <div class="flex items-center space-x-4">
-                                <div class="text-right">
-                                    <p class="text-2xl font-bold text-yellow-600">\${rule.points}</p>
-                                    <p class="text-xs text-gray-500">ポイント</p>
+                                <div class="text-right ml-3">
+                                    <p class="text-xl font-bold text-yellow-600">\${rule.points}pt</p>
                                 </div>
-                                <button onclick="editRule('\${rule.action}')" class="btn-secondary">
-                                    <i class="fas fa-edit"></i>
-                                    編集
-                                </button>
                             </div>
-                        </div>
-                    \`
-                    container.appendChild(ruleCard)
+                            <button onclick="editRule('\${rule.action}')" class="btn-secondary w-full text-sm">
+                                <i class="fas fa-edit mr-1"></i>
+                                編集
+                            </button>
+                        \`
+                        categoryContainer.appendChild(ruleCard)
+                    })
+                    
+                    container.appendChild(categoryContainer)
                 })
+
+                // 未分類のルール
+                const uncategorizedRules = currentRules.filter(rule => {
+                    return !Object.values(actionCategories).flat().includes(rule.action)
+                })
+                
+                if (uncategorizedRules.length > 0) {
+                    const categoryHeader = document.createElement('div')
+                    categoryHeader.className = 'mb-3'
+                    categoryHeader.innerHTML = '<h4 class="font-semibold text-gray-900 text-lg">その他</h4>'
+                    container.appendChild(categoryHeader)
+
+                    const categoryContainer = document.createElement('div')
+                    categoryContainer.className = 'grid grid-cols-1 md:grid-cols-2 gap-4 mb-6'
+                    
+                    uncategorizedRules.forEach(rule => {
+                        const ruleCard = document.createElement('div')
+                        ruleCard.className = 'border border-gray-200 rounded-lg p-4 hover:border-yellow-300 transition-colors'
+                        ruleCard.innerHTML = \`
+                            <div class="flex items-center justify-between mb-3">
+                                <div class="flex-1">
+                                    <div class="flex items-center space-x-2 mb-1">
+                                        <h5 class="font-semibold text-gray-900">\${rule.action}</h5>
+                                        <span class="\${rule.is_active ? 'badge-success' : 'badge-secondary'} text-xs">\${rule.is_active ? '有効' : '無効'}</span>
+                                    </div>
+                                    <p class="text-xs text-gray-600">\${rule.note || ''}</p>
+                                </div>
+                                <div class="text-right ml-3">
+                                    <p class="text-xl font-bold text-yellow-600">\${rule.points}pt</p>
+                                </div>
+                            </div>
+                            <button onclick="editRule('\${rule.action}')" class="btn-secondary w-full text-sm">
+                                <i class="fas fa-edit mr-1"></i>
+                                編集
+                            </button>
+                        \`
+                        categoryContainer.appendChild(ruleCard)
+                    })
+                    
+                    container.appendChild(categoryContainer)
+                }
             }
 
             async function editRule(action) {
@@ -6947,11 +7050,49 @@ app.get('/tenant/points', (c) => {
                     div.className = 'flex items-center justify-between p-3 border border-gray-200 rounded hover:bg-gray-50'
                     
                     const reasonLabels = {
-                        'site_visit': 'サイト訪問',
+                        // 基本アクション
                         'signup': '会員登録ボーナス',
-                        'subscription': 'サブスクリプション登録',
-                        'post_view': '記事閲覧（1日1回）',
+                        'daily_login': 'デイリーログイン',
+                        'post_view': '記事閲覧',
                         'comment_create': 'コメント投稿',
+                        
+                        // いいね関連
+                        'post_like': '投稿にいいね',
+                        'comment_like': 'コメントにいいね',
+                        'received_post_like': '投稿にいいねされた',
+                        'received_comment_like': 'コメントにいいねされた',
+                        
+                        // コメント関連
+                        'comment_reply': 'コメントに返信',
+                        'received_comment': '自分の投稿にコメントされた',
+                        
+                        // プロフィール関連
+                        'profile_complete': 'プロフィール完成',
+                        'avatar_upload': 'アバター画像アップロード',
+                        
+                        // 連続ログイン
+                        'login_streak_7': '7日連続ログイン',
+                        'login_streak_30': '30日連続ログイン',
+                        
+                        // その他
+                        'post_share': '投稿をシェア',
+                        'post_bookmark': '投稿をブックマーク',
+                        'first_comment': '初めてのコメント',
+                        'first_like': '初めてのいいね',
+                        'birthday_bonus': '誕生日ボーナス',
+                        'anniversary': '会員登録記念日',
+                        'survey_complete': 'アンケート回答',
+                        'feedback_submit': 'フィードバック送信',
+                        
+                        // 高度な機能
+                        'subscription': 'サブスクリプション登録',
+                        'active_commenter': '月間10コメント達成',
+                        'super_active': '月間50コメント達成',
+                        'event_participation': 'イベント参加',
+                        'invite_friend': '友達を招待',
+                        'invited_signup': '招待された友達が登録',
+                        
+                        // システム
                         'admin_grant': '管理者付与',
                         'reward_exchange': '報酬交換',
                         'exchange_rejected': '交換却下（返却）'
