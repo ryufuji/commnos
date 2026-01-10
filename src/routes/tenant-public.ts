@@ -3262,7 +3262,7 @@ tenantPublic.get('/posts', async (c) => {
            class="flex items-center gap-3 p-4 bg-gradient-to-r from-gray-50 to-white rounded-xl hover:shadow-md transition group">
             ${badgeHTML}
             <div class="flex-grow min-w-0">
-                <h4 class="font-semibold text-gray-900 transition truncate text-sm mb-1" style="color: var(--commons-text-primary);">
+                <h4 class="font-semibold  transition truncate text-sm mb-1" style="color: var(--commons-text-primary);">
                   ${postTitle}
                 </h4>
                 <div class="flex items-center gap-3 text-xs text-gray-500">
@@ -3835,7 +3835,7 @@ tenantPublic.get('/posts/:id', async (c) => {
             
             <!-- 投稿ヘッダー -->
             <div class="p-8 border-b">
-                <h1 class="text-3xl md:text-4xl font-bold text-gray-900 mb-4">${postTitle}</h1>
+                <h1 class="text-3xl md:text-4xl font-bold mb-4" style="color: var(--commons-text-primary);">${postTitle}</h1>
                 
                 <!-- メタ情報 -->
                 <div class="flex flex-wrap items-center gap-6 text-gray-600">
@@ -3893,7 +3893,7 @@ tenantPublic.get('/posts/:id', async (c) => {
         
         <!-- コメントセクション -->
         <div class="mt-8 bg-white rounded-lg shadow-md p-8">
-            <h2 class="text-2xl font-bold text-gray-900 mb-6">
+            <h2 class="text-2xl font-bold mb-6" style="color: var(--commons-text-primary);">
                 <i class="fas fa-comments mr-2 text-blue-600"></i>コメント (${comments.length})
             </h2>
             
@@ -3927,7 +3927,7 @@ tenantPublic.get('/posts/:id', async (c) => {
                             <div class="flex-grow">
                                 <div class="flex items-center justify-between mb-2">
                                     <div>
-                                        <span class="font-semibold text-gray-900">${commentUserName}</span>
+                                        <span class="font-semibold" style="color: var(--commons-text-primary);">${commentUserName}</span>
                                         <span class="text-sm text-gray-500 ml-2">${commentDate}</span>
                                     </div>
                                 </div>
@@ -3954,22 +3954,33 @@ tenantPublic.get('/posts/:id', async (c) => {
         </div>
     </footer>
 
-    <script src="/static/app.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+    <script src="/static/app.js"></script>
     <script>
-        // モバイルメニュー切替
-        document.getElementById('mobileMenuToggle')?.addEventListener('click', () => {
-            const menu = document.getElementById('mobileMenu')
-            menu.classList.toggle('hidden')
-        })
-        
-        // いいね機能
-        const likeButton = document.getElementById('likeButton')
-        const likeIcon = document.getElementById('likeIcon')
-        const likeText = document.getElementById('likeText')
-        const likeCount = document.getElementById('likeCount')
-        
-        if (likeButton) {
+        // ページ読み込み完了を待つ
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('[Post Detail] Page loaded, initializing like button...')
+            
+            // モバイルメニュー切替
+            document.getElementById('mobileMenuToggle')?.addEventListener('click', () => {
+                const menu = document.getElementById('mobileMenu')
+                menu.classList.toggle('hidden')
+            })
+            
+            // いいね機能
+            const likeButton = document.getElementById('likeButton')
+            const likeIcon = document.getElementById('likeIcon')
+            const likeText = document.getElementById('likeText')
+            const likeCount = document.getElementById('likeCount')
+            
+            console.log('[Post Detail] Like button elements:', {
+                likeButton: !!likeButton,
+                likeIcon: !!likeIcon,
+                likeText: !!likeText,
+                likeCount: !!likeCount
+            })
+            
+            if (likeButton) {
             const postId = likeButton.dataset.postId
             const subdomain = '${subdomain}'
             
@@ -4285,7 +4296,7 @@ tenantPublic.get('/members', async (c) => {
                 
                 <!-- 会員情報 -->
                 <div class="mb-2 flex items-center gap-2">
-                    <h3 class="text-xl font-bold text-gray-900">${nickname}</h3>
+                    <h3 class="text-xl font-bold" style="color: var(--commons-text-primary);">${nickname}</h3>
                     ${roleBadge}
                 </div>
                 
@@ -4893,7 +4904,7 @@ tenantPublic.get('/members/:memberId', async (c) => {
       
       const postHTML = '<div class="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow">' +
         '<a href="/tenant/posts/' + post.id + '?subdomain=' + subdomain + '" class="block">' +
-        '<h3 class="text-xl font-bold text-gray-900 mb-2 hover:text-blue-600 transition">' + postTitle + '</h3>' +
+        '<h3 class="text-xl font-bold mb-2 hover:text-blue-600 transition" style="color: var(--commons-text-primary);">' + postTitle + '</h3>' +
         '<p class="text-gray-600 mb-4">' + postExcerpt + '...</p>' +
         '<div class="flex items-center justify-between text-sm text-gray-500">' +
         '<div class="flex items-center gap-4">' +
@@ -4931,7 +4942,7 @@ tenantPublic.get('/members/:memberId', async (c) => {
     '<div class="flex-shrink-0">' + avatarHTML + '</div>' +
     '<div class="flex-grow text-center md:text-left">' +
     '<div class="flex flex-col md:flex-row items-center md:items-start gap-3 mb-4">' +
-    '<h1 class="text-3xl font-bold text-gray-900">' + nickname + '</h1>' + roleBadgeHTML + '</div>' +
+    '<h1 class="text-3xl font-bold" style="color: var(--commons-text-primary);">' + nickname + '</h1>' + roleBadgeHTML + '</div>' +
     '<p class="text-gray-600 mb-6 whitespace-pre-wrap">' + bio + '</p>' +
     '<div class="grid grid-cols-3 gap-4 mb-6">' +
     '<div class="text-center p-4 bg-blue-50 rounded-lg">' +
@@ -4947,7 +4958,7 @@ tenantPublic.get('/members/:memberId', async (c) => {
     '</div></div></div>' +
     '<div class="bg-white rounded-lg shadow-lg p-8">' +
     '<div class="flex items-center justify-between mb-6">' +
-    '<h2 class="text-2xl font-bold text-gray-900"><i class="fas fa-newspaper mr-2 text-blue-600"></i>最近の投稿</h2>' +
+    '<h2 class="text-2xl font-bold" style="color: var(--commons-text-primary);"><i class="fas fa-newspaper mr-2 text-blue-600"></i>最近の投稿</h2>' +
     '</div><div class="space-y-4">' + postsHTML + '</div></div>' +
     '<div class="mt-8 text-center">' +
     '<a href="/tenant/members?subdomain=' + subdomain + '" class="inline-block px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition">' +
@@ -5031,7 +5042,7 @@ tenantPublic.get('/mypage', async (c) => {
     <!-- ログインが必要 -->
     <div id="needLogin" class="hidden fixed inset-0 bg-gray-50 flex items-center justify-center z-50">
         <div class="text-center">
-            <h1 class="text-3xl font-bold text-gray-900 mb-4">ログインが必要です</h1>
+            <h1 class="text-3xl font-bold  mb-4" style="color: var(--commons-text-primary);">ログインが必要です</h1>
             <p class="text-gray-600 mb-6">マイページにアクセスするにはログインしてください</p>
             <a href="/login?subdomain=${subdomain}" class="inline-block px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
                 ログインページへ
@@ -5068,7 +5079,7 @@ tenantPublic.get('/mypage', async (c) => {
     <main class="container mx-auto px-4 py-8">
         <!-- ページヘッダー -->
         <div class="mb-8">
-            <h1 class="text-3xl md:text-4xl font-bold text-gray-900 mb-2">
+            <h1 class="text-3xl md:text-4xl font-bold mb-2" style="color: var(--commons-text-primary);">
                 <i class="fas fa-user-circle mr-2 text-blue-600"></i>マイページ
             </h1>
             <p class="text-gray-600">あなたの活動状況</p>
@@ -5305,7 +5316,7 @@ tenantPublic.get('/mypage', async (c) => {
                             return \`
                                 <div class="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow">
                                     <div class="flex items-start justify-between mb-3">
-                                        <h3 class="text-xl font-bold text-gray-900 flex-1">\${post.title}</h3>
+                                        <h3 class="text-xl font-bold  flex-1" style="color: var(--commons-text-primary);">\${post.title}</h3>
                                         \${statusBadge}
                                     </div>
                                     <p class="text-gray-600 mb-4">\${(post.excerpt || post.content || '').substring(0, 100)}...</p>
@@ -5412,7 +5423,7 @@ tenantPublic.get('/liked-posts', async (c) => {
 </head>
 <body class="bg-gray-50 min-h-screen flex items-center justify-center">
     <div class="text-center">
-        <h1 class="text-3xl font-bold text-gray-900 mb-4">Login Required</h1>
+        <h1 class="text-3xl font-bold  mb-4" style="color: var(--commons-text-primary);">Login Required</h1>
         <p class="text-gray-600 mb-6">Please login to view your liked posts</p>
         <a href="/login?subdomain=${subdomain}" class="inline-block px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
             Login
@@ -5471,7 +5482,7 @@ tenantPublic.get('/liked-posts', async (c) => {
                     <i class="fas fa-file-alt text-3xl text-white opacity-50"></i>
                 </div>
                 <div class="flex-grow">
-                    <h3 class="text-xl font-bold text-gray-900 mb-2">${postTitle}</h3>
+                    <h3 class="text-xl font-bold  mb-2" style="color: var(--commons-text-primary);">${postTitle}</h3>
                     <p class="text-gray-600 mb-3 line-clamp-2">${postExcerpt}...</p>
                     <div class="flex items-center justify-between text-sm text-gray-500">
                         <div class="flex items-center space-x-4">
@@ -5531,7 +5542,7 @@ tenantPublic.get('/liked-posts', async (c) => {
     <main class="container mx-auto px-4 py-8">
         <!-- Page Header -->
         <div class="mb-8">
-            <h1 class="text-3xl md:text-4xl font-bold text-gray-900 mb-2">
+            <h1 class="text-3xl md:text-4xl font-bold  mb-2" style="color: var(--commons-text-primary);">
                 <i class="fas fa-heart mr-2 text-red-500"></i>Liked Posts
             </h1>
             <p class="text-gray-600">Posts you have liked (${likedPosts.length})</p>
@@ -5669,7 +5680,7 @@ tenantPublic.get('/liked-posts', async (c) => {
       
       return '<div class="bg-white rounded-lg shadow p-6 hover:shadow-lg transition">' +
         '<div class="flex items-start justify-between mb-3">' +
-        '<h3 class="text-xl font-bold text-gray-900 flex-grow">' +
+        '<h3 class="text-xl font-bold  flex-grow" style="color: var(--commons-text-primary);">' +
         '<a href="/tenant/posts/' + post.id + '?subdomain=' + subdomain + '" class="hover:text-blue-600">' + post.title + '</a>' +
         '</h3></div>' +
         '<p class="text-gray-600 mb-4">' + excerpt + '</p>' +
@@ -5791,7 +5802,7 @@ tenantPublic.get('/liked-posts', async (c) => {
     <main class="container mx-auto px-4 py-8">
         <!-- ページヘッダー -->
         <div class="bg-white rounded-lg shadow-lg p-8 mb-8">
-            <h1 class="text-3xl font-bold text-gray-900 mb-2">
+            <h1 class="text-3xl font-bold  mb-2" style="color: var(--commons-text-primary);">
                 <i class="fas fa-heart text-red-500 mr-3"></i>いいねした投稿
             </h1>
             <p class="text-gray-600">
@@ -5869,7 +5880,7 @@ tenantPublic.get('/subscription', async (c) => {
     <header class="bg-white shadow-sm sticky top-0 z-50">
         <div class="max-w-7xl mx-auto px-4 py-4">
             <div class="flex items-center justify-between">
-                <h1 class="text-2xl font-bold text-gray-900">
+                <h1 class="text-2xl font-bold " style="color: var(--commons-text-primary);">
                     <i class="fas fa-credit-card mr-2"></i>サブスクリプション管理
                 </h1>
                 <div class="flex gap-3">
@@ -6358,7 +6369,7 @@ tenantPublic.get('/plans', async (c) => {
         <div class="bg-white rounded-lg shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div class="p-6 border-b border-gray-200">
                 <div class="flex justify-between items-center">
-                    <h2 class="text-2xl font-bold text-gray-900">
+                    <h2 class="text-2xl font-bold " style="color: var(--commons-text-primary);">
                         <i class="fas fa-tag mr-2 text-primary-500"></i>
                         <span id="modalTitle">新規プラン作成</span>
                     </h2>
@@ -6807,7 +6818,7 @@ tenantPublic.get('/chat', async (c) => {
     
     <div class="container mx-auto px-4 py-8 max-w-6xl">
         <div class="flex items-center justify-between mb-6">
-            <h1 class="text-3xl font-bold text-gray-900">
+            <h1 class="text-3xl font-bold " style="color: var(--commons-text-primary);">
                 <i class="fas fa-comments mr-3 text-primary"></i>
                 チャット
             </h1>
@@ -6840,7 +6851,7 @@ tenantPublic.get('/chat', async (c) => {
         <div class="bg-white rounded-lg shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div class="p-6 border-b border-gray-200">
                 <div class="flex justify-between items-center">
-                    <h2 class="text-2xl font-bold text-gray-900">
+                    <h2 class="text-2xl font-bold " style="color: var(--commons-text-primary);">
                         <i class="fas fa-plus-circle mr-2 text-primary"></i>
                         チャットルーム作成
                     </h2>
@@ -7000,7 +7011,7 @@ tenantPublic.get('/chat', async (c) => {
                     <a href="/tenant/chat/\${room.id}?subdomain=${subdomain}" 
                        class="block bg-white rounded-lg shadow-md hover:shadow-xl transition p-6 border-l-4 border-primary">
                         <div class="flex items-start justify-between mb-3">
-                            <h3 class="text-xl font-bold text-gray-900 flex-1">
+                            <h3 class="text-xl font-bold  flex-1" style="color: var(--commons-text-primary);">
                                 <i class="fas fa-comments text-primary mr-2"></i>
                                 \${room.name}
                             </h3>
@@ -7488,7 +7499,7 @@ tenantPublic.get('/chat/:id', async (c) => {
                     document.getElementById('roomInfo').innerHTML = \`
                         <div class="flex items-start justify-between">
                             <div>
-                                <h2 class="text-2xl font-bold text-gray-900 mb-2">
+                                <h2 class="text-2xl font-bold  mb-2" style="color: var(--commons-text-primary);">
                                     <i class="fas fa-comments mr-2 text-primary"></i>
                                     \${room.name}
                                 </h2>
@@ -7744,7 +7755,7 @@ tenantPublic.get('/profile', async (c) => {
     <header class="bg-white shadow-sm sticky top-0 z-40">
         <div class="max-w-7xl mx-auto px-4 py-4">
             <div class="flex justify-between items-center">
-                <h1 class="text-2xl font-bold text-gray-900">
+                <h1 class="text-2xl font-bold " style="color: var(--commons-text-primary);">
                     <i class="fas fa-user-circle mr-2 text-primary"></i>
                     プロフィール
                 </h1>
@@ -7785,7 +7796,7 @@ tenantPublic.get('/profile', async (c) => {
                         </button>
                         <input type="file" id="avatarInput" accept="image/*" class="hidden" />
                     </div>
-                    <h2 id="userName" class="text-2xl font-bold text-gray-900 mb-2"></h2>
+                    <h2 id="userName" class="text-2xl font-bold  mb-2" style="color: var(--commons-text-primary);"></h2>
                     <p id="userEmail" class="text-gray-600 mb-4"></p>
                     <div class="flex gap-2">
                         <span id="userRole" class="px-3 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-semibold"></span>
@@ -7796,7 +7807,7 @@ tenantPublic.get('/profile', async (c) => {
 
             <!-- プロフィール編集フォーム -->
             <div class="bg-white rounded-lg shadow-sm p-8">
-                <h3 class="text-xl font-bold text-gray-900 mb-6">
+                <h3 class="text-xl font-bold  mb-6" style="color: var(--commons-text-primary);">
                     <i class="fas fa-edit mr-2 text-primary"></i>
                     プロフィール編集
                 </h3>
@@ -8248,7 +8259,7 @@ tenantPublic.get('/member-plans', async (c) => {
                 const plansHtml = response.data.plans.map(plan => \`
                     <div class="bg-white rounded-lg shadow-md p-6 hover:shadow-xl transition-shadow">
                         <div class="mb-4">
-                            <h3 class="text-2xl font-bold text-gray-900 mb-2">\${plan.name}</h3>
+                            <h3 class="text-2xl font-bold  mb-2" style="color: var(--commons-text-primary);">\${plan.name}</h3>
                             <p class="text-gray-600 text-sm mb-4">\${plan.description || ''}</p>
                             <div class="flex items-baseline">
                                 <span class="text-4xl font-bold text-primary-600">¥\${plan.price.toLocaleString()}</span>
@@ -8690,7 +8701,7 @@ tenantPublic.get('/events', async (c) => {
                 ${featuredEvents.length > 0 ? `
                 <!-- 注目イベント -->
                 <div class="bg-gradient-to-br from-yellow-50 to-orange-50 rounded-2xl shadow-sm p-6">
-                    <h2 class="text-2xl font-bold text-gray-900 mb-4 flex items-center">
+                    <h2 class="text-2xl font-bold  mb-4 flex items-center" style="color: var(--commons-text-primary);">
                         <span class="w-10 h-10 bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center mr-3">
                             <i class="fas fa-star text-white"></i>
                         </span>
@@ -8705,7 +8716,7 @@ tenantPublic.get('/events', async (c) => {
                 <!-- イベント一覧 -->
                 <div class="bg-white rounded-2xl shadow-sm p-6">
                     <div class="flex items-center justify-between mb-6">
-                        <h2 class="text-2xl font-bold text-gray-900 flex items-center">
+                        <h2 class="text-2xl font-bold  flex items-center" style="color: var(--commons-text-primary);">
                             <i class="fas fa-calendar-day style="color: var(--commons-primary)" mr-3"></i>
                             今後のイベント
                         </h2>
@@ -8746,7 +8757,7 @@ tenantPublic.get('/events', async (c) => {
             <div class="lg:col-span-1 space-y-6">
                 <!-- 統計情報 -->
                 <div class="bg-white rounded-2xl shadow-sm p-6">
-                    <h3 class="text-xl font-bold text-gray-900 mb-4">
+                    <h3 class="text-xl font-bold  mb-4" style="color: var(--commons-text-primary);">
                         <i class="fas fa-chart-bar text-blue-600 mr-2"></i>統計情報
                     </h3>
                     <div class="space-y-4">
@@ -8763,7 +8774,7 @@ tenantPublic.get('/events', async (c) => {
                 
                 <!-- イベントタイプ凡例 -->
                 <div class="bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl shadow-sm p-6">
-                    <h3 class="text-lg font-bold text-gray-900 mb-4">
+                    <h3 class="text-lg font-bold  mb-4" style="color: var(--commons-text-primary);">
                         <i class="fas fa-tags style="color: var(--commons-primary)" mr-2"></i>イベントタイプ
                     </h3>
                     <div class="space-y-2 text-sm">
@@ -8860,7 +8871,7 @@ tenantPublic.get('/events', async (c) => {
                                     <span class="\${typeColor} text-white text-xs px-2 py-1 rounded-full">\${typeLabel}</span>
                                     \${event.is_member_only ? '<span class="bg-yellow-500 text-white text-xs px-2 py-1 rounded-full">会員限定</span>' : ''}
                                 </div>
-                                <h3 class="font-bold text-gray-900 mb-1 truncate">\${event.title}</h3>
+                                <h3 class="font-bold  mb-1 truncate" style="color: var(--commons-text-primary);">\${event.title}</h3>
                                 <p class="text-sm text-gray-600">
                                     <i class="far fa-calendar mr-1"></i>\${formatEventDate(event.start_datetime)}
                                 </p>
@@ -8909,7 +8920,7 @@ tenantPublic.get('/events', async (c) => {
                                     \${event.is_featured ? '<span class="bg-yellow-500 text-white text-xs px-3 py-1 rounded-full font-semibold"><i class="fas fa-star mr-1"></i>注目</span>' : ''}
                                     \${event.is_member_only ? '<span class="bg-purple-500 text-white text-xs px-3 py-1 rounded-full font-semibold">会員限定</span>' : ''}
                                 </div>
-                                <h3 class="text-xl font-bold text-gray-900 mb-2">\${event.title}</h3>
+                                <h3 class="text-xl font-bold  mb-2" style="color: var(--commons-text-primary);">\${event.title}</h3>
                                 <p class="text-gray-600 mb-3 line-clamp-2">\${event.description || ''}</p>
                                 <div class="flex flex-wrap gap-4 text-sm text-gray-600">
                                     <div><i class="far fa-calendar style="color: var(--commons-primary)" mr-2"></i>\${formatEventDate(event.start_datetime)}</div>
@@ -8954,7 +8965,7 @@ tenantPublic.get('/events', async (c) => {
                         \${event.is_member_only ? '<span class="bg-purple-500 text-white text-sm px-4 py-2 rounded-full font-semibold">会員限定</span>' : ''}
                     </div>
                     
-                    <h2 class="text-3xl font-bold text-gray-900 mb-4">\${event.title}</h2>
+                    <h2 class="text-3xl font-bold  mb-4" style="color: var(--commons-text-primary);">\${event.title}</h2>
                     
                     <div class="space-y-4 mb-6">
                         <div class="flex items-start gap-3">
@@ -9019,7 +9030,7 @@ tenantPublic.get('/events', async (c) => {
                     
                     \${event.description ? \`
                         <div class="mb-6">
-                            <h3 class="text-xl font-bold text-gray-900 mb-3">詳細</h3>
+                            <h3 class="text-xl font-bold  mb-3" style="color: var(--commons-text-primary);">詳細</h3>
                             <p class="text-gray-700 leading-relaxed whitespace-pre-wrap">\${event.description}</p>
                         </div>
                     \` : ''}
