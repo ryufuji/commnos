@@ -4236,13 +4236,10 @@ tenantPublic.get('/members', async (c) => {
   const membersResult = await DB.prepare(`
     SELECT 
       u.id, u.nickname, u.email, u.avatar_url, u.bio, u.created_at,
-      tm.role, tm.joined_at,
-      COUNT(DISTINCT p.id) as post_count
+      tm.role, tm.joined_at
     FROM tenant_memberships tm
     JOIN users u ON tm.user_id = u.id
-    LEFT JOIN posts p ON p.author_id = u.id AND p.tenant_id = tm.tenant_id AND p.status = 'published'
     WHERE ${whereConditions}
-    GROUP BY u.id, u.nickname, u.email, u.avatar_url, u.bio, u.created_at, tm.role, tm.joined_at
     ORDER BY tm.joined_at DESC
     LIMIT ? OFFSET ?
   `).bind(...bindParams, perPage, offset).all()
@@ -4262,7 +4259,6 @@ tenantPublic.get('/members', async (c) => {
       const bio = String(member.bio || 'プロフィールが設定されていません')
       const avatarUrl = String(member.avatar_url || '')
       const role = String(member.role || 'member')
-      const postCount = member.post_count || 0
       const joinedDate = new Date(String(member.joined_at)).toLocaleDateString('ja-JP')
       
       // ロールのバッジ
@@ -4302,10 +4298,6 @@ tenantPublic.get('/members', async (c) => {
                 
                 <!-- 統計情報 -->
                 <div class="flex items-center gap-4 text-sm text-gray-500 mb-4">
-                    <div class="flex items-center gap-1">
-                        <i class="fas fa-file-alt"></i>
-                        <span>${postCount} 投稿</span>
-                    </div>
                     <div class="flex items-center gap-1">
                         <i class="fas fa-calendar"></i>
                         <span>${joinedDate} 参加</span>
