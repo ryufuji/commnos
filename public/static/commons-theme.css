@@ -403,3 +403,64 @@ th, td {
     max-width: 1440px;
   }
 }
+
+/* ========================================
+   PC表示最適化（ファーストビュー改善）
+======================================== */
+
+@media (min-width: 769px) {
+  /* ヒーローセクション（ホームページ）のパディングを削減 */
+  section[style*="padding: 80px 24px 60px"],
+  section[style*="padding: 80px 24px"] {
+    padding: 40px 24px 32px !important;
+  }
+  
+  /* ページヘッダー（投稿、イベント）のパディングを削減 */
+  section[style*="padding: 64px 24px 48px"],
+  section[style*="padding: 64px 24px"] {
+    padding: 40px 24px 32px !important;
+  }
+  
+  /* グラデーション背景セクション全般の高さ調整 */
+  section[style*="background: linear-gradient"] {
+    padding-top: 40px !important;
+    padding-bottom: 32px !important;
+  }
+  
+  /* メインコンテンツの上部余白を削減 */
+  main[style*="padding: 64px 24px"] {
+    padding: 40px 24px !important;
+  }
+  
+  main[style*="padding: 48px 24px"] {
+    padding: 32px 24px !important;
+  }
+  
+  /* セクション間の余白を削減 */
+  section[style*="margin-bottom: 96px"] {
+    margin-bottom: 48px !important;
+  }
+  
+  section[style*="margin-bottom: 64px"] {
+    margin-bottom: 40px !important;
+  }
+  
+  /* ヒーローセクション内の要素調整 */
+  section[style*="background: linear-gradient"] h1 {
+    margin-bottom: 12px !important;
+  }
+  
+  section[style*="background: linear-gradient"] p {
+    margin-bottom: 32px !important;
+  }
+  
+  /* 統計カードのパディング削減 */
+  section[style*="background: linear-gradient"] div[style*="padding: 32px"] {
+    padding: 20px 16px !important;
+  }
+  
+  /* 統計カードの数字サイズ調整 */
+  section[style*="background: linear-gradient"] div[style*="font-size: 48px"] {
+    font-size: 36px !important;
+  }
+}
