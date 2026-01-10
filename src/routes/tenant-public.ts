@@ -1293,13 +1293,353 @@ tenantPublic.get('/register/pending', async (c) => {
 })
 
 // --------------------------------------------
-// テナントホームページ
+// テナントホームページ（統一デザイン適用）
 // --------------------------------------------
 tenantPublic.get('/home', async (c) => {
+  const { DB } = c.env
   const subdomain = c.req.query('subdomain')
   
-  // ホームページは投稿一覧にリダイレクト
-  return c.redirect(`/tenant/posts?subdomain=${subdomain}`)
+  if (!subdomain) {
+    return c.text('Subdomain is required', 400)
+  }
+  
+  // テナント情報を取得
+  const tenant = await DB.prepare(
+    'SELECT * FROM tenants WHERE subdomain = ? AND status = ?'
+  ).bind(subdomain, 'active').first() as any
+  
+  if (!tenant) {
+    return c.text('Tenant not found', 404)
+  }
+  
+  const tenantName = String(tenant.name || '')
+  const tenantSubtitle = String(tenant.subtitle || '')
+  
+  // 最新投稿を取得（6件）
+  const postsResult = await DB.prepare(`
+    SELECT p.*, u.nickname as author_name,
+           (SELECT COUNT(*) FROM post_likes WHERE post_id = p.id) as like_count
+    FROM posts p
+    LEFT JOIN users u ON p.author_id = u.id
+    WHERE p.tenant_id = ? AND p.status = ?
+    ORDER BY p.created_at DESC
+    LIMIT 6
+  `).bind(tenant.id, 'published').all()
+  
+  const posts = postsResult.results || []
+  
+  // 今後のイベントを取得（3件）
+  const eventsResult = await DB.prepare(`
+    SELECT *
+    FROM events
+    WHERE tenant_id = ? AND is_published = 1
+    AND start_datetime >= datetime('now')
+    ORDER BY start_datetime ASC
+    LIMIT 3
+  `).bind(tenant.id).all()
+  
+  const events = eventsResult.results || []
+  
+  // 統計情報を取得
+  const memberResult = await DB.prepare(`
+    SELECT COUNT(*) as count
+    FROM tenant_memberships
+    WHERE tenant_id = ? AND status = ?
+  `).bind(tenant.id, 'active').first()
+  
+  const memberCount = Number(memberResult?.count || 0)
+  
+  const postCountResult = await DB.prepare(`
+    SELECT COUNT(*) as count
+    FROM posts
+    WHERE tenant_id = ? AND status = ?
+  `).bind(tenant.id, 'published').first()
+  
+  const postCount = Number(postCountResult?.count || 0)
+  
+  const eventCountResult = await DB.prepare(`
+    SELECT COUNT(*) as count
+    FROM events
+    WHERE tenant_id = ? AND is_published = 1 AND start_datetime >= datetime('now')
+  `).bind(tenant.id).first()
+  
+  const eventCount = Number(eventCountResult?.count || 0)
+  
+  return c.html(`<!DOCTYPE html>
+<html lang="ja" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${tenantName} - ホーム</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="/static/commons-theme.css" rel="stylesheet">
+    <link href="/static/commons-components.css" rel="stylesheet">
+</head>
+<body style="background: var(--commons-bg-light);">
+    <!-- ヘッダー -->
+    <header class="commons-header">
+        <div class="commons-header-inner">
+            <a href="/tenant/home?subdomain=${subdomain}" class="commons-logo">
+                <i class="fas fa-users"></i>
+                <span>${tenantName}</span>
+            </a>
+            
+            <nav class="commons-nav hidden md:flex">
+                <a href="/tenant/home?subdomain=${subdomain}" class="commons-nav-link active">
+                    <i class="fas fa-home mr-2"></i>ホーム
+                </a>
+                <a href="/tenant/posts?subdomain=${subdomain}" class="commons-nav-link">
+                    <i class="fas fa-newspaper mr-2"></i>投稿
+                </a>
+                <a href="/tenant/events?subdomain=${subdomain}" class="commons-nav-link">
+                    <i class="fas fa-calendar-alt mr-2"></i>イベント
+                </a>
+                <a href="/tenant/members?subdomain=${subdomain}" class="commons-nav-link">
+                    <i class="fas fa-users mr-2"></i>メンバー
+                </a>
+                <a href="/tenant/shop?subdomain=${subdomain}" class="commons-nav-link">
+                    <i class="fas fa-shopping-bag mr-2"></i>ショップ
+                </a>
+            </nav>
+            
+            <div class="commons-header-actions">
+                <a href="/tenant/notifications?subdomain=${subdomain}" class="relative p-2 hover:bg-gray-100 rounded-full transition">
+                    <i class="fas fa-bell text-xl" style="color: var(--commons-text-secondary);"></i>
+                </a>
+                <a href="/login?subdomain=${subdomain}" class="px-6 py-2 rounded-full font-semibold transition" 
+                   style="background: var(--commons-primary); color: white;">
+                    ログイン
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- ヒーローセクション -->
+    <section style="background: linear-gradient(135deg, var(--commons-primary) 0%, var(--commons-primary-dark) 100%); color: white; padding: 80px 24px 60px;">
+        <div style="max-width: 1280px; margin: 0 auto; text-align: center;">
+            <h1 style="font-size: var(--font-size-hero); font-weight: var(--font-weight-bold); line-height: var(--line-height-tight); margin-bottom: 24px;">
+                ${tenantName}
+            </h1>
+            ${tenantSubtitle ? `<p style="font-size: var(--font-size-medium); color: rgba(255,255,255,0.9); margin-bottom: 48px;">${tenantSubtitle}</p>` : ''}
+            
+            <!-- 統計カード -->
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 24px; max-width: 800px; margin: 0 auto;">
+                <div style="background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); padding: 32px; border-radius: var(--radius-lg); text-align: center;">
+                    <div style="font-size: 48px; font-weight: var(--font-weight-bold); margin-bottom: 8px;">${memberCount}</div>
+                    <div style="font-size: var(--font-size-small); opacity: 0.9;">メンバー</div>
+                </div>
+                <div style="background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); padding: 32px; border-radius: var(--radius-lg); text-align: center;">
+                    <div style="font-size: 48px; font-weight: var(--font-weight-bold); margin-bottom: 8px;">${postCount}</div>
+                    <div style="font-size: var(--font-size-small); opacity: 0.9;">投稿</div>
+                </div>
+                <div style="background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); padding: 32px; border-radius: var(--radius-lg); text-align: center;">
+                    <div style="font-size: 48px; font-weight: var(--font-weight-bold); margin-bottom: 8px;">${eventCount}</div>
+                    <div style="font-size: var(--font-size-small); opacity: 0.9;">イベント</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- メインコンテンツ -->
+    <main style="max-width: 1280px; margin: 0 auto; padding: 64px 24px;">
+        <!-- 最新投稿セクション -->
+        <section style="margin-bottom: 96px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 48px;">
+                <div>
+                    <h2 style="font-size: var(--font-size-large); font-weight: var(--font-weight-bold); color: var(--commons-text-primary); margin-bottom: 8px;">
+                        <i class="fas fa-fire" style="color: var(--commons-accent-yellow); margin-right: 12px;"></i>
+                        最新投稿
+                    </h2>
+                    <p style="color: var(--commons-text-secondary); font-size: var(--font-size-small);">コミュニティの新着コンテンツ</p>
+                </div>
+                <a href="/tenant/posts?subdomain=${subdomain}" 
+                   style="color: var(--commons-primary); font-weight: var(--font-weight-semibold); text-decoration: none; display: flex; align-items: center; gap: 8px;">
+                    すべて見る
+                    <i class="fas fa-arrow-right"></i>
+                </a>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 32px;">
+                ${posts.length === 0 ? `
+                    <div style="grid-column: 1 / -1; text-align: center; padding: 80px 24px; background: white; border-radius: var(--radius-lg);">
+                        <i class="fas fa-inbox" style="font-size: 64px; color: var(--commons-text-tertiary); margin-bottom: 24px;"></i>
+                        <p style="color: var(--commons-text-secondary); font-size: var(--font-size-medium);">まだ投稿がありません</p>
+                    </div>
+                ` : posts.map((post: any) => {
+                    const postTitle = String(post.title || '')
+                    const postContent = String(post.content || '')
+                    const postExcerpt = String(post.excerpt || postContent.substring(0, 120))
+                    const authorName = String(post.author_name || '不明')
+                    const thumbnailUrl = String(post.thumbnail_url || '')
+                    const likeCount = Number(post.like_count || 0)
+                    const viewCount = Number(post.view_count || 0)
+                    const createdDate = new Date(String(post.created_at))
+                    const now = new Date()
+                    const diffHours = Math.floor((now.getTime() - createdDate.getTime()) / 3600000)
+                    const isNew = diffHours < 24
+                    
+                    return `
+                        <a href="/tenant/posts/${post.id}?subdomain=${subdomain}" 
+                           style="display: block; background: white; border-radius: var(--radius-lg); overflow: hidden; box-shadow: var(--shadow-soft); transition: all var(--transition-normal); text-decoration: none; position: relative;"
+                           onmouseover="this.style.transform='translateY(-8px)'; this.style.boxShadow='var(--shadow-card)'"
+                           onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='var(--shadow-soft)'">
+                            ${isNew ? '<div style="position: absolute; top: 16px; right: 16px; background: var(--commons-accent-yellow); color: white; padding: 6px 16px; border-radius: var(--radius-full); font-size: var(--font-size-xsmall); font-weight: var(--font-weight-bold); z-index: 10;">NEW</div>' : ''}
+                            
+                            ${thumbnailUrl ? `
+                                <div style="width: 100%; height: 240px; overflow: hidden;">
+                                    <img src="${thumbnailUrl}" alt="${postTitle}" style="width: 100%; height: 100%; object-fit: cover; transition: transform var(--transition-slow);"
+                                         onmouseover="this.style.transform='scale(1.05)'"
+                                         onmouseout="this.style.transform='scale(1)'">
+                                </div>
+                            ` : `
+                                <div style="width: 100%; height: 240px; background: linear-gradient(135deg, var(--commons-bg-cyan) 0%, var(--commons-primary) 100%); display: flex; align-items: center; justify-content: center;">
+                                    <i class="fas fa-file-alt" style="font-size: 80px; color: rgba(255,255,255,0.3);"></i>
+                                </div>
+                            `}
+                            
+                            <div style="padding: 24px;">
+                                <h3 style="font-size: var(--font-size-medium); font-weight: var(--font-weight-bold); color: var(--commons-text-primary); margin-bottom: 12px; line-height: var(--line-height-tight); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
+                                    ${postTitle}
+                                </h3>
+                                <p style="color: var(--commons-text-secondary); font-size: var(--font-size-small); line-height: var(--line-height-normal); margin-bottom: 16px; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;">
+                                    ${postExcerpt}
+                                </p>
+                                
+                                <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 16px; border-top: 1px solid var(--commons-border-light);">
+                                    <div style="display: flex; align-items: center; gap: 8px;">
+                                        <div style="width: 32px; height: 32px; border-radius: 50%; background: var(--commons-primary-light); display: flex; align-items: center; justify-content: center; color: var(--commons-primary); font-weight: var(--font-weight-bold); font-size: var(--font-size-small);">
+                                            ${authorName.charAt(0).toUpperCase()}
+                                        </div>
+                                        <span style="color: var(--commons-text-secondary); font-size: var(--font-size-small);">${authorName}</span>
+                                    </div>
+                                    <div style="display: flex; gap: 16px; color: var(--commons-text-tertiary); font-size: var(--font-size-small);">
+                                        <span><i class="far fa-heart" style="margin-right: 4px;"></i>${likeCount}</span>
+                                        <span><i class="far fa-eye" style="margin-right: 4px;"></i>${viewCount}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </a>
+                    `
+                }).join('')}
+            </div>
+        </section>
+
+        <!-- 今後のイベントセクション -->
+        ${events.length > 0 ? `
+        <section style="margin-bottom: 96px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 48px;">
+                <div>
+                    <h2 style="font-size: var(--font-size-large); font-weight: var(--font-weight-bold); color: var(--commons-text-primary); margin-bottom: 8px;">
+                        <i class="fas fa-calendar-alt" style="color: var(--commons-primary); margin-right: 12px;"></i>
+                        今後のイベント
+                    </h2>
+                    <p style="color: var(--commons-text-secondary); font-size: var(--font-size-small);">参加予定のイベント</p>
+                </div>
+                <a href="/tenant/events?subdomain=${subdomain}" 
+                   style="color: var(--commons-primary); font-weight: var(--font-weight-semibold); text-decoration: none; display: flex; align-items: center; gap: 8px;">
+                    すべて見る
+                    <i class="fas fa-arrow-right"></i>
+                </a>
+            </div>
+            
+            <div style="display: grid; gap: 24px;">
+                ${events.map((event: any) => {
+                    const eventTitle = String(event.title || '')
+                    const eventDescription = String(event.description || '')
+                    const locationName = String(event.location_name || '')
+                    const startDate = new Date(String(event.start_datetime))
+                    const formattedDate = startDate.toLocaleDateString('ja-JP', { month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+                    
+                    return `
+                        <a href="/tenant/events?subdomain=${subdomain}" 
+                           style="display: flex; gap: 24px; background: white; padding: 32px; border-radius: var(--radius-lg); box-shadow: var(--shadow-soft); transition: all var(--transition-normal); text-decoration: none;"
+                           onmouseover="this.style.transform='translateX(8px)'; this.style.boxShadow='var(--shadow-medium)'"
+                           onmouseout="this.style.transform='translateX(0)'; this.style.boxShadow='var(--shadow-soft)'">
+                            <div style="flex-shrink: 0; width: 120px; height: 120px; background: linear-gradient(135deg, var(--commons-primary) 0%, var(--commons-bg-cyan) 100%); border-radius: var(--radius-md); display: flex; flex-direction: column; align-items: center; justify-content: center; color: white;">
+                                <div style="font-size: 40px; font-weight: var(--font-weight-bold); line-height: 1;">${startDate.getDate()}</div>
+                                <div style="font-size: var(--font-size-small); opacity: 0.9; margin-top: 4px;">${startDate.toLocaleDateString('ja-JP', { month: 'short' })}</div>
+                            </div>
+                            <div style="flex: 1; min-width: 0;">
+                                <h3 style="font-size: var(--font-size-medium); font-weight: var(--font-weight-bold); color: var(--commons-text-primary); margin-bottom: 8px;">
+                                    ${eventTitle}
+                                </h3>
+                                <p style="color: var(--commons-text-secondary); font-size: var(--font-size-small); margin-bottom: 16px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
+                                    ${eventDescription}
+                                </p>
+                                <div style="display: flex; gap: 24px; color: var(--commons-text-tertiary); font-size: var(--font-size-small);">
+                                    <span><i class="far fa-clock" style="color: var(--commons-primary); margin-right: 8px;"></i>${formattedDate}</span>
+                                    ${locationName ? `<span><i class="fas fa-map-marker-alt" style="color: var(--commons-primary); margin-right: 8px;"></i>${locationName}</span>` : ''}
+                                </div>
+                            </div>
+                        </a>
+                    `
+                }).join('')}
+            </div>
+        </section>
+        ` : ''}
+        
+        <!-- CTAセクション -->
+        <section style="background: linear-gradient(135deg, var(--commons-primary-light) 0%, rgba(0, 212, 224, 0.2) 100%); padding: 80px 48px; border-radius: var(--radius-xl); text-align: center;">
+            <h2 style="font-size: var(--font-size-xlarge); font-weight: var(--font-weight-bold); color: var(--commons-text-primary); margin-bottom: 24px;">
+                コミュニティに参加しよう
+            </h2>
+            <p style="font-size: var(--font-size-medium); color: var(--commons-text-secondary); margin-bottom: 48px; max-width: 600px; margin-left: auto; margin-right: auto;">
+                ${tenantName}で新しいつながりを見つけ、充実した時間を過ごしませんか？
+            </p>
+            <div style="display: flex; gap: 16px; justify-content: center; flex-wrap: wrap;">
+                <a href="/login?subdomain=${subdomain}" 
+                   style="display: inline-block; padding: 16px 48px; background: var(--commons-primary); color: white; border-radius: var(--radius-full); font-size: var(--font-size-medium); font-weight: var(--font-weight-semibold); text-decoration: none; transition: all var(--transition-normal); box-shadow: var(--shadow-medium);"
+                   onmouseover="this.style.background='var(--commons-primary-dark)'; this.style.transform='translateY(-4px)'; this.style.boxShadow='var(--shadow-strong)'"
+                   onmouseout="this.style.background='var(--commons-primary)'; this.style.transform='translateY(0)'; this.style.boxShadow='var(--shadow-medium)'">
+                    <i class="fas fa-sign-in-alt" style="margin-right: 12px;"></i>
+                    ログイン
+                </a>
+                <a href="/tenant/posts?subdomain=${subdomain}" 
+                   style="display: inline-block; padding: 16px 48px; background: white; color: var(--commons-primary); border-radius: var(--radius-full); font-size: var(--font-size-medium); font-weight: var(--font-weight-semibold); text-decoration: none; transition: all var(--transition-normal); box-shadow: var(--shadow-soft);"
+                   onmouseover="this.style.boxShadow='var(--shadow-medium)'; this.style.transform='translateY(-4px)'"
+                   onmouseout="this.style.boxShadow='var(--shadow-soft)'; this.style.transform='translateY(0)'">
+                    <i class="fas fa-newspaper" style="margin-right: 12px;"></i>
+                    投稿を見る
+                </a>
+            </div>
+        </section>
+    </main>
+
+    <!-- フッター -->
+    <footer style="background: var(--commons-text-primary); color: white; padding: 64px 24px 32px;">
+        <div style="max-width: 1280px; margin: 0 auto;">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 48px; margin-bottom: 48px;">
+                <div>
+                    <h3 style="font-size: var(--font-size-medium); font-weight: var(--font-weight-bold); margin-bottom: 16px;">${tenantName}</h3>
+                    ${tenantSubtitle ? `<p style="color: rgba(255,255,255,0.7); font-size: var(--font-size-small); line-height: var(--line-height-relaxed);">${tenantSubtitle}</p>` : ''}
+                </div>
+                <div>
+                    <h4 style="font-size: var(--font-size-small); font-weight: var(--font-weight-bold); margin-bottom: 16px; opacity: 0.9;">ナビゲーション</h4>
+                    <div style="display: flex; flex-direction: column; gap: 12px;">
+                        <a href="/tenant/posts?subdomain=${subdomain}" style="color: rgba(255,255,255,0.7); text-decoration: none; font-size: var(--font-size-small); transition: color var(--transition-fast);" onmouseover="this.style.color='white'" onmouseout="this.style.color='rgba(255,255,255,0.7)'">投稿</a>
+                        <a href="/tenant/events?subdomain=${subdomain}" style="color: rgba(255,255,255,0.7); text-decoration: none; font-size: var(--font-size-small); transition: color var(--transition-fast);" onmouseover="this.style.color='white'" onmouseout="this.style.color='rgba(255,255,255,0.7)'">イベント</a>
+                        <a href="/tenant/members?subdomain=${subdomain}" style="color: rgba(255,255,255,0.7); text-decoration: none; font-size: var(--font-size-small); transition: color var(--transition-fast);" onmouseover="this.style.color='white'" onmouseout="this.style.color='rgba(255,255,255,0.7)'">メンバー</a>
+                        <a href="/tenant/shop?subdomain=${subdomain}" style="color: rgba(255,255,255,0.7); text-decoration: none; font-size: var(--font-size-small); transition: color var(--transition-fast);" onmouseover="this.style.color='white'" onmouseout="this.style.color='rgba(255,255,255,0.7)'">ショップ</a>
+                    </div>
+                </div>
+            </div>
+            
+            <div style="text-align: center; padding-top: 32px; border-top: 1px solid rgba(255,255,255,0.1);">
+                <p style="color: rgba(255,255,255,0.5); font-size: var(--font-size-small);">
+                    &copy; ${new Date().getFullYear()} ${tenantName}. All rights reserved.
+                </p>
+                <p style="color: rgba(255,255,255,0.3); font-size: var(--font-size-xsmall); margin-top: 8px;">
+                    Powered by <span style="color: var(--commons-primary); font-weight: var(--font-weight-bold);">Commons</span>
+                </p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>
+  `)
 })
 
 // --------------------------------------------
