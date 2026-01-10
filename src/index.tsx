@@ -1595,6 +1595,9 @@ app.get('/dashboard', (c) => {
             <main class="container-custom section-spacing">
                 <div id="userInfo" class="mb-8 fade-in"></div>
 
+                <!-- 支払いアラート -->
+                <div id="paymentAlerts" class="mb-8"></div>
+
                 <!-- 統計カード -->
                 <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-6 mb-8">
                     <div class="card p-6 border-l-4 border-l-primary-500">
@@ -1857,9 +1860,75 @@ app.get('/dashboard', (c) => {
                     } catch (error) {
                         console.error('Failed to load stats:', error)
                     }
+
+                    // 支払いアラートを取得（オーナーと管理者のみ）
+                    try {
+                        const token = localStorage.getItem('token')
+                        const alertsResponse = await fetch('/api/admin/payment-alerts', {
+                            headers: { 'Authorization': 'Bearer ' + token }
+                        })
+                        
+                        if (alertsResponse.ok) {
+                            const alertsData = await alertsResponse.json()
+                            if (alertsData.success && alertsData.alerts.length > 0) {
+                                displayPaymentAlerts(alertsData.alerts)
+                            }
+                        }
+                    } catch (error) {
+                        console.error('Failed to load payment alerts:', error)
+                    }
                 } else {
                     console.log('User is not admin/owner, skipping stats fetch')
                 }
+            }
+
+            function displayPaymentAlerts(alerts) {
+                const alertsContainer = document.getElementById('paymentAlerts')
+                let alertsHtml = \`
+                    <div class="card p-6 bg-error-50 border-error-200">
+                        <div class="flex items-start mb-4">
+                            <i class="fas fa-exclamation-triangle text-error-500 text-2xl mr-3 mt-1"></i>
+                            <div>
+                                <h3 class="font-bold text-error-900 text-lg mb-2">
+                                    支払い失敗アラート (\${alerts.length}件)
+                                </h3>
+                                <p class="text-sm text-error-700 mb-4">
+                                    以下の会員のサブスクリプション決済が失敗しています。
+                                </p>
+                                <div class="space-y-3">
+                \`
+                
+                alerts.forEach(alert => {
+                    const amount = (alert.amount / 100).toLocaleString('ja-JP')
+                    const failedDate = new Date(alert.created_at).toLocaleDateString('ja-JP')
+                    alertsHtml += \`
+                        <div class="bg-white p-4 rounded-lg border border-error-200">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="font-semibold text-gray-900">\${alert.user_nickname}</span>
+                                <span class="text-sm text-error-600 font-semibold">¥\${amount}</span>
+                            </div>
+                            <div class="flex items-center justify-between text-sm text-gray-600">
+                                <span>\${alert.user_email}</span>
+                                <span>失敗日: \${failedDate}</span>
+                            </div>
+                            \${alert.reminder_count > 0 ? \`
+                                <div class="mt-2 text-xs text-gray-500">
+                                    <i class="fas fa-bell mr-1"></i>
+                                    リマインダー送信済み: \${alert.reminder_count}回
+                                </div>
+                            \` : ''}
+                        </div>
+                    \`
+                })
+                
+                alertsHtml += \`
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                \`
+                
+                alertsContainer.innerHTML = alertsHtml
             }
 
             // モバイルメニュートグル

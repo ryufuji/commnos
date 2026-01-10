@@ -305,10 +305,31 @@ async function handlePaymentSucceeded(
 
     console.log(`[Stripe Webhook] Recorded payment for subscription ${subscriptionId}`)
 
-    // TODO: メール通知を送信
-    // - 支払い完了・領収書メール
+    // 関連する支払いリマインダーを解決
+    await resolvePaymentReminder(DB, subscriptionId, invoice.id)
   } catch (error) {
     console.error('[Stripe Webhook] Error recording payment:', error)
+  }
+}
+
+/**
+ * 支払いリマインダーを解決
+ */
+async function resolvePaymentReminder(
+  DB: D1Database,
+  subscriptionId: string,
+  invoiceId: string
+) {
+  try {
+    await DB.prepare(`
+      UPDATE payment_reminders
+      SET status = 'resolved', resolved_at = datetime('now'), updated_at = datetime('now')
+      WHERE subscription_id = ? AND invoice_id = ? AND status IN ('pending', 'sent')
+    `).bind(subscriptionId, invoiceId).run()
+
+    console.log(`[Stripe Webhook] Resolved payment reminder for invoice ${invoiceId}`)
+  } catch (error) {
+    console.error('[Stripe Webhook] Error resolving payment reminder:', error)
   }
 }
 
@@ -363,11 +384,145 @@ async function handlePaymentFailed(
 
     console.log(`[Stripe Webhook] Recorded failed payment for subscription ${subscriptionId}`)
 
-    // TODO: メール通知を送信
-    // - 支払い失敗通知
-    // - 再試行のお願い
+    // オーナーと管理者に通知を送信
+    await notifyAdminsPaymentFailed(
+      DB,
+      (membership as any).tenant_id,
+      (membership as any).user_id,
+      invoice.amount_due,
+      invoice.currency
+    )
+
+    // 支払いリマインダーを作成
+    await createPaymentReminder(
+      DB,
+      (membership as any).tenant_id,
+      (membership as any).user_id,
+      subscriptionId,
+      invoice.id,
+      invoice.amount_due,
+      invoice.currency
+    )
   } catch (error) {
     console.error('[Stripe Webhook] Error recording failed payment:', error)
+  }
+}
+
+/**
+ * 支払い失敗時にオーナーと管理者に通知
+ */
+async function notifyAdminsPaymentFailed(
+  DB: D1Database,
+  tenantId: number,
+  userId: number,
+  amount: number,
+  currency: string
+) {
+  try {
+    // 失敗したユーザーの情報を取得
+    const user = await DB.prepare(`
+      SELECT nickname, email FROM users WHERE id = ?
+    `).bind(userId).first() as any
+
+    if (!user) return
+
+    // オーナーと管理者を取得
+    const admins = await DB.prepare(`
+      SELECT user_id FROM tenant_memberships
+      WHERE tenant_id = ? AND role IN ('owner', 'admin') AND status = 'active'
+    `).bind(tenantId).all()
+
+    if (!admins.results || admins.results.length === 0) return
+
+    // 金額をフォーマット
+    const formattedAmount = (amount / 100).toLocaleString('ja-JP')
+    const currencySymbol = currency.toUpperCase() === 'JPY' ? '¥' : '$'
+
+    // 各管理者に通知を作成
+    for (const admin of admins.results) {
+      await DB.prepare(`
+        INSERT INTO notifications (
+          tenant_id,
+          user_id,
+          actor_id,
+          type,
+          target_type,
+          target_id,
+          message
+        ) VALUES (?, ?, ?, ?, ?, ?, ?)
+      `).bind(
+        tenantId,
+        (admin as any).user_id,
+        userId,
+        'payment_failed',
+        'subscription',
+        userId,
+        `【支払い失敗】${user.nickname}さんのサブスクリプション決済（${currencySymbol}${formattedAmount}）が失敗しました。`
+      ).run()
+    }
+
+    console.log(`[Stripe Webhook] Notified admins about payment failure for user ${userId}`)
+  } catch (error) {
+    console.error('[Stripe Webhook] Error notifying admins:', error)
+  }
+}
+
+/**
+ * 支払いリマインダーを作成
+ */
+async function createPaymentReminder(
+  DB: D1Database,
+  tenantId: number,
+  userId: number,
+  subscriptionId: string,
+  invoiceId: string,
+  amount: number,
+  currency: string
+) {
+  try {
+    // 既存のリマインダーを確認
+    const existingReminder = await DB.prepare(`
+      SELECT id FROM payment_reminders
+      WHERE subscription_id = ? AND invoice_id = ? AND status IN ('pending', 'sent')
+    `).bind(subscriptionId, invoiceId).first()
+
+    if (existingReminder) {
+      console.log(`[Stripe Webhook] Payment reminder already exists for invoice ${invoiceId}`)
+      return
+    }
+
+    // 次回リマインダー送信日時を設定（3日後）
+    const nextReminderDate = new Date()
+    nextReminderDate.setDate(nextReminderDate.getDate() + 3)
+
+    // リマインダーを作成
+    await DB.prepare(`
+      INSERT INTO payment_reminders (
+        tenant_id,
+        user_id,
+        subscription_id,
+        invoice_id,
+        amount,
+        currency,
+        status,
+        reminder_count,
+        next_reminder_at
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).bind(
+      tenantId,
+      userId,
+      subscriptionId,
+      invoiceId,
+      amount,
+      currency,
+      'pending',
+      0,
+      nextReminderDate.toISOString()
+    ).run()
+
+    console.log(`[Stripe Webhook] Created payment reminder for user ${userId}, invoice ${invoiceId}`)
+  } catch (error) {
+    console.error('[Stripe Webhook] Error creating payment reminder:', error)
   }
 }
 

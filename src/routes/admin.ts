@@ -748,4 +748,44 @@ admin.get('/dashboard/stats', authMiddleware, requireRole('admin'), async (c) =>
   }
 })
 
+/**
+ * GET /api/admin/payment-alerts
+ * 支払い失敗アラート一覧（オーナーと管理者のみ）
+ */
+admin.get('/payment-alerts', authMiddleware, requireRole('admin'), async (c) => {
+  const tenantId = c.get('tenantId')
+  const { DB } = c.env
+
+  try {
+    // 未解決の支払いリマインダーを取得
+    const alerts = await DB.prepare(`
+      SELECT 
+        pr.id,
+        pr.user_id,
+        pr.amount,
+        pr.currency,
+        pr.reminder_count,
+        pr.created_at,
+        u.nickname as user_nickname,
+        u.email as user_email
+      FROM payment_reminders pr
+      JOIN users u ON pr.user_id = u.id
+      WHERE pr.tenant_id = ? AND pr.status IN ('pending', 'sent')
+      ORDER BY pr.created_at DESC
+      LIMIT 20
+    `).bind(tenantId).all()
+
+    return c.json({
+      success: true,
+      alerts: alerts.results || []
+    })
+  } catch (error) {
+    console.error('[Get Payment Alerts Error]', error)
+    return c.json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to get payment alerts'
+    }, 500)
+  }
+})
+
 export default admin
