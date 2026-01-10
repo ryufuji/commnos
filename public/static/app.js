@@ -660,7 +660,7 @@ async function loadNotifications() {
     const urlParams = new URLSearchParams(window.location.search);
     const subdomain = urlParams.get('subdomain') || 'test';
 
-    const response = await axios.get(`/api/notifications?subdomain=${subdomain}&limit=10`, {
+    const response = await axios.get(`/api/notifications?perPage=10`, {
       headers: {
         'Authorization': `Bearer ${token}`
       }
@@ -761,7 +761,7 @@ async function updateUnreadCount() {
     const urlParams = new URLSearchParams(window.location.search);
     const subdomain = urlParams.get('subdomain') || 'test';
 
-    const response = await axios.get(`/api/notifications/unread-count?subdomain=${subdomain}`, {
+    const response = await axios.get(`/api/notifications/unread-count`, {
       headers: {
         'Authorization': `Bearer ${token}`
       }
