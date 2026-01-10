@@ -8,6 +8,91 @@ import type { AppContext } from '../types'
 
 const tenantPublic = new Hono<AppContext>()
 
+// ============================================
+// 共通ヘッダー・フッターのヘルパー関数
+// ============================================
+
+/**
+ * 統一ヘッダーHTMLを生成
+ * @param tenantName - テナント名
+ * @param subdomain - サブドメイン
+ * @param activePage - アクティブなページ (home|posts|events|members|shop)
+ */
+function renderCommonHeader(tenantName: string, subdomain: string, activePage: string = ''): string {
+  const isActive = (page: string) => activePage === page ? 'active' : ''
+  
+  return `
+    <header class="commons-header">
+        <div class="commons-header-inner">
+            <a href="/tenant/home?subdomain=${subdomain}" class="commons-logo">
+                <i class="fas fa-users"></i>
+                <span>${tenantName}</span>
+            </a>
+            
+            <nav class="commons-nav hidden md:flex">
+                <a href="/tenant/home?subdomain=${subdomain}" class="commons-nav-link ${isActive('home')}">
+                    <i class="fas fa-home mr-2"></i>ホーム
+                </a>
+                <a href="/tenant/posts?subdomain=${subdomain}" class="commons-nav-link ${isActive('posts')}">
+                    <i class="fas fa-newspaper mr-2"></i>投稿
+                </a>
+                <a href="/tenant/events?subdomain=${subdomain}" class="commons-nav-link ${isActive('events')}">
+                    <i class="fas fa-calendar-alt mr-2"></i>イベント
+                </a>
+                <a href="/tenant/members?subdomain=${subdomain}" class="commons-nav-link ${isActive('members')}">
+                    <i class="fas fa-users mr-2"></i>メンバー
+                </a>
+                <a href="/tenant/shop?subdomain=${subdomain}" class="commons-nav-link ${isActive('shop')}">
+                    <i class="fas fa-shopping-bag mr-2"></i>ショップ
+                </a>
+            </nav>
+            
+            <div class="commons-header-actions">
+                <a href="/tenant/notifications?subdomain=${subdomain}" class="relative p-2 hover:bg-gray-100 rounded-full transition">
+                    <i class="fas fa-bell text-xl" style="color: var(--commons-text-secondary);"></i>
+                    <span id="notificationBadge" class="hidden absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center"></span>
+                </a>
+                <button class="commons-mobile-menu-btn md:hidden">
+                    <i class="fas fa-bars"></i>
+                </button>
+                <a href="/login?subdomain=${subdomain}" class="hidden md:block px-6 py-2 rounded-full font-semibold transition" 
+                   style="background: var(--commons-primary); color: white;">
+                    ログイン
+                </a>
+            </div>
+        </div>
+    </header>
+  `
+}
+
+/**
+ * 統一フッターHTMLを生成
+ * @param tenantName - テナント名
+ * @param subdomain - サブドメイン
+ */
+function renderCommonFooter(tenantName: string, subdomain: string): string {
+  return `
+    <footer style="background: var(--commons-text-primary); color: white; padding: 64px 24px 32px; margin-top: 96px;">
+        <div style="max-width: 1280px; margin: 0 auto; text-align: center;">
+            <h2 style="font-size: var(--font-size-large); font-weight: var(--font-weight-bold); margin-bottom: 16px;">${tenantName}</h2>
+            <div style="display: flex; justify-content: center; gap: 32px; margin-bottom: 32px; flex-wrap: wrap;">
+                <a href="/tenant/home?subdomain=${subdomain}" style="color: rgba(255,255,255,0.7); text-decoration: none; transition: color 0.2s;" onmouseover="this.style.color='var(--commons-primary)'" onmouseout="this.style.color='rgba(255,255,255,0.7)'">ホーム</a>
+                <a href="/tenant/posts?subdomain=${subdomain}" style="color: rgba(255,255,255,0.7); text-decoration: none; transition: color 0.2s;" onmouseover="this.style.color='var(--commons-primary)'" onmouseout="this.style.color='rgba(255,255,255,0.7)'">投稿</a>
+                <a href="/tenant/events?subdomain=${subdomain}" style="color: rgba(255,255,255,0.7); text-decoration: none; transition: color 0.2s;" onmouseover="this.style.color='var(--commons-primary)'" onmouseout="this.style.color='rgba(255,255,255,0.7)'">イベント</a>
+                <a href="/tenant/members?subdomain=${subdomain}" style="color: rgba(255,255,255,0.7); text-decoration: none; transition: color 0.2s;" onmouseover="this.style.color='var(--commons-primary)'" onmouseout="this.style.color='rgba(255,255,255,0.7)'">メンバー</a>
+                <a href="/tenant/shop?subdomain=${subdomain}" style="color: rgba(255,255,255,0.7); text-decoration: none; transition: color 0.2s;" onmouseover="this.style.color='var(--commons-primary)'" onmouseout="this.style.color='rgba(255,255,255,0.7)'">ショップ</a>
+            </div>
+            <p style="color: rgba(255,255,255,0.5); font-size: var(--font-size-small); margin-top: 32px;">
+                &copy; ${new Date().getFullYear()} ${tenantName}. All rights reserved.
+            </p>
+            <p style="color: rgba(255,255,255,0.3); font-size: var(--font-size-xsmall); margin-top: 8px;">
+                Powered by <span style="color: var(--commons-primary); font-weight: var(--font-weight-bold);">Commons</span>
+            </p>
+        </div>
+    </footer>
+  `
+}
+
 // テスト用シンプルルート
 tenantPublic.get('/test', (c) => {
   return c.text('Test route works!')
@@ -1378,42 +1463,7 @@ tenantPublic.get('/home', async (c) => {
 </head>
 <body style="background: var(--commons-bg-light);">
     <!-- ヘッダー -->
-    <header class="commons-header">
-        <div class="commons-header-inner">
-            <a href="/tenant/home?subdomain=${subdomain}" class="commons-logo">
-                <i class="fas fa-users"></i>
-                <span>${tenantName}</span>
-            </a>
-            
-            <nav class="commons-nav hidden md:flex">
-                <a href="/tenant/home?subdomain=${subdomain}" class="commons-nav-link active">
-                    <i class="fas fa-home mr-2"></i>ホーム
-                </a>
-                <a href="/tenant/posts?subdomain=${subdomain}" class="commons-nav-link">
-                    <i class="fas fa-newspaper mr-2"></i>投稿
-                </a>
-                <a href="/tenant/events?subdomain=${subdomain}" class="commons-nav-link">
-                    <i class="fas fa-calendar-alt mr-2"></i>イベント
-                </a>
-                <a href="/tenant/members?subdomain=${subdomain}" class="commons-nav-link">
-                    <i class="fas fa-users mr-2"></i>メンバー
-                </a>
-                <a href="/tenant/shop?subdomain=${subdomain}" class="commons-nav-link">
-                    <i class="fas fa-shopping-bag mr-2"></i>ショップ
-                </a>
-            </nav>
-            
-            <div class="commons-header-actions">
-                <a href="/tenant/notifications?subdomain=${subdomain}" class="relative p-2 hover:bg-gray-100 rounded-full transition">
-                    <i class="fas fa-bell text-xl" style="color: var(--commons-text-secondary);"></i>
-                </a>
-                <a href="/login?subdomain=${subdomain}" class="px-6 py-2 rounded-full font-semibold transition" 
-                   style="background: var(--commons-primary); color: white;">
-                    ログイン
-                </a>
-            </div>
-        </div>
-    </header>
+    ${renderCommonHeader(tenantName, subdomain, 'home')}
 
     <!-- ヒーローセクション -->
     <section style="background: linear-gradient(135deg, var(--commons-primary) 0%, var(--commons-primary-dark) 100%); color: white; padding: 80px 24px 60px;">
@@ -3253,42 +3303,7 @@ tenantPublic.get('/posts', async (c) => {
 </head>
 <body style="background: var(--commons-bg-light);">
     <!-- ヘッダー -->
-    <header class="commons-header">
-        <div class="commons-header-inner">
-            <a href="/tenant/home?subdomain=${subdomain}" class="commons-logo">
-                <i class="fas fa-users"></i>
-                <span>${tenantName}</span>
-            </a>
-            
-            <nav class="commons-nav hidden md:flex">
-                <a href="/tenant/home?subdomain=${subdomain}" class="commons-nav-link">
-                    <i class="fas fa-home mr-2"></i>ホーム
-                </a>
-                <a href="/tenant/posts?subdomain=${subdomain}" class="commons-nav-link active">
-                    <i class="fas fa-newspaper mr-2"></i>投稿
-                </a>
-                <a href="/tenant/events?subdomain=${subdomain}" class="commons-nav-link">
-                    <i class="fas fa-calendar-alt mr-2"></i>イベント
-                </a>
-                <a href="/tenant/members?subdomain=${subdomain}" class="commons-nav-link">
-                    <i class="fas fa-users mr-2"></i>メンバー
-                </a>
-                <a href="/tenant/shop?subdomain=${subdomain}" class="commons-nav-link">
-                    <i class="fas fa-shopping-bag mr-2"></i>ショップ
-                </a>
-            </nav>
-            
-            <div class="commons-header-actions">
-                <a href="/tenant/notifications?subdomain=${subdomain}" class="relative p-2 hover:bg-gray-100 rounded-full transition">
-                    <i class="fas fa-bell text-xl" style="color: var(--commons-text-secondary);"></i>
-                </a>
-                <a href="/login?subdomain=${subdomain}" class="px-6 py-2 rounded-full font-semibold transition" 
-                   style="background: var(--commons-primary); color: white;">
-                    ログイン
-                </a>
-            </div>
-        </div>
-    </header>
+    ${renderCommonHeader(tenantName, subdomain, 'posts')}
 
     <!-- ページヘッダー -->
     <section style="background: linear-gradient(135deg, var(--commons-primary) 0%, var(--commons-primary-dark) 100%); color: white; padding: 64px 24px 48px;">
@@ -3323,17 +3338,7 @@ tenantPublic.get('/posts', async (c) => {
     </main>
 
     <!-- フッター -->
-    <footer style="background: var(--commons-text-primary); color: white; padding: 64px 24px 32px; margin-top: 96px;">
-        <div style="max-width: 1280px; margin: 0 auto; text-align: center;">
-            <h2 style="font-size: var(--font-size-large); font-weight: var(--font-weight-bold); margin-bottom: 16px;">${tenantName}</h2>
-            <p style="color: rgba(255,255,255,0.5); font-size: var(--font-size-small); margin-top: 32px;">
-                &copy; ${new Date().getFullYear()} ${tenantName}. All rights reserved.
-            </p>
-            <p style="color: rgba(255,255,255,0.3); font-size: var(--font-size-xsmall); margin-top: 8px;">
-                Powered by <span style="color: var(--commons-primary); font-weight: var(--font-weight-bold);">Commons</span>
-            </p>
-        </div>
-    </footer>
+    ${renderCommonFooter(tenantName, subdomain)}
 
     <script src="/static/app.js"></script>
 </body>
