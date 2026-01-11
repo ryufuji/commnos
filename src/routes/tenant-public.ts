@@ -4863,8 +4863,8 @@ tenantPublic.get('/members/:memberId', async (c) => {
   }
   
   const avatarHTML = avatarUrl 
-    ? '<img data-src="' + avatarUrl + '" alt="' + nickname + '" class="w-32 h-32 rounded-full object-cover border-4 border-blue-100" loading="lazy">'
-    : '<div class="w-32 h-32 rounded-full bg-blue-100 flex items-center justify-center border-4 border-blue-200">' +
+    ? '<img data-src="' + avatarUrl + '" alt="' + nickname + '" class="w-32 h-32 rounded-full object-cover border-4 border-blue-100" style="width: 128px !important; height: 128px !important;" loading="lazy">'
+    : '<div class="w-32 h-32 rounded-full bg-blue-100 flex items-center justify-center border-4 border-blue-200" style="width: 128px !important; height: 128px !important;">' +
       '<i class="fas fa-user text-5xl text-blue-400"></i></div>'
   
   // 年齢計算
