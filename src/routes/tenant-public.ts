@@ -1472,56 +1472,68 @@ tenantPublic.get('/home', async (c) => {
   
   const tenantName = String(tenant.name || '')
   const tenantSubtitle = String(tenant.subtitle || '')
+  const heroCustomContent = String(tenant.hero_custom_content || '')
   
-  // 最新投稿を取得（6件）
+  // お知らせを取得（最新3件）
+  const announcementsResult = await DB.prepare(`
+    SELECT *
+    FROM announcements
+    WHERE tenant_id = ? AND is_published = 1 
+    AND (expires_at IS NULL OR expires_at >= datetime('now', '+9 hours'))
+    ORDER BY is_pinned DESC, created_at DESC
+    LIMIT 3
+  `).bind(tenant.id).all()
+  
+  const announcements = announcementsResult.results || []
+  
+  // 次回イベントを取得（1件のみ）
+  const nextEventResult = await DB.prepare(`
+    SELECT *
+    FROM events
+    WHERE tenant_id = ? AND is_published = 1
+    AND start_datetime >= datetime('now', '+9 hours')
+    ORDER BY start_datetime ASC
+    LIMIT 1
+  `).bind(tenant.id).first()
+  
+  // 注目の投稿を取得（ピン留め投稿、最大3件）
+  const pinnedPostsResult = await DB.prepare(`
+    SELECT p.*, u.nickname as author_name,
+           (SELECT COUNT(*) FROM post_likes WHERE post_id = p.id) as like_count
+    FROM posts p
+    LEFT JOIN users u ON p.author_id = u.id
+    WHERE p.tenant_id = ? AND p.status = ? AND p.is_pinned = 1
+    ORDER BY p.created_at DESC
+    LIMIT 3
+  `).bind(tenant.id, 'published').all()
+  
+  const pinnedPosts = pinnedPostsResult.results || []
+  
+  // 最新投稿を取得（5件、ピン留めを除く）
   const postsResult = await DB.prepare(`
     SELECT p.*, u.nickname as author_name,
            (SELECT COUNT(*) FROM post_likes WHERE post_id = p.id) as like_count
     FROM posts p
     LEFT JOIN users u ON p.author_id = u.id
-    WHERE p.tenant_id = ? AND p.status = ?
+    WHERE p.tenant_id = ? AND p.status = ? AND p.is_pinned = 0
     ORDER BY p.created_at DESC
-    LIMIT 6
+    LIMIT 5
   `).bind(tenant.id, 'published').all()
   
   const posts = postsResult.results || []
   
-  // 今後のイベントを取得（3件）
-  const eventsResult = await DB.prepare(`
-    SELECT *
-    FROM events
-    WHERE tenant_id = ? AND is_published = 1
-    AND start_datetime >= datetime('now')
-    ORDER BY start_datetime ASC
-    LIMIT 3
+  // アクティブなメンバーを取得（最近ログインした10人）
+  const activeMembersResult = await DB.prepare(`
+    SELECT u.id, u.nickname, u.avatar_url, u.last_login_at,
+           tm.role
+    FROM users u
+    INNER JOIN tenant_memberships tm ON u.id = tm.user_id
+    WHERE tm.tenant_id = ? AND tm.status = 'active'
+    ORDER BY u.last_login_at DESC
+    LIMIT 10
   `).bind(tenant.id).all()
   
-  const events = eventsResult.results || []
-  
-  // 統計情報を取得
-  const memberResult = await DB.prepare(`
-    SELECT COUNT(*) as count
-    FROM tenant_memberships
-    WHERE tenant_id = ? AND status = ?
-  `).bind(tenant.id, 'active').first()
-  
-  const memberCount = Number(memberResult?.count || 0)
-  
-  const postCountResult = await DB.prepare(`
-    SELECT COUNT(*) as count
-    FROM posts
-    WHERE tenant_id = ? AND status = ?
-  `).bind(tenant.id, 'published').first()
-  
-  const postCount = Number(postCountResult?.count || 0)
-  
-  const eventCountResult = await DB.prepare(`
-    SELECT COUNT(*) as count
-    FROM events
-    WHERE tenant_id = ? AND is_published = 1 AND start_datetime >= datetime('now')
-  `).bind(tenant.id).first()
-  
-  const eventCount = Number(eventCountResult?.count || 0)
+  const activeMembers = activeMembersResult.results || []
   
   return c.html(`<!DOCTYPE html>
 <html lang="ja" data-theme="light">
@@ -1541,12 +1553,76 @@ tenantPublic.get('/home', async (c) => {
             <h1 style="font-size: var(--font-size-hero); font-weight: var(--font-weight-bold); line-height: var(--line-height-tight); margin-bottom: 12px;">
                 ${tenantName}
             </h1>
-            ${tenantSubtitle ? `<p style="font-size: var(--font-size-medium); color: rgba(255,255,255,0.9);">${tenantSubtitle}</p>` : ''}
+            ${tenantSubtitle ? `<p style="font-size: var(--font-size-medium); color: rgba(255,255,255,0.9); margin-bottom: 24px;">${tenantSubtitle}</p>` : ''}
+            
+            ${heroCustomContent ? `
+            <!-- カスタムコンテンツエリア -->
+            <div style="background: rgba(255,255,255,0.1); padding: 24px; border-radius: var(--radius-lg); margin-top: 24px; backdrop-filter: blur(10px);">
+                <div style="color: white; line-height: var(--line-height-relaxed);">
+                    ${heroCustomContent}
+                </div>
+            </div>
+            ` : ''}
         </div>
     </section>
 
     <!-- メインコンテンツ -->
     <main style="max-width: 1280px; margin: 0 auto; padding: 64px 24px;">
+        <!-- お知らせセクション -->
+        ${announcements.length > 0 ? `
+        <section style="margin-bottom: 64px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px;">
+                <div>
+                    <h2 style="font-size: var(--font-size-large); font-weight: var(--font-weight-bold); color: var(--commons-text-primary); margin-bottom: 8px;">
+                        <i class="fas fa-bullhorn" style="color: var(--commons-accent-yellow); margin-right: 12px;"></i>
+                        お知らせ
+                    </h2>
+                    <p style="color: var(--commons-text-secondary); font-size: var(--font-size-small);">重要な情報をチェック</p>
+                </div>
+            </div>
+            
+            <div style="display: flex; flex-direction: column; gap: 16px;">
+                ${announcements.map((announcement: any) => {
+                    const title = String(announcement.title || '')
+                    const content = String(announcement.content || '').substring(0, 100)
+                    const isPinned = Boolean(announcement.is_pinned)
+                    const priority = String(announcement.priority || 'info')
+                    
+                    let priorityColor = 'var(--commons-primary)'
+                    let priorityIcon = 'fa-info-circle'
+                    if (priority === 'urgent') {
+                        priorityColor = '#EF4444'
+                        priorityIcon = 'fa-exclamation-triangle'
+                    } else if (priority === 'important') {
+                        priorityColor = 'var(--commons-accent-yellow)'
+                        priorityIcon = 'fa-star'
+                    }
+                    
+                    return `
+                        <div style="display: flex; gap: 16px; background: white; padding: 24px; border-radius: var(--radius-lg); border-left: 4px solid ${priorityColor}; box-shadow: var(--shadow-soft); transition: all var(--transition-normal);"
+                             onmouseover="this.style.transform='translateX(4px)'; this.style.boxShadow='var(--shadow-medium)'"
+                             onmouseout="this.style.transform='translateX(0)'; this.style.boxShadow='var(--shadow-soft)'">
+                            <div style="flex-shrink: 0;">
+                                <i class="fas ${priorityIcon}" style="font-size: 24px; color: ${priorityColor};"></i>
+                            </div>
+                            <div style="flex: 1; min-width: 0;">
+                                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 8px;">
+                                    <h3 style="font-size: var(--font-size-medium); font-weight: var(--font-weight-bold); color: var(--commons-text-primary);">
+                                        ${title}
+                                    </h3>
+                                    ${isPinned ? `<span style="background: var(--commons-accent-yellow); color: white; padding: 4px 12px; border-radius: var(--radius-full); font-size: var(--font-size-xsmall); font-weight: var(--font-weight-bold);">固定</span>` : ''}
+                                </div>
+                                <p style="color: var(--commons-text-secondary); font-size: var(--font-size-small); line-height: var(--line-height-normal);">
+                                    ${content}${content.length >= 100 ? '...' : ''}
+                                </p>
+                            </div>
+                        </div>
+                    `
+                }).join('')}
+            </div>
+        </section>
+        ` : ''}
+        
         <!-- 最新投稿セクション -->
         <section style="margin-bottom: 96px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 48px;">
@@ -1632,53 +1708,231 @@ tenantPublic.get('/home', async (c) => {
             </div>
         </section>
 
-        <!-- 今後のイベントセクション -->
-        ${events.length > 0 ? `
-        <section style="margin-bottom: 96px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 48px;">
+        <!-- 次回イベント（大カード） -->
+        ${nextEventResult ? `
+        <section style="margin-bottom: 64px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px;">
                 <div>
                     <h2 style="font-size: var(--font-size-large); font-weight: var(--font-weight-bold); color: var(--commons-text-primary); margin-bottom: 8px;">
-                        <i class="fas fa-calendar-alt" style="color: var(--commons-primary); margin-right: 12px;"></i>
-                        今後のイベント
+                        <i class="fas fa-calendar-check" style="color: var(--commons-primary); margin-right: 12px;"></i>
+                        次回イベント
                     </h2>
-                    <p style="color: var(--commons-text-secondary); font-size: var(--font-size-small);">参加予定のイベント</p>
+                    <p style="color: var(--commons-text-secondary); font-size: var(--font-size-small);">開催予定のイベント</p>
                 </div>
                 <a href="/tenant/events?subdomain=${subdomain}" 
                    style="color: var(--commons-primary); font-weight: var(--font-weight-semibold); text-decoration: none; display: flex; align-items: center; gap: 8px;">
-                    すべて見る
+                    イベントカレンダー
                     <i class="fas fa-arrow-right"></i>
                 </a>
             </div>
             
-            <div style="display: grid; gap: 24px;">
-                ${events.map((event: any) => {
-                    const eventTitle = String(event.title || '')
-                    const eventDescription = String(event.description || '')
-                    const locationName = String(event.location_name || '')
-                    const startDate = new Date(String(event.start_datetime))
-                    const formattedDate = startDate.toLocaleDateString('ja-JP', { month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })
-                    
-                    return `
-                        <a href="/tenant/events?subdomain=${subdomain}" 
-                           style="display: flex; gap: 24px; background: white; padding: 32px; border-radius: var(--radius-lg); box-shadow: var(--shadow-soft); transition: all var(--transition-normal); text-decoration: none;"
-                           onmouseover="this.style.transform='translateX(8px)'; this.style.boxShadow='var(--shadow-medium)'"
-                           onmouseout="this.style.transform='translateX(0)'; this.style.boxShadow='var(--shadow-soft)'">
-                            <div style="flex-shrink: 0; width: 120px; height: 120px; background: linear-gradient(135deg, var(--commons-primary) 0%, var(--commons-bg-cyan) 100%); border-radius: var(--radius-md); display: flex; flex-direction: column; align-items: center; justify-content: center; color: white;">
-                                <div style="font-size: 40px; font-weight: var(--font-weight-bold); line-height: 1;">${startDate.getDate()}</div>
-                                <div style="font-size: var(--font-size-small); opacity: 0.9; margin-top: 4px;">${startDate.toLocaleDateString('ja-JP', { month: 'short' })}</div>
+            ${(() => {
+                const event: any = nextEventResult
+                const eventTitle = String(event.title || '')
+                const eventDescription = String(event.description || '')
+                const locationName = String(event.location_name || '')
+                const startDate = new Date(String(event.start_datetime))
+                const formattedDate = startDate.toLocaleDateString('ja-JP', { 
+                    year: 'numeric',
+                    month: 'long', 
+                    day: 'numeric', 
+                    weekday: 'short',
+                    hour: '2-digit', 
+                    minute: '2-digit' 
+                })
+                
+                return `
+                    <div style="background: linear-gradient(135deg, var(--commons-primary-light) 0%, rgba(0, 212, 224, 0.1) 100%); padding: 48px; border-radius: var(--radius-xl); box-shadow: var(--shadow-card);">
+                        <div style="display: flex; gap: 32px; align-items: start;">
+                            <div style="flex-shrink: 0; width: 160px; height: 160px; background: linear-gradient(135deg, var(--commons-primary) 0%, var(--commons-bg-cyan) 100%); border-radius: var(--radius-lg); display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; box-shadow: var(--shadow-strong);">
+                                <div style="font-size: 64px; font-weight: var(--font-weight-bold); line-height: 1;">${startDate.getDate()}</div>
+                                <div style="font-size: var(--font-size-medium); opacity: 0.9; margin-top: 8px;">${startDate.toLocaleDateString('ja-JP', { month: 'short' })}</div>
+                                <div style="font-size: var(--font-size-small); opacity: 0.8;">${startDate.toLocaleDateString('ja-JP', { weekday: 'short' })}</div>
                             </div>
                             <div style="flex: 1; min-width: 0;">
-                                <h3 style="font-size: var(--font-size-medium); font-weight: var(--font-weight-bold); color: var(--commons-text-primary); margin-bottom: 8px;">
+                                <h3 style="font-size: var(--font-size-xlarge); font-weight: var(--font-weight-bold); color: var(--commons-text-primary); margin-bottom: 16px; line-height: var(--line-height-tight);">
                                     ${eventTitle}
                                 </h3>
-                                <p style="color: var(--commons-text-secondary); font-size: var(--font-size-small); margin-bottom: 16px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
+                                <p style="color: var(--commons-text-secondary); font-size: var(--font-size-medium); line-height: var(--line-height-relaxed); margin-bottom: 24px;">
                                     ${eventDescription}
                                 </p>
-                                <div style="display: flex; gap: 24px; color: var(--commons-text-tertiary); font-size: var(--font-size-small);">
-                                    <span><i class="far fa-clock" style="color: var(--commons-primary); margin-right: 8px;"></i>${formattedDate}</span>
-                                    ${locationName ? `<span><i class="fas fa-map-marker-alt" style="color: var(--commons-primary); margin-right: 8px;"></i>${locationName}</span>` : ''}
+                                <div style="display: flex; flex-wrap: wrap; gap: 24px; margin-bottom: 32px;">
+                                    <div style="display: flex; align-items: center; gap: 8px; color: var(--commons-text-secondary);">
+                                        <i class="far fa-clock" style="color: var(--commons-primary); font-size: 20px;"></i>
+                                        <span style="font-size: var(--font-size-small);">${formattedDate}</span>
+                                    </div>
+                                    ${locationName ? `
+                                    <div style="display: flex; align-items: center; gap: 8px; color: var(--commons-text-secondary);">
+                                        <i class="fas fa-map-marker-alt" style="color: var(--commons-primary); font-size: 20px;"></i>
+                                        <span style="font-size: var(--font-size-small);">${locationName}</span>
+                                    </div>
+                                    ` : ''}
+                                </div>
+                                <a href="/tenant/events?subdomain=${subdomain}" 
+                                   style="display: inline-block; padding: 16px 32px; background: var(--commons-primary); color: white; border-radius: var(--radius-full); font-size: var(--font-size-medium); font-weight: var(--font-weight-semibold); text-decoration: none; transition: all var(--transition-normal); box-shadow: var(--shadow-medium);"
+                                   onmouseover="this.style.background='var(--commons-primary-dark)'; this.style.transform='translateY(-2px)'; this.style.boxShadow='var(--shadow-strong)'"
+                                   onmouseout="this.style.background='var(--commons-primary)'; this.style.transform='translateY(0)'; this.style.boxShadow='var(--shadow-medium)'">
+                                    <i class="fas fa-ticket-alt" style="margin-right: 8px;"></i>
+                                    詳細を見る
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                `
+            })()}
+        </section>
+        ` : ''}
+        
+        <!-- 注目の投稿（ピン留め） -->
+        ${pinnedPosts.length > 0 ? `
+        <section style="margin-bottom: 64px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px;">
+                <div>
+                    <h2 style="font-size: var(--font-size-large); font-weight: var(--font-weight-bold); color: var(--commons-text-primary); margin-bottom: 8px;">
+                        <i class="fas fa-thumbtack" style="color: var(--commons-accent-yellow); margin-right: 12px;"></i>
+                        注目の投稿
+                    </h2>
+                    <p style="color: var(--commons-text-secondary); font-size: var(--font-size-small);">管理者がおすすめする投稿</p>
+                </div>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 32px;">
+                ${pinnedPosts.map((post: any) => {
+                    const postTitle = String(post.title || '')
+                    const postContent = String(post.content || '')
+                    const postExcerpt = String(post.excerpt || postContent.substring(0, 120))
+                    const authorName = String(post.author_name || '不明')
+                    const thumbnailUrl = String(post.thumbnail_url || '')
+                    const likeCount = Number(post.like_count || 0)
+                    const viewCount = Number(post.view_count || 0)
+                    
+                    return `
+                        <a href="/tenant/posts/${post.id}?subdomain=${subdomain}" 
+                           style="display: block; background: white; border-radius: var(--radius-lg); overflow: hidden; box-shadow: var(--shadow-soft); transition: all var(--transition-normal); text-decoration: none; position: relative; border: 2px solid var(--commons-accent-yellow);"
+                           onmouseover="this.style.transform='translateY(-8px)'; this.style.boxShadow='var(--shadow-card)'"
+                           onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='var(--shadow-soft)'">
+                            <div style="position: absolute; top: 16px; left: 16px; background: var(--commons-accent-yellow); color: white; padding: 8px 16px; border-radius: var(--radius-full); font-size: var(--font-size-xsmall); font-weight: var(--font-weight-bold); z-index: 10; display: flex; align-items: center; gap: 6px;">
+                                <i class="fas fa-star"></i>
+                                注目
+                            </div>
+                            
+                            ${thumbnailUrl ? `
+                                <div style="width: 100%; height: 240px; overflow: hidden;">
+                                    <img data-src="${thumbnailUrl}" 
+                                         alt="${postTitle}" 
+                                         style="width: 100%; height: 100%; object-fit: cover; transition: transform var(--transition-slow);"
+                                         onmouseover="this.style.transform='scale(1.05)'"
+                                         onmouseout="this.style.transform='scale(1)'"
+                                         loading="lazy">
+                                </div>
+                            ` : `
+                                <div style="width: 100%; height: 240px; background: linear-gradient(135deg, var(--commons-bg-cyan) 0%, var(--commons-primary) 100%); display: flex; align-items: center; justify-content: center;">
+                                    <i class="fas fa-file-alt" style="font-size: 80px; color: rgba(255,255,255,0.3);"></i>
+                                </div>
+                            `}
+                            
+                            <div style="padding: 24px;">
+                                <h3 style="font-size: var(--font-size-medium); font-weight: var(--font-weight-bold); color: var(--commons-text-primary); margin-bottom: 12px; line-height: var(--line-height-tight); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
+                                    ${postTitle}
+                                </h3>
+                                <p style="color: var(--commons-text-secondary); font-size: var(--font-size-small); line-height: var(--line-height-normal); margin-bottom: 16px; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;">
+                                    ${postExcerpt}
+                                </p>
+                                
+                                <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 16px; border-top: 1px solid var(--commons-border-light);">
+                                    <div style="display: flex; align-items: center; gap: 8px;">
+                                        <div style="width: 32px; height: 32px; border-radius: 50%; background: var(--commons-primary-light); display: flex; align-items: center; justify-content: center; color: var(--commons-primary); font-weight: var(--font-weight-bold); font-size: var(--font-size-small);">
+                                            ${authorName.charAt(0).toUpperCase()}
+                                        </div>
+                                        <span style="color: var(--commons-text-secondary); font-size: var(--font-size-small);">${authorName}</span>
+                                    </div>
+                                    <div style="display: flex; gap: 16px; color: var(--commons-text-tertiary); font-size: var(--font-size-small);">
+                                        <span><i class="far fa-heart" style="margin-right: 4px;"></i>${likeCount}</span>
+                                        <span><i class="far fa-eye" style="margin-right: 4px;"></i>${viewCount}</span>
+                                    </div>
                                 </div>
                             </div>
+                        </a>
+                    `
+                }).join('')}
+            </div>
+        </section>
+        ` : ''}
+
+        <!-- アクティブなメンバー -->
+        ${activeMembers.length > 0 ? `
+        <section style="margin-bottom: 64px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px;">
+                <div>
+                    <h2 style="font-size: var(--font-size-large); font-weight: var(--font-weight-bold); color: var(--commons-text-primary); margin-bottom: 8px;">
+                        <i class="fas fa-users" style="color: var(--commons-primary); margin-right: 12px;"></i>
+                        アクティブなメンバー
+                    </h2>
+                    <p style="color: var(--commons-text-secondary); font-size: var(--font-size-small);">最近ログインしたメンバー</p>
+                </div>
+                <a href="/tenant/members?subdomain=${subdomain}" 
+                   style="color: var(--commons-primary); font-weight: var(--font-weight-semibold); text-decoration: none; display: flex; align-items: center; gap: 8px;">
+                    全メンバー
+                    <i class="fas fa-arrow-right"></i>
+                </a>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 24px;">
+                ${activeMembers.map((member: any) => {
+                    const nickname = String(member.nickname || '不明')
+                    const avatarUrl = String(member.avatar_url || '')
+                    const role = String(member.role || 'member')
+                    const lastLoginAt = member.last_login_at ? String(member.last_login_at) : null
+                    
+                    let roleBadge = ''
+                    if (role === 'owner') {
+                        roleBadge = '<span style="background: var(--commons-bg-purple); color: white; padding: 4px 8px; border-radius: var(--radius-full); font-size: var(--font-size-xsmall); font-weight: var(--font-weight-bold);">オーナー</span>'
+                    } else if (role === 'admin') {
+                        roleBadge = '<span style="background: var(--commons-primary); color: white; padding: 4px 8px; border-radius: var(--radius-full); font-size: var(--font-size-xsmall); font-weight: var(--font-weight-bold);">管理者</span>'
+                    } else if (role === 'moderator') {
+                        roleBadge = '<span style="background: var(--commons-success); color: white; padding: 4px 8px; border-radius: var(--radius-full); font-size: var(--font-size-xsmall); font-weight: var(--font-weight-bold);">モデレーター</span>'
+                    }
+                    
+                    let lastLoginText = ''
+                    if (lastLoginAt) {
+                        const now = new Date()
+                        const loginDate = new Date(lastLoginAt)
+                        const diffMinutes = Math.floor((now.getTime() - loginDate.getTime()) / 60000)
+                        
+                        if (diffMinutes < 60) {
+                            lastLoginText = `${diffMinutes}分前`
+                        } else if (diffMinutes < 1440) {
+                            lastLoginText = `${Math.floor(diffMinutes / 60)}時間前`
+                        } else {
+                            lastLoginText = `${Math.floor(diffMinutes / 1440)}日前`
+                        }
+                    }
+                    
+                    return `
+                        <a href="/tenant/members/${member.id}?subdomain=${subdomain}" 
+                           style="display: flex; flex-direction: column; align-items: center; background: white; padding: 24px; border-radius: var(--radius-lg); box-shadow: var(--shadow-soft); transition: all var(--transition-normal); text-decoration: none;"
+                           onmouseover="this.style.transform='translateY(-8px)'; this.style.boxShadow='var(--shadow-card)'"
+                           onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='var(--shadow-soft)'">
+                            ${avatarUrl ? `
+                                <img data-src="${avatarUrl}" 
+                                     alt="${nickname}" 
+                                     style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; margin-bottom: 12px; border: 3px solid var(--commons-primary-light);"
+                                     loading="lazy">
+                            ` : `
+                                <div style="width: 80px; height: 80px; border-radius: 50%; background: linear-gradient(135deg, var(--commons-primary-light) 0%, var(--commons-primary) 100%); display: flex; align-items: center; justify-content: center; margin-bottom: 12px; border: 3px solid var(--commons-primary-light);">
+                                    <i class="fas fa-user" style="font-size: 32px; color: var(--commons-primary);"></i>
+                                </div>
+                            `}
+                            <h3 style="font-size: var(--font-size-medium); font-weight: var(--font-weight-bold); color: var(--commons-text-primary); margin-bottom: 8px; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;">
+                                ${nickname}
+                            </h3>
+                            ${roleBadge ? `<div style="margin-bottom: 8px;">${roleBadge}</div>` : ''}
+                            ${lastLoginText ? `
+                                <div style="color: var(--commons-text-tertiary); font-size: var(--font-size-xsmall); text-align: center;">
+                                    <i class="far fa-clock" style="margin-right: 4px;"></i>
+                                    ${lastLoginText}
+                                </div>
+                            ` : ''}
                         </a>
                     `
                 }).join('')}
