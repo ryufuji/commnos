@@ -1475,16 +1475,22 @@ tenantPublic.get('/home', async (c) => {
   const heroCustomContent = String(tenant.hero_custom_content || '')
   
   // お知らせを取得（最新3件）
-  const announcementsResult = await DB.prepare(`
-    SELECT *
-    FROM announcements
-    WHERE tenant_id = ? AND is_published = 1 
-    AND (expires_at IS NULL OR expires_at >= datetime('now', '+9 hours'))
-    ORDER BY is_pinned DESC, created_at DESC
-    LIMIT 3
-  `).bind(tenant.id).all()
-  
-  const announcements = announcementsResult.results || []
+  let announcements: any[] = []
+  try {
+    const announcementsResult = await DB.prepare(`
+      SELECT *
+      FROM announcements
+      WHERE tenant_id = ? AND is_published = 1 
+      AND (expires_at IS NULL OR expires_at >= datetime('now', '+9 hours'))
+      ORDER BY is_pinned DESC, created_at DESC
+      LIMIT 3
+    `).bind(tenant.id).all()
+    announcements = announcementsResult.results || []
+  } catch (e) {
+    // テーブルが存在しない場合は空配列
+    console.log('announcements table not found:', e)
+    announcements = []
+  }
   
   // 次回イベントを取得（1件のみ）
   const nextEventResult = await DB.prepare(`
@@ -1497,30 +1503,51 @@ tenantPublic.get('/home', async (c) => {
   `).bind(tenant.id).first()
   
   // 注目の投稿を取得（ピン留め投稿、最大3件）
-  const pinnedPostsResult = await DB.prepare(`
-    SELECT p.*, u.nickname as author_name,
-           (SELECT COUNT(*) FROM post_likes WHERE post_id = p.id) as like_count
-    FROM posts p
-    LEFT JOIN users u ON p.author_id = u.id
-    WHERE p.tenant_id = ? AND p.status = ? AND p.is_pinned = 1
-    ORDER BY p.created_at DESC
-    LIMIT 3
-  `).bind(tenant.id, 'published').all()
-  
-  const pinnedPosts = pinnedPostsResult.results || []
+  let pinnedPosts: any[] = []
+  try {
+    const pinnedPostsResult = await DB.prepare(`
+      SELECT p.*, u.nickname as author_name,
+             (SELECT COUNT(*) FROM post_likes WHERE post_id = p.id) as like_count
+      FROM posts p
+      LEFT JOIN users u ON p.author_id = u.id
+      WHERE p.tenant_id = ? AND p.status = ? AND p.is_pinned = 1
+      ORDER BY p.created_at DESC
+      LIMIT 3
+    `).bind(tenant.id, 'published').all()
+    pinnedPosts = pinnedPostsResult.results || []
+  } catch (e) {
+    // is_pinned カラムが存在しない場合は空配列
+    console.log('is_pinned column not found:', e)
+    pinnedPosts = []
+  }
   
   // 最新投稿を取得（5件、ピン留めを除く）
-  const postsResult = await DB.prepare(`
-    SELECT p.*, u.nickname as author_name,
-           (SELECT COUNT(*) FROM post_likes WHERE post_id = p.id) as like_count
-    FROM posts p
-    LEFT JOIN users u ON p.author_id = u.id
-    WHERE p.tenant_id = ? AND p.status = ? AND p.is_pinned = 0
-    ORDER BY p.created_at DESC
-    LIMIT 5
-  `).bind(tenant.id, 'published').all()
-  
-  const posts = postsResult.results || []
+  let posts: any[] = []
+  try {
+    const postsResult = await DB.prepare(`
+      SELECT p.*, u.nickname as author_name,
+             (SELECT COUNT(*) FROM post_likes WHERE post_id = p.id) as like_count
+      FROM posts p
+      LEFT JOIN users u ON p.author_id = u.id
+      WHERE p.tenant_id = ? AND p.status = ? AND p.is_pinned = 0
+      ORDER BY p.created_at DESC
+      LIMIT 5
+    `).bind(tenant.id, 'published').all()
+    posts = postsResult.results || []
+  } catch (e) {
+    // is_pinned カラムがない場合は、全投稿を取得
+    console.log('is_pinned column not found, fetching all posts:', e)
+    const postsResult = await DB.prepare(`
+      SELECT p.*, u.nickname as author_name,
+             (SELECT COUNT(*) FROM post_likes WHERE post_id = p.id) as like_count
+      FROM posts p
+      LEFT JOIN users u ON p.author_id = u.id
+      WHERE p.tenant_id = ? AND p.status = ?
+      ORDER BY p.created_at DESC
+      LIMIT 5
+    `).bind(tenant.id, 'published').all()
+    posts = postsResult.results || []
+  }
   
   // アクティブなメンバーを取得（最近ログインした10人）
   const activeMembersResult = await DB.prepare(`
