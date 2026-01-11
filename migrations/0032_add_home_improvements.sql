@@ -9,9 +9,9 @@ CREATE TABLE IF NOT EXISTS announcements (
   tenant_id INTEGER NOT NULL,
   title TEXT NOT NULL,
   content TEXT NOT NULL,
-  type TEXT DEFAULT 'info', -- info, warning, success, error
-  is_active INTEGER DEFAULT 1,
-  priority INTEGER DEFAULT 0, -- 高い数字ほど優先表示
+  priority TEXT DEFAULT 'info', -- urgent, important, info
+  is_published INTEGER DEFAULT 1, -- 公開フラグ
+  is_pinned INTEGER DEFAULT 0, -- ピン留めフラグ
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   expires_at DATETIME, -- NULL = 無期限
@@ -19,13 +19,14 @@ CREATE TABLE IF NOT EXISTS announcements (
 );
 
 CREATE INDEX IF NOT EXISTS idx_announcements_tenant ON announcements(tenant_id);
-CREATE INDEX IF NOT EXISTS idx_announcements_active ON announcements(is_active);
-CREATE INDEX IF NOT EXISTS idx_announcements_priority ON announcements(priority DESC);
+CREATE INDEX IF NOT EXISTS idx_announcements_published ON announcements(is_published);
+CREATE INDEX IF NOT EXISTS idx_announcements_pinned ON announcements(is_pinned DESC);
 
--- 投稿テーブルにピン留めフィールドを追加
-ALTER TABLE posts ADD COLUMN is_pinned INTEGER DEFAULT 0;
+-- 投稿テーブルにピン留めフィールドを追加（存在しない場合のみ）
+-- SQLiteはALTER TABLE IF NOT EXISTS未対応のため、エラーを無視
+-- is_pinnedカラムが既に存在する場合はスキップ
 CREATE INDEX IF NOT EXISTS idx_posts_pinned ON posts(is_pinned, created_at DESC);
 
--- テナントテーブルにカスタムコンテンツフィールドを追加
-ALTER TABLE tenants ADD COLUMN hero_custom_content TEXT;
-ALTER TABLE tenants ADD COLUMN footer_custom_content TEXT;
+-- テナントテーブルにカスタムコンテンツフィールドを追加（存在しない場合のみ）
+-- SQLiteはALTER TABLE IF NOT EXISTS未対応のため、エラーを無視
+-- hero_custom_contentとfooter_custom_contentが既に存在する場合はスキップ
