@@ -3,6 +3,13 @@
    モバイルファースト設計版（Phase 2）
 ======================================== */
 
+/* FontAwesome icons reset - prevent Tailwind classes from breaking icons */
+.fas, .far, .fab, .fal, .fa {
+  width: auto !important;
+  height: auto !important;
+  display: inline-block !important;
+}
+
 :root {
   /* === カラーパレット（デバイス非依存） === */
   
