@@ -4918,9 +4918,9 @@ tenantPublic.get('/members/:memberId', async (c) => {
     '</nav></div></div></header>' +
     '<main class="container mx-auto px-4 py-8">' +
     '<div class="bg-white rounded-lg shadow-lg p-8 mb-8">' +
-    '<div class="flex flex-col md:flex-row items-center md:items-start gap-8">' +
+    '<div class="flex flex-col md:flex-row items-center md:items-start gap-8" style="display: flex !important;">' +
     '<div class="flex-shrink-0">' + avatarHTML + '</div>' +
-    '<div class="flex-grow text-center md:text-left">' +
+    '<div class="flex-grow text-center md:text-left" style="flex-grow: 1 !important;">' +
     '<div class="flex flex-col md:flex-row items-center md:items-start gap-3 mb-4">' +
     '<h1 class="text-3xl font-bold" style="color: var(--commons-text-primary);">' + nickname + '</h1>' + roleBadgeHTML + '</div>' +
     '<p class="text-gray-600 mb-6 whitespace-pre-wrap">' + bio + '</p>' +
