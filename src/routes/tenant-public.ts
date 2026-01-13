@@ -7351,10 +7351,6 @@ tenantPublic.get('/chat', async (c) => {
         // イベントリスナー
         document.getElementById('createRoomBtn').addEventListener('click', openCreateRoomModal)
         
-        document.getElementById('mobileMenuToggle').addEventListener('click', () => {
-            document.getElementById('mobileMenu').classList.toggle('hidden')
-        })
-        
         // 初期化
         async function init() {
             const authOk = await checkAuth()
