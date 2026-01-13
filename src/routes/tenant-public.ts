@@ -7043,56 +7043,87 @@ tenantPublic.get('/chat', async (c) => {
     <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
 </head>
 <body class="bg-gray-50 min-h-screen">
-    <!-- ヘッダー -->
-    <header class="bg-white shadow-sm sticky top-0 z-50">
-        <div class="container mx-auto px-4 py-4">
-            <div class="flex items-center justify-between">
-                <div class="flex items-center space-x-4">
-                    <a href="/tenant/home?subdomain=${subdomain}" class="text-xl md:text-2xl font-bold text-primary">
-                        ${tenant.name}
-                    </a>
+    <!-- ログイン必須メッセージ -->
+    <div id="loginRequired" class="hidden min-h-screen flex items-center justify-center bg-gray-50 px-4">
+        <div class="max-w-md w-full bg-white rounded-lg shadow-lg p-8 text-center">
+            <div class="mb-6">
+                <i class="fas fa-lock text-blue-600 text-6xl mb-4"></i>
+                <h2 class="text-2xl font-bold text-gray-900 mb-2">ログインが必要です</h2>
+                <p class="text-gray-600">
+                    チャット機能をご利用いただくには、ログインが必要です。<br>
+                    アカウントをお持ちでない方は、新規登録をお願いします。
+                </p>
+            </div>
+            
+            <div class="space-y-3">
+                <a href="/tenant/login?subdomain=${subdomain}&redirect=/tenant/chat?subdomain=${subdomain}" class="block w-full btn-primary">
+                    <i class="fas fa-sign-in-alt mr-2"></i>
+                    ログイン
+                </a>
+                <a href="/tenant/signup?subdomain=${subdomain}&redirect=/tenant/chat?subdomain=${subdomain}" class="block w-full btn-secondary">
+                    <i class="fas fa-user-plus mr-2"></i>
+                    新規登録
+                </a>
+                <a href="/tenant/home?subdomain=${subdomain}" class="block w-full text-gray-600 hover:text-gray-900 py-2">
+                    <i class="fas fa-arrow-left mr-2"></i>
+                    ホームに戻る
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- メインコンテンツ -->
+    <div id="mainContent" class="hidden">
+        <!-- ヘッダー -->
+        <header class="bg-white shadow-sm sticky top-0 z-50">
+            <div class="container mx-auto px-4 py-4">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center space-x-4">
+                        <a href="/tenant/home?subdomain=${subdomain}" class="text-xl md:text-2xl font-bold text-primary">
+                            ${tenant.name}
+                        </a>
+                    </div>
+                    
+                    <nav id="desktopNav" class="hidden md:flex items-center space-x-6">
+                        <!-- JavaScriptで動的に生成 -->
+                    </nav>
+                    
+                    <button id="mobileMenuToggle" class="md:hidden text-gray-600 hover:text-primary">
+                        <i class="fas fa-bars text-xl"></i>
+                    </button>
                 </div>
                 
-                <nav id="desktopNav" class="hidden md:flex items-center space-x-6">
+                <nav id="mobileMenu" class="md:hidden mt-4 pb-4 space-y-2 hidden">
                     <!-- JavaScriptで動的に生成 -->
                 </nav>
-                
-                <button id="mobileMenuToggle" class="md:hidden text-gray-600 hover:text-primary">
-                    <i class="fas fa-bars text-xl"></i>
+            </div>
+        </header>
+        
+        <div class="container mx-auto px-4 py-8 max-w-6xl">
+            <div class="flex items-center justify-between mb-6">
+                <h1 class="text-3xl font-bold " style="color: var(--commons-text-primary);">
+                    <i class="fas fa-comments mr-3 text-primary"></i>
+                    チャット
+                </h1>
+                <button id="createRoomBtn" class="hidden px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary-dark transition font-semibold shadow-md">
+                    <i class="fas fa-plus mr-2"></i>ルーム作成
                 </button>
             </div>
             
-            <nav id="mobileMenu" class="md:hidden mt-4 pb-4 space-y-2 hidden">
+            <!-- ローディング -->
+            <div id="loading" class="text-center py-12">
+                <i class="fas fa-spinner fa-spin text-4xl text-primary mb-4"></i>
+                <p class="text-gray-600">読み込み中...</p>
+            </div>
+            
+            <!-- チャットルーム一覧 -->
+            <div id="roomsList" class="hidden grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                 <!-- JavaScriptで動的に生成 -->
-            </nav>
-        </div>
-    </header>
-    
-    <div class="container mx-auto px-4 py-8 max-w-6xl">
-        <div class="flex items-center justify-between mb-6">
-            <h1 class="text-3xl font-bold " style="color: var(--commons-text-primary);">
-                <i class="fas fa-comments mr-3 text-primary"></i>
-                チャット
-            </h1>
-            <button id="createRoomBtn" class="hidden px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary-dark transition font-semibold shadow-md">
-                <i class="fas fa-plus mr-2"></i>ルーム作成
-            </button>
-        </div>
-        
-        <!-- ローディング -->
-        <div id="loading" class="text-center py-12">
-            <i class="fas fa-spinner fa-spin text-4xl text-primary mb-4"></i>
-            <p class="text-gray-600">読み込み中...</p>
-        </div>
-        
-        <!-- チャットルーム一覧 -->
-        <div id="roomsList" class="hidden grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <!-- JavaScriptで動的に生成 -->
-        </div>
-        
-        <!-- 空の状態 -->
-        <div id="emptyState" class="hidden text-center py-12">
-            <i class="fas fa-comments text-6xl text-gray-300 mb-4"></i>
+            </div>
+            
+            <!-- 空の状態 -->
+            <div id="emptyState" class="hidden text-center py-12">
+                <i class="fas fa-comments text-6xl text-gray-300 mb-4"></i>
             <p class="text-xl text-gray-600 mb-2">チャットルームがありません</p>
             <p class="text-gray-500" id="emptyMessage">管理者がチャットルームを作成するとここに表示されます</p>
         </div>
@@ -7170,9 +7201,15 @@ tenantPublic.get('/chat', async (c) => {
             const user = JSON.parse(localStorage.getItem('user') || 'null')
             
             if (!token || !user) {
-                window.location.href = '/login?subdomain=${subdomain}'
+                // ログインしていない場合はログイン必須メッセージを表示
+                document.getElementById('loginRequired').classList.remove('hidden')
+                document.getElementById('mainContent').classList.add('hidden')
                 return false
             }
+            
+            // ログインしている場合はメインコンテンツを表示
+            document.getElementById('loginRequired').classList.add('hidden')
+            document.getElementById('mainContent').classList.remove('hidden')
             
             currentUser = user
             
@@ -7472,23 +7509,49 @@ tenantPublic.get('/chat/:id', async (c) => {
     </style>
 </head>
 <body class="bg-gray-50">
-    <!-- ヘッダー -->
-    <header class="bg-white shadow-sm sticky top-0 z-40">
-        <div class="max-w-7xl mx-auto px-4 py-4">
-            <div class="flex justify-between items-center">
-                <div>
-                    <h1 class="text-2xl md:text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                        <i class="fas fa-users mr-2"></i>${tenantName}
-                    </h1>
-                    ${tenantSubtitle ? `<p class="text-gray-600 mt-1">${tenantSubtitle}</p>` : ''}
-                </div>
-                <!-- デスクトップナビ (動的に更新される) -->
-                <nav class="hidden md:flex gap-4" id="desktopNav">
-                    <!-- 認証後に updateNavigation() で内容が設定されます -->
-                    <a href="/login?subdomain=${subdomain}" id="loginBtn" class="auth-hide px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition">
-                        <i class="fas fa-sign-in-alt mr-2"></i>ログイン
-                    </a>
-                </nav>
+    <!-- ログイン必須メッセージ -->
+    <div id="loginRequired" class="hidden min-h-screen flex items-center justify-center bg-gray-50 px-4">
+        <div class="max-w-md w-full bg-white rounded-lg shadow-lg p-8 text-center">
+            <div class="mb-6">
+                <i class="fas fa-lock text-blue-600 text-6xl mb-4"></i>
+                <h2 class="text-2xl font-bold text-gray-900 mb-2">ログインが必要です</h2>
+                <p class="text-gray-600">
+                    チャットルームをご利用いただくには、ログインが必要です。
+                </p>
+            </div>
+            
+            <div class="space-y-3">
+                <a href="/tenant/login?subdomain=${subdomain}&redirect=/tenant/chat/${roomId}?subdomain=${subdomain}" class="block w-full btn-primary">
+                    <i class="fas fa-sign-in-alt mr-2"></i>
+                    ログイン
+                </a>
+                <a href="/tenant/chat?subdomain=${subdomain}" class="block w-full text-gray-600 hover:text-gray-900 py-2">
+                    <i class="fas fa-arrow-left mr-2"></i>
+                    チャット一覧に戻る
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <!-- メインコンテンツ -->
+    <div id="mainContent" class="hidden">
+        <!-- ヘッダー -->
+        <header class="bg-white shadow-sm sticky top-0 z-40">
+            <div class="max-w-7xl mx-auto px-4 py-4">
+                <div class="flex justify-between items-center">
+                    <div>
+                        <h1 class="text-2xl md:text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                            <i class="fas fa-users mr-2"></i>${tenantName}
+                        </h1>
+                        ${tenantSubtitle ? `<p class="text-gray-600 mt-1">${tenantSubtitle}</p>` : ''}
+                    </div>
+                    <!-- デスクトップナビ (動的に更新される) -->
+                    <nav class="hidden md:flex gap-4" id="desktopNav">
+                        <!-- 認証後に updateNavigation() で内容が設定されます -->
+                        <a href="/login?subdomain=${subdomain}" id="loginBtn" class="auth-hide px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition">
+                            <i class="fas fa-sign-in-alt mr-2"></i>ログイン
+                        </a>
+                    </nav>
                 <!-- モバイルメニューボタン -->
                 <button id="mobileMenuBtn" class="md:hidden p-2 text-gray-700 hover:bg-gray-100 rounded-lg">
                     <i class="fas fa-bars text-xl"></i>
@@ -7560,6 +7623,7 @@ tenantPublic.get('/chat/:id', async (c) => {
             </form>
         </div>
     </main>
+    </div>
 
     <script src="/static/app.js"></script>
     <script>
@@ -7711,15 +7775,23 @@ tenantPublic.get('/chat/:id', async (c) => {
         async function checkAuth() {
             const token = getToken()
             if (!token) {
-                window.location.href = '/login?subdomain=' + subdomain
+                // ログインしていない場合はログイン必須メッセージを表示
+                document.getElementById('loginRequired').classList.remove('hidden')
+                document.getElementById('mainContent').classList.add('hidden')
                 return false
             }
 
             const userStr = localStorage.getItem('user')
             if (!userStr) {
-                window.location.href = '/login?subdomain=' + subdomain
+                // ログインしていない場合はログイン必須メッセージを表示
+                document.getElementById('loginRequired').classList.remove('hidden')
+                document.getElementById('mainContent').classList.add('hidden')
                 return false
             }
+
+            // ログインしている場合はメインコンテンツを表示
+            document.getElementById('loginRequired').classList.add('hidden')
+            document.getElementById('mainContent').classList.remove('hidden')
 
             currentUser = JSON.parse(userStr)
             updateNavigation(currentUser)
