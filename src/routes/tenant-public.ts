@@ -7535,49 +7535,22 @@ tenantPublic.get('/chat/:id', async (c) => {
     
     <!-- メインコンテンツ -->
     <div id="mainContent" class="hidden">
-        <!-- ヘッダー -->
-        <header class="bg-white shadow-sm sticky top-0 z-40">
-            <div class="max-w-7xl mx-auto px-4 py-4">
-                <div class="flex justify-between items-center">
-                    <div>
-                        <h1 class="text-2xl md:text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                            <i class="fas fa-users mr-2"></i>${tenantName}
-                        </h1>
-                        ${tenantSubtitle ? `<p class="text-gray-600 mt-1">${tenantSubtitle}</p>` : ''}
-                    </div>
-                    <!-- デスクトップナビ (動的に更新される) -->
-                    <nav class="hidden md:flex gap-4" id="desktopNav">
-                        <!-- 認証後に updateNavigation() で内容が設定されます -->
-                        <a href="/login?subdomain=${subdomain}" id="loginBtn" class="auth-hide px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition">
-                            <i class="fas fa-sign-in-alt mr-2"></i>ログイン
-                        </a>
-                    </nav>
-                <!-- モバイルメニューボタン -->
-                <button id="mobileMenuBtn" class="md:hidden p-2 text-gray-700 hover:bg-gray-100 rounded-lg">
-                    <i class="fas fa-bars text-xl"></i>
-                </button>
-            </div>
-            <!-- モバイルメニュー (動的に更新される) -->
-            <div id="mobileMenu" class="hidden md:hidden mt-4 space-y-2">
-                <!-- 認証後に updateNavigation() で内容が設定されます -->
-            </div>
-        </div>
-    </header>
+        ${renderCommonHeader(tenantName, subdomain, 'chat')}
 
-    <!-- メインコンテンツ -->
-    <main class="max-w-5xl mx-auto px-4 py-8">
-        <!-- 戻るボタンとルーム情報 -->
-        <div class="mb-6">
-            <a href="/tenant/chat?subdomain=${subdomain}" class="inline-flex items-center text-primary hover:underline mb-4">
-                <i class="fas fa-arrow-left mr-2"></i>チャットルーム一覧に戻る
-            </a>
-            <div class="bg-white rounded-lg shadow-sm p-6" id="roomInfo">
-                <div class="animate-pulse">
-                    <div class="h-6 bg-gray-200 rounded w-1/3 mb-2"></div>
-                    <div class="h-4 bg-gray-200 rounded w-2/3"></div>
+        <!-- メインコンテンツ -->
+        <main class="max-w-5xl mx-auto px-4 py-8">
+            <!-- 戻るボタンとルーム情報 -->
+            <div class="mb-6">
+                <a href="/tenant/chat?subdomain=${subdomain}" class="inline-flex items-center text-primary hover:underline mb-4">
+                    <i class="fas fa-arrow-left mr-2"></i>チャットルーム一覧に戻る
+                </a>
+                <div class="bg-white rounded-lg shadow-sm p-6" id="roomInfo">
+                    <div class="animate-pulse">
+                        <div class="h-6 bg-gray-200 rounded w-1/3 mb-2"></div>
+                        <div class="h-4 bg-gray-200 rounded w-2/3"></div>
+                    </div>
                 </div>
             </div>
-        </div>
 
         <!-- メッセージ表示エリア -->
         <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
@@ -7625,6 +7598,7 @@ tenantPublic.get('/chat/:id', async (c) => {
     </main>
     </div>
 
+    ${renderCommonScripts(subdomain)}
     <script src="/static/app.js"></script>
     <script>
         const subdomain = '${subdomain}'
@@ -7635,141 +7609,6 @@ tenantPublic.get('/chat/:id', async (c) => {
         console.log('[Chat Room] subdomain:', subdomain)
         console.log('[Chat Room] roomId:', roomId)
         console.log('[Chat Room] Current URL:', window.location.href)
-
-        // ナビゲーションを更新
-        function updateNavigation(user) {
-            const isAdmin = user.role === 'owner' || user.role === 'admin'
-            const desktopNav = document.getElementById('desktopNav')
-            const mobileMenu = document.getElementById('mobileMenu')
-            
-            if (isAdmin) {
-                if (desktopNav) {
-                    desktopNav.innerHTML = \`
-                        <a href="/tenant/home?subdomain=\${subdomain}" class="text-gray-600 hover:text-primary transition">
-                            <i class="fas fa-home mr-2"></i>ホーム
-                        </a>
-                        <a href="/tenant/members?subdomain=\${subdomain}" class="text-gray-600 hover:text-primary transition">
-                            <i class="fas fa-users mr-2"></i>会員管理
-                        </a>
-                        <a href="/posts-admin" class="text-gray-600 hover:text-primary transition">
-                            <i class="fas fa-file-alt mr-2"></i>投稿管理
-                        </a>
-                        <a href="/tenant/chat?subdomain=\${subdomain}" class="text-primary font-semibold">
-                            <i class="fas fa-comments mr-2"></i>チャット
-                        </a>
-                        <div class="relative">
-                            <button id="chatAdminMenuBtn" class="text-gray-600 hover:text-primary transition flex items-center">
-                                <i class="fas fa-user-circle mr-2"></i>
-                                \${user.nickname || 'ユーザー'}
-                                <i class="fas fa-chevron-down ml-2 text-xs"></i>
-                            </button>
-                            <div id="chatAdminDropdown" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-50">
-                                <a href="/tenant/mypage?subdomain=\${subdomain}" class="block px-4 py-2 text-gray-700 hover:bg-gray-50 transition">
-                                    <i class="fas fa-user mr-2"></i>マイページ
-                                </a>
-                                <a href="/tenant/settings?subdomain=\${subdomain}" class="block px-4 py-2 text-gray-700 hover:bg-gray-50 transition">
-                                    <i class="fas fa-cog mr-2"></i>設定
-                                </a>
-                                <button onclick="logout()" class="block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-50 transition">
-                                    <i class="fas fa-sign-out-alt mr-2"></i>ログアウト
-                                </button>
-                            </div>
-                        </div>
-                    \`
-                }
-            } else {
-                if (desktopNav) {
-                    desktopNav.innerHTML = \`
-                        <a href="/tenant/home?subdomain=\${subdomain}" class="text-gray-600 hover:text-primary transition">
-                            <i class="fas fa-home mr-2"></i>ホーム
-                        </a>
-                        <a href="/tenant/posts?subdomain=\${subdomain}" class="text-gray-600 hover:text-primary transition">
-                            <i class="fas fa-newspaper mr-2"></i>投稿
-                        </a>
-                        <a href="/tenant/chat?subdomain=\${subdomain}" class="text-primary font-semibold">
-                            <i class="fas fa-comments mr-2"></i>チャット
-                        </a>
-                        <a href="/tenant/members?subdomain=\${subdomain}" class="text-gray-600 hover:text-primary transition">
-                            <i class="fas fa-users mr-2"></i>メンバー
-                        </a>
-                        <div class="relative">
-                            <button id="chatMemberMenuBtn" class="text-gray-600 hover:text-primary transition flex items-center">
-                                <i class="fas fa-user-circle mr-2"></i>
-                                \${user.nickname || 'ユーザー'}
-                                <i class="fas fa-chevron-down ml-2 text-xs"></i>
-                            </button>
-                            <div id="chatMemberDropdown" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-200 py-2 z-50">
-                                <a href="/profile?subdomain=${subdomain}" class="block px-4 py-2 text-gray-700 hover:bg-gray-50 transition">
-                                    <i class="fas fa-user mr-2"></i>プロフィール
-                                </a>
-                                <button onclick="logout()" class="block w-full text-left px-4 py-2 text-gray-700 hover:bg-gray-50 transition">
-                                    <i class="fas fa-sign-out-alt mr-2"></i>ログアウト
-                                </button>
-                            </div>
-                        </div>
-                    \`
-                }
-            }
-            
-            // ドロップダウンメニューの設定
-            setTimeout(() => {
-                setupChatDropdowns()
-            }, 100)
-        }
-        
-        // チャットページ用ドロップダウン設定
-        function setupChatDropdowns() {
-            // 管理者用
-            const adminBtn = document.getElementById('chatAdminMenuBtn')
-            const adminDropdown = document.getElementById('chatAdminDropdown')
-            
-            if (adminBtn && adminDropdown) {
-                adminBtn.addEventListener('click', (e) => {
-                    e.stopPropagation()
-                    adminDropdown.classList.toggle('hidden')
-                })
-                
-                document.addEventListener('click', (e) => {
-                    if (!adminDropdown.contains(e.target) && e.target !== adminBtn) {
-                        adminDropdown.classList.add('hidden')
-                    }
-                })
-            }
-            
-            // 一般メンバー用
-            const memberBtn = document.getElementById('chatMemberMenuBtn')
-            const memberDropdown = document.getElementById('chatMemberDropdown')
-            
-            if (memberBtn && memberDropdown) {
-                memberBtn.addEventListener('click', (e) => {
-                    e.stopPropagation()
-                    memberDropdown.classList.toggle('hidden')
-                })
-                
-                document.addEventListener('click', (e) => {
-                    if (!memberDropdown.contains(e.target) && e.target !== memberBtn) {
-                        memberDropdown.classList.add('hidden')
-                    }
-                })
-            }
-        }
-        }
-
-        window.logout = function() {
-            localStorage.removeItem('token')
-            localStorage.removeItem('user')
-            localStorage.removeItem('membership')
-            window.location.href = '/tenant/home?subdomain=' + subdomain
-        }
-
-        // モバイルメニュー切り替え
-        const mobileMenuBtn = document.getElementById('mobileMenuBtn')
-        const mobileMenu = document.getElementById('mobileMenu')
-        if (mobileMenuBtn && mobileMenu) {
-            mobileMenuBtn.addEventListener('click', () => {
-                mobileMenu.classList.toggle('hidden')
-            })
-        }
 
         // 認証チェック
         async function checkAuth() {
@@ -7794,7 +7633,6 @@ tenantPublic.get('/chat/:id', async (c) => {
             document.getElementById('mainContent').classList.remove('hidden')
 
             currentUser = JSON.parse(userStr)
-            updateNavigation(currentUser)
             return true
         }
 
