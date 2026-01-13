@@ -180,5 +180,61 @@ members.post('/apply', tenantMiddleware, async (c) => {
   }
 })
 
+/**
+ * GET /api/members?subdomain=xxx
+ * テナントのメンバー一覧を取得（公開API - 認証不要）
+ */
+members.get('/', async (c) => {
+  const subdomain = c.req.query('subdomain')
+  
+  if (!subdomain) {
+    return c.json({ success: false, error: 'Subdomain is required' }, 400)
+  }
+
+  const db = c.env.DB
+
+  try {
+    // サブドメインからテナントIDを取得
+    const tenant = await db
+      .prepare('SELECT id FROM tenants WHERE subdomain = ? AND status = ?')
+      .bind(subdomain, 'active')
+      .first() as { id: number } | null
+
+    if (!tenant) {
+      return c.json({ success: false, error: 'Tenant not found' }, 404)
+    }
+
+    // テナントのメンバー一覧を取得
+    const membersResult = await db
+      .prepare(`
+        SELECT 
+          u.id,
+          u.email,
+          u.nickname,
+          u.avatar_url,
+          m.status,
+          m.role
+        FROM memberships m
+        JOIN users u ON m.user_id = u.id
+        WHERE m.tenant_id = ? AND m.status = 'active'
+        ORDER BY u.nickname ASC
+      `)
+      .bind(tenant.id)
+      .all()
+
+    return c.json({
+      success: true,
+      members: membersResult.results || []
+    })
+  } catch (error) {
+    console.error('[Get Members Error]', error)
+    return c.json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to get members'
+    }, 500)
+  }
+})
+
 export default members
+
 
