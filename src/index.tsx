@@ -9107,7 +9107,37 @@ app.get('/tenant/shop', (c) => {
         <link href="/static/commons-components.css" rel="stylesheet">
     </head>
     <body class="bg-gray-50">
-        <div class="min-h-screen flex flex-col">
+        <!-- ログイン必須メッセージ（未ログイン時に表示） -->
+        <div id="loginRequired" class="hidden min-h-screen flex items-center justify-center bg-gray-50 px-4">
+            <div class="max-w-md w-full bg-white rounded-lg shadow-lg p-8 text-center">
+                <div class="mb-6">
+                    <i class="fas fa-lock text-blue-600 text-6xl mb-4"></i>
+                    <h2 class="text-2xl font-bold text-gray-900 mb-2">ログインが必要です</h2>
+                    <p class="text-gray-600">
+                        ショップをご利用いただくには、ログインが必要です。<br>
+                        アカウントをお持ちでない方は、新規登録をお願いします。
+                    </p>
+                </div>
+                
+                <div class="space-y-3">
+                    <a href="/tenant/login?subdomain=${subdomain}&redirect=/tenant/shop?subdomain=${subdomain}" class="block w-full btn-primary">
+                        <i class="fas fa-sign-in-alt mr-2"></i>
+                        ログイン
+                    </a>
+                    <a href="/tenant/signup?subdomain=${subdomain}&redirect=/tenant/shop?subdomain=${subdomain}" class="block w-full btn-secondary">
+                        <i class="fas fa-user-plus mr-2"></i>
+                        新規登録
+                    </a>
+                    <a href="/tenant/home?subdomain=${subdomain}" class="block w-full text-gray-600 hover:text-gray-900 py-2">
+                        <i class="fas fa-arrow-left mr-2"></i>
+                        ホームに戻る
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- メインコンテンツ（ログイン時に表示） -->
+        <div id="mainContent" class="hidden min-h-screen flex flex-col">
             <!-- Header -->
             <header class="bg-white border-b border-gray-200 sticky top-0 z-40">
                 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
@@ -9226,6 +9256,29 @@ app.get('/tenant/shop', (c) => {
             let cart = JSON.parse(localStorage.getItem(\`cart_\${subdomain}\`) || '[]')
             let categories = []
             let products = []
+            
+            // ログインチェック
+            function checkAuth() {
+                const token = localStorage.getItem('token')
+                if (!token) {
+                    document.getElementById('loginRequired').classList.remove('hidden')
+                    document.getElementById('mainContent').classList.add('hidden')
+                    return false
+                }
+                document.getElementById('loginRequired').classList.add('hidden')
+                document.getElementById('mainContent').classList.remove('hidden')
+                return true
+            }
+            
+            // ページ読み込み時にログインチェック
+            if (!checkAuth()) {
+                // ログインしていない場合はここで終了
+            } else {
+                // ログイン済みの場合は初期化処理を実行
+                loadCategories()
+                loadProducts()
+                updateCartBadge()
+            }
             
             // 商品タイプのラベルとアイコン
             const typeLabels = {
@@ -9531,13 +9584,6 @@ app.get('/tenant/shop', (c) => {
                 
                 window.location.href = \`/tenant/shop/checkout?subdomain=\${subdomain}\`
             }
-            
-            // 初期化
-            document.addEventListener('DOMContentLoaded', async () => {
-                updateCartBadge()
-                await loadCategories()
-                await loadProducts()
-            })
         </script>
     </body>
     </html>
@@ -9564,7 +9610,32 @@ app.get('/tenant/shop/product', (c) => {
         <link href="/static/commons-components.css" rel="stylesheet">
     </head>
     <body class="bg-gray-50">
-        <div class="min-h-screen flex flex-col">
+        <!-- ログイン必須メッセージ -->
+        <div id="loginRequired" class="hidden min-h-screen flex items-center justify-center bg-gray-50 px-4">
+            <div class="max-w-md w-full bg-white rounded-lg shadow-lg p-8 text-center">
+                <div class="mb-6">
+                    <i class="fas fa-lock text-blue-600 text-6xl mb-4"></i>
+                    <h2 class="text-2xl font-bold text-gray-900 mb-2">ログインが必要です</h2>
+                    <p class="text-gray-600">
+                        商品をご覧いただくには、ログインが必要です。
+                    </p>
+                </div>
+                
+                <div class="space-y-3">
+                    <a href="/tenant/login?subdomain=${subdomain}&redirect=/tenant/shop/product?subdomain=${subdomain}&id=${productId}" class="block w-full btn-primary">
+                        <i class="fas fa-sign-in-alt mr-2"></i>
+                        ログイン
+                    </a>
+                    <a href="/tenant/shop?subdomain=${subdomain}" class="block w-full text-gray-600 hover:text-gray-900 py-2">
+                        <i class="fas fa-arrow-left mr-2"></i>
+                        ショップに戻る
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- メインコンテンツ -->
+        <div id="mainContent" class="hidden min-h-screen flex flex-col">
             <!-- Header -->
             <header class="bg-white border-b border-gray-200">
                 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
@@ -9593,6 +9664,24 @@ app.get('/tenant/shop/product', (c) => {
         <script>
             const subdomain = '${subdomain}'
             const productId = '${productId}'
+            
+            // ログインチェック
+            function checkAuth() {
+                const token = localStorage.getItem('token')
+                if (!token) {
+                    document.getElementById('loginRequired').classList.remove('hidden')
+                    document.getElementById('mainContent').classList.add('hidden')
+                    return false
+                }
+                document.getElementById('loginRequired').classList.add('hidden')
+                document.getElementById('mainContent').classList.remove('hidden')
+                return true
+            }
+            
+            // ページ読み込み時にログインチェック
+            if (checkAuth()) {
+                loadProduct()
+            }
             
             const typeLabels = {
                 physical: '物販',
@@ -9773,8 +9862,6 @@ app.get('/tenant/shop/product', (c) => {
                     window.location.href = \`/tenant/shop?subdomain=\${subdomain}\`
                 }, 1000)
             }
-            
-            document.addEventListener('DOMContentLoaded', loadProduct)
         </script>
     </body>
     </html>
@@ -9800,7 +9887,32 @@ app.get('/tenant/shop/checkout', (c) => {
         <link href="/static/commons-components.css" rel="stylesheet">
     </head>
     <body class="bg-gray-50">
-        <div class="min-h-screen flex flex-col">
+        <!-- ログイン必須メッセージ -->
+        <div id="loginRequired" class="hidden min-h-screen flex items-center justify-center bg-gray-50 px-4">
+            <div class="max-w-md w-full bg-white rounded-lg shadow-lg p-8 text-center">
+                <div class="mb-6">
+                    <i class="fas fa-lock text-blue-600 text-6xl mb-4"></i>
+                    <h2 class="text-2xl font-bold text-gray-900 mb-2">ログインが必要です</h2>
+                    <p class="text-gray-600">
+                        購入手続きには、ログインが必要です。
+                    </p>
+                </div>
+                
+                <div class="space-y-3">
+                    <a href="/tenant/login?subdomain=${subdomain}&redirect=/tenant/shop/checkout?subdomain=${subdomain}" class="block w-full btn-primary">
+                        <i class="fas fa-sign-in-alt mr-2"></i>
+                        ログイン
+                    </a>
+                    <a href="/tenant/shop?subdomain=${subdomain}" class="block w-full text-gray-600 hover:text-gray-900 py-2">
+                        <i class="fas fa-arrow-left mr-2"></i>
+                        ショップに戻る
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- メインコンテンツ -->
+        <div id="mainContent" class="hidden min-h-screen flex flex-col">
             <!-- Header -->
             <header class="bg-white border-b border-gray-200">
                 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
@@ -9884,6 +9996,24 @@ app.get('/tenant/shop/checkout', (c) => {
             const subdomain = '${subdomain}'
             let cart = []
             let requiresShipping = false
+            
+            // ログインチェック
+            function checkAuth() {
+                const token = localStorage.getItem('token')
+                if (!token) {
+                    document.getElementById('loginRequired').classList.remove('hidden')
+                    document.getElementById('mainContent').classList.add('hidden')
+                    return false
+                }
+                document.getElementById('loginRequired').classList.add('hidden')
+                document.getElementById('mainContent').classList.remove('hidden')
+                return true
+            }
+            
+            // ページ読み込み時にログインチェック
+            if (checkAuth()) {
+                loadCart()
+            }
             
             function loadCart() {
                 cart = JSON.parse(localStorage.getItem(\`cart_\${subdomain}\`) || '[]')
@@ -10043,7 +10173,6 @@ app.get('/tenant/shop/checkout', (c) => {
                 }
             }
             
-            document.addEventListener('DOMContentLoaded', loadCart)
         </script>
     </body>
     </html>
@@ -10069,7 +10198,32 @@ app.get('/tenant/shop/orders', (c) => {
         <link href="/static/commons-components.css" rel="stylesheet">
     </head>
     <body class="bg-gray-50">
-        <div class="min-h-screen flex flex-col">
+        <!-- ログイン必須メッセージ -->
+        <div id="loginRequired" class="hidden min-h-screen flex items-center justify-center bg-gray-50 px-4">
+            <div class="max-w-md w-full bg-white rounded-lg shadow-lg p-8 text-center">
+                <div class="mb-6">
+                    <i class="fas fa-lock text-blue-600 text-6xl mb-4"></i>
+                    <h2 class="text-2xl font-bold text-gray-900 mb-2">ログインが必要です</h2>
+                    <p class="text-gray-600">
+                        注文履歴をご覧いただくには、ログインが必要です。
+                    </p>
+                </div>
+                
+                <div class="space-y-3">
+                    <a href="/tenant/login?subdomain=${subdomain}&redirect=/tenant/shop/orders?subdomain=${subdomain}" class="block w-full btn-primary">
+                        <i class="fas fa-sign-in-alt mr-2"></i>
+                        ログイン
+                    </a>
+                    <a href="/tenant/shop?subdomain=${subdomain}" class="block w-full text-gray-600 hover:text-gray-900 py-2">
+                        <i class="fas fa-arrow-left mr-2"></i>
+                        ショップに戻る
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- メインコンテンツ -->
+        <div id="mainContent" class="hidden min-h-screen flex flex-col">
             <!-- Header -->
             <header class="bg-white border-b border-gray-200">
                 <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
@@ -10100,6 +10254,24 @@ app.get('/tenant/shop/orders', (c) => {
         <script src="/static/app.js"></script>
         <script>
             const subdomain = '${subdomain}'
+            
+            // ログインチェック
+            function checkAuth() {
+                const token = localStorage.getItem('token')
+                if (!token) {
+                    document.getElementById('loginRequired').classList.remove('hidden')
+                    document.getElementById('mainContent').classList.add('hidden')
+                    return false
+                }
+                document.getElementById('loginRequired').classList.add('hidden')
+                document.getElementById('mainContent').classList.remove('hidden')
+                return true
+            }
+            
+            // ページ読み込み時にログインチェック
+            if (checkAuth()) {
+                loadOrders()
+            }
             
             const statusLabels = {
                 pending: '処理待ち',
@@ -10205,8 +10377,6 @@ app.get('/tenant/shop/orders', (c) => {
                 // TODO: 注文詳細モーダルまたはページを実装
                 showToast('注文詳細機能は近日実装予定です', 'info')
             }
-            
-            document.addEventListener('DOMContentLoaded', loadOrders)
         </script>
     </body>
     </html>
