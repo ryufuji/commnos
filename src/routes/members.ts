@@ -212,11 +212,11 @@ members.get('/', async (c) => {
           u.email,
           u.nickname,
           u.avatar_url,
-          m.status,
-          m.role
-        FROM memberships m
-        JOIN users u ON m.user_id = u.id
-        WHERE m.tenant_id = ? AND m.status = 'active'
+          tm.status,
+          tm.role
+        FROM tenant_memberships tm
+        JOIN users u ON tm.user_id = u.id
+        WHERE tm.tenant_id = ? AND tm.status = 'active'
         ORDER BY u.nickname ASC
       `)
       .bind(tenant.id)
