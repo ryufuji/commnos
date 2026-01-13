@@ -204,7 +204,7 @@ chat.get('/rooms/:id', async (c) => {
     // メンバー一覧取得
     const members = await c.env.DB.prepare(`
       SELECT 
-        u.id, u.nickname, u.avatar_url,
+        u.id as user_id, u.nickname, u.avatar_url,
         crm.joined_at
       FROM chat_room_members crm
       INNER JOIN users u ON crm.user_id = u.id
