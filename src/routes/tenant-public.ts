@@ -7074,30 +7074,7 @@ tenantPublic.get('/chat', async (c) => {
     
     <!-- メインコンテンツ -->
     <div id="mainContent" class="hidden">
-        <!-- ヘッダー -->
-        <header class="bg-white shadow-sm sticky top-0 z-50">
-            <div class="container mx-auto px-4 py-4">
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center space-x-4">
-                        <a href="/tenant/home?subdomain=${subdomain}" class="text-xl md:text-2xl font-bold text-primary">
-                            ${tenant.name}
-                        </a>
-                    </div>
-                    
-                    <nav id="desktopNav" class="hidden md:flex items-center space-x-6">
-                        <!-- JavaScriptで動的に生成 -->
-                    </nav>
-                    
-                    <button id="mobileMenuToggle" class="md:hidden text-gray-600 hover:text-primary">
-                        <i class="fas fa-bars text-xl"></i>
-                    </button>
-                </div>
-                
-                <nav id="mobileMenu" class="md:hidden mt-4 pb-4 space-y-2 hidden">
-                    <!-- JavaScriptで動的に生成 -->
-                </nav>
-            </div>
-        </header>
+        ${renderCommonHeader(tenant.name, subdomain, 'chat')}
         
         <div class="container mx-auto px-4 py-8 max-w-6xl">
             <div class="flex items-center justify-between mb-6">
@@ -7219,51 +7196,12 @@ tenantPublic.get('/chat', async (c) => {
                 document.getElementById('emptyMessage').textContent = 'ルーム作成ボタンから新しいチャットルームを作成できます'
             }
             
-            // ナビゲーション更新
-            updateNavigation(user)
+            // モバイルメニューを初期化
+            if (typeof initMobileMenu === 'function') {
+                initMobileMenu()
+            }
             
             return true
-        }
-        
-        // ナビゲーション更新
-        function updateNavigation(user) {
-            const isAdmin = user.role === 'owner' || user.role === 'admin'
-            const desktopNav = document.getElementById('desktopNav')
-            const mobileMenu = document.getElementById('mobileMenu')
-            
-            const navHTML = isAdmin ? \`
-                <a href="/tenant/home?subdomain=${subdomain}" class="text-gray-600 hover:text-primary transition">
-                    <i class="fas fa-home mr-2"></i>ホーム
-                </a>
-                <a href="/tenant/members?subdomain=${subdomain}" class="text-gray-600 hover:text-primary transition">
-                    <i class="fas fa-users mr-2"></i>会員管理
-                </a>
-                <a href="/tenant/posts?subdomain=${subdomain}" class="text-gray-600 hover:text-primary transition">
-                    <i class="fas fa-file-alt mr-2"></i>投稿管理
-                </a>
-                <a href="/tenant/chat?subdomain=${subdomain}" class="text-primary font-semibold">
-                    <i class="fas fa-comments mr-2"></i>チャット
-                </a>
-                <button onclick="handleLogout()" class="text-gray-600 hover:text-primary transition">
-                    <i class="fas fa-sign-out-alt mr-2"></i>ログアウト
-                </button>
-            \` : \`
-                <a href="/tenant/home?subdomain=${subdomain}" class="text-gray-600 hover:text-primary transition">
-                    <i class="fas fa-home mr-2"></i>ホーム
-                </a>
-                <a href="/tenant/posts?subdomain=${subdomain}" class="text-gray-600 hover:text-primary transition">
-                    <i class="fas fa-newspaper mr-2"></i>投稿
-                </a>
-                <a href="/tenant/chat?subdomain=${subdomain}" class="text-primary font-semibold">
-                    <i class="fas fa-comments mr-2"></i>チャット
-                </a>
-                <button onclick="handleLogout()" class="text-gray-600 hover:text-primary transition">
-                    <i class="fas fa-sign-out-alt mr-2"></i>ログアウト
-                </button>
-            \`
-            
-            if (desktopNav) desktopNav.innerHTML = navHTML
-            if (mobileMenu) mobileMenu.innerHTML = navHTML.replace(/md:flex/g, 'block py-3')
         }
         
         // チャットルーム一覧読み込み
@@ -7618,6 +7556,7 @@ tenantPublic.get('/chat/:id', async (c) => {
             if (token && userStr) {
                 try {
                     const user = JSON.parse(userStr)
+                    
                     // ログインボタンを非表示
                     const loginButtons = document.querySelectorAll('a[href*="/login"]')
                     loginButtons.forEach(btn => {
@@ -7626,17 +7565,14 @@ tenantPublic.get('/chat/:id', async (c) => {
                         }
                     })
                     
-                    // 通知機能を初期化
-                    if (typeof initNotifications === 'function') {
-                        initNotifications()
-                    }
-                    
-                    // モバイルメニューを初期化
+                    // モバイルメニューを初期化（app.jsに存在する関数）
                     if (typeof initMobileMenu === 'function') {
                         initMobileMenu()
                     }
+                    
+                    console.log('[Chat Room] Common header initialized for user:', user.nickname)
                 } catch (error) {
-                    console.error('Failed to initialize common header:', error)
+                    console.error('[Chat Room] Failed to initialize common header:', error)
                 }
             }
         }
