@@ -521,4 +521,51 @@ chat.delete('/messages/:id', async (c) => {
   }
 })
 
+/**
+ * DELETE /api/chat/rooms/:id/members/:userId
+ * チャットルームからメンバーを削除（管理者のみ）
+ */
+chat.delete('/rooms/:id/members/:userId', async (c) => {
+  try {
+    const authHeader = c.req.header('Authorization')
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return c.json({ success: false, error: 'Unauthorized' }, 401)
+    }
+
+    const token = authHeader.substring(7)
+    const result = await verifyToken(token, c.env.JWT_SECRET)
+    if (!result.valid || !result.payload) {
+      return c.json({ success: false, error: 'Invalid token' }, 401)
+    }
+
+    const role = result.payload.role
+    const roomId = c.req.param('id')
+    const userIdToRemove = c.req.param('userId')
+
+    // 管理者権限チェック
+    if (role !== 'owner' && role !== 'admin') {
+      return c.json({ success: false, error: 'Forbidden: Admin access required' }, 403)
+    }
+
+    // ルーム存在チェック
+    const room = await c.env.DB.prepare(`
+      SELECT * FROM chat_rooms WHERE id = ?
+    `).bind(roomId).first()
+
+    if (!room) {
+      return c.json({ success: false, error: 'Room not found' }, 404)
+    }
+
+    // メンバーを削除
+    await c.env.DB.prepare(`
+      DELETE FROM chat_room_members WHERE room_id = ? AND user_id = ?
+    `).bind(roomId, userIdToRemove).run()
+
+    return c.json({ success: true })
+  } catch (error: any) {
+    console.error('[Chat Remove Member Error]', error)
+    return c.json({ success: false, error: error.message }, 500)
+  }
+})
+
 export default chat

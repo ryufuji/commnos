@@ -7946,6 +7946,8 @@ tenantPublic.get('/chat/:id', async (c) => {
                 // 現在のメンバーを表示
                 const currentMembersList = document.getElementById('currentMembersList')
                 const currentMembers = membersData.members.filter(m => currentMemberIds.includes(m.id))
+                const isAdmin = currentUser && (currentUser.role === 'owner' || currentUser.role === 'admin')
+                
                 if (currentMembers.length > 0) {
                     currentMembersList.innerHTML = currentMembers.map(member => \`
                         <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
@@ -7956,6 +7958,13 @@ tenantPublic.get('/chat/:id', async (c) => {
                                 <div class="font-semibold">\${member.nickname}</div>
                                 <div class="text-sm text-gray-500">\${member.email}</div>
                             </div>
+                            \${isAdmin ? \`
+                                <button onclick="removeMember(\${member.id}, '\${member.nickname}')" 
+                                        class="px-3 py-1 text-sm bg-red-500 text-white rounded hover:bg-red-600 transition">
+                                    <i class="fas fa-user-minus mr-1"></i>
+                                    削除
+                                </button>
+                            \` : ''}
                         </div>
                     \`).join('')
                 } else {
@@ -8019,6 +8028,36 @@ tenantPublic.get('/chat/:id', async (c) => {
             } catch (error) {
                 console.error('Failed to invite members:', error)
                 showToast('メンバーの招待に失敗しました', 'error')
+            }
+        }
+
+        // メンバーを削除
+        async function removeMember(userId, nickname) {
+            if (!confirm(nickname + ' をこのチャットルームから削除しますか？')) {
+                return
+            }
+            
+            const token = getToken()
+            
+            try {
+                const response = await fetch('/api/chat/rooms/' + roomId + '/members/' + userId, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': 'Bearer ' + token
+                    }
+                })
+                
+                const data = await response.json()
+                if (data.success) {
+                    showToast(nickname + ' を削除しました', 'success')
+                    await loadMembersForInvite() // メンバーリストを再読み込み
+                    await loadRoomInfo() // ルーム情報を再読み込み
+                } else {
+                    showToast(data.error || 'メンバーの削除に失敗しました', 'error')
+                }
+            } catch (error) {
+                console.error('Failed to remove member:', error)
+                showToast('メンバーの削除に失敗しました', 'error')
             }
         }
 
