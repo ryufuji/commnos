@@ -7695,13 +7695,23 @@ tenantPublic.get('/chat/:id', async (c) => {
             const messagesList = document.getElementById('messagesList')
             messagesList.innerHTML = messages.map(msg => {
                 const isOwn = msg.user_id === currentUser.id
+                
+                // デバッグ: 生の時刻文字列を確認
+                console.log('[Chat] Raw created_at:', msg.created_at)
+                
                 // データベースの時刻はUTCなので、9時間加算してJST表示
                 const utcDate = new Date(msg.created_at + 'Z') // Zを付けてUTCとして解釈
+                console.log('[Chat] UTC Date:', utcDate.toISOString())
+                
                 const jstDate = new Date(utcDate.getTime() + (9 * 60 * 60 * 1000)) // 9時間加算
+                console.log('[Chat] JST Date:', jstDate.toISOString())
+                
                 const time = jstDate.toLocaleTimeString('ja-JP', { 
                     hour: '2-digit', 
                     minute: '2-digit'
                 })
+                console.log('[Chat] Display time:', time)
+                
                 const avatarUrl = msg.avatar_url || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(msg.nickname || 'User') + '&background=random'
                 
                 // 既読状態の計算
