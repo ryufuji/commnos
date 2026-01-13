@@ -7238,12 +7238,12 @@ tenantPublic.get('/chat', async (c) => {
                     // UTCとして解釈し、9時間加算
                     const utcDate = new Date(room.last_message_at + 'Z')
                     const jstDate = new Date(utcDate.getTime() + (9 * 60 * 60 * 1000))
-                    lastMessageTime = jstDate.toLocaleString('ja-JP', { 
-                        month: 'short', 
-                        day: 'numeric', 
-                        hour: '2-digit', 
-                        minute: '2-digit'
-                    })
+                    // ブラウザのタイムゾーンに依存しないように手動でフォーマット
+                    const month = jstDate.getUTCMonth() + 1
+                    const day = jstDate.getUTCDate()
+                    const hour = String(jstDate.getUTCHours()).padStart(2, '0')
+                    const minute = String(jstDate.getUTCMinutes()).padStart(2, '0')
+                    lastMessageTime = month + '月' + day + '日 ' + hour + ':' + minute
                 }
                 
                 return \`
@@ -7696,21 +7696,14 @@ tenantPublic.get('/chat/:id', async (c) => {
             messagesList.innerHTML = messages.map(msg => {
                 const isOwn = msg.user_id === currentUser.id
                 
-                // デバッグ: 生の時刻文字列を確認
-                console.log('[Chat] Raw created_at:', msg.created_at)
-                
                 // データベースの時刻はUTCなので、9時間加算してJST表示
                 const utcDate = new Date(msg.created_at + 'Z') // Zを付けてUTCとして解釈
-                console.log('[Chat] UTC Date:', utcDate.toISOString())
-                
                 const jstDate = new Date(utcDate.getTime() + (9 * 60 * 60 * 1000)) // 9時間加算
-                console.log('[Chat] JST Date:', jstDate.toISOString())
                 
-                const time = jstDate.toLocaleTimeString('ja-JP', { 
-                    hour: '2-digit', 
-                    minute: '2-digit'
-                })
-                console.log('[Chat] Display time:', time)
+                // ブラウザのタイムゾーンに依存しないように手動でフォーマット
+                const hour = String(jstDate.getUTCHours()).padStart(2, '0')
+                const minute = String(jstDate.getUTCMinutes()).padStart(2, '0')
+                const time = hour + ':' + minute
                 
                 const avatarUrl = msg.avatar_url || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(msg.nickname || 'User') + '&background=random'
                 
