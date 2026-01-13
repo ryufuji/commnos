@@ -7232,7 +7232,18 @@ tenantPublic.get('/chat', async (c) => {
             const container = document.getElementById('roomsList')
             container.innerHTML = rooms.map(room => {
                 const lastMessage = room.last_message ? room.last_message.substring(0, 50) + (room.last_message.length > 50 ? '...' : '') : 'メッセージはまだありません'
-                const lastMessageTime = room.last_message_at ? new Date(room.last_message_at).toLocaleString('ja-JP', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : ''
+                // データベースの時刻はUTCなので、9時間加算してJST表示
+                let lastMessageTime = ''
+                if (room.last_message_at) {
+                    const utcDate = new Date(room.last_message_at + 'Z') // Zを付けてUTCとして解釈
+                    lastMessageTime = utcDate.toLocaleString('ja-JP', { 
+                        month: 'short', 
+                        day: 'numeric', 
+                        hour: '2-digit', 
+                        minute: '2-digit',
+                        timeZone: 'Asia/Tokyo' 
+                    })
+                }
                 
                 return \`
                     <a href="/tenant/chat/\${room.id}?subdomain=${subdomain}" 
@@ -7683,7 +7694,13 @@ tenantPublic.get('/chat/:id', async (c) => {
             const messagesList = document.getElementById('messagesList')
             messagesList.innerHTML = messages.map(msg => {
                 const isOwn = msg.user_id === currentUser.id
-                const time = new Date(msg.created_at).toLocaleTimeString('ja-JP', { hour: '2-digit', minute: '2-digit' })
+                // データベースの時刻はUTCなので、9時間加算してJST表示
+                const utcDate = new Date(msg.created_at + 'Z') // Zを付けてUTCとして解釈
+                const time = utcDate.toLocaleTimeString('ja-JP', { 
+                    hour: '2-digit', 
+                    minute: '2-digit',
+                    timeZone: 'Asia/Tokyo'
+                })
                 const avatarUrl = msg.avatar_url || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(msg.nickname || 'User') + '&background=random'
                 
                 // 既読状態の計算
@@ -7691,8 +7708,8 @@ tenantPublic.get('/chat/:id', async (c) => {
                 const totalMembers = msg.total_members || 1
                 const isRead = readCount >= totalMembers - 1 // 自分以外全員が既読
                 
-                // 1分以内かチェック
-                const createdAt = new Date(msg.created_at).getTime()
+                // 1分以内かチェック（UTC時刻で比較）
+                const createdAt = utcDate.getTime()
                 const now = Date.now()
                 const canDelete = isOwn && (now - createdAt < 60000)
 
