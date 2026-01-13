@@ -7235,13 +7235,14 @@ tenantPublic.get('/chat', async (c) => {
                 // データベースの時刻はUTCなので、9時間加算してJST表示
                 let lastMessageTime = ''
                 if (room.last_message_at) {
-                    const utcDate = new Date(room.last_message_at + 'Z') // Zを付けてUTCとして解釈
-                    lastMessageTime = utcDate.toLocaleString('ja-JP', { 
+                    // UTCとして解釈し、9時間加算
+                    const utcDate = new Date(room.last_message_at + 'Z')
+                    const jstDate = new Date(utcDate.getTime() + (9 * 60 * 60 * 1000))
+                    lastMessageTime = jstDate.toLocaleString('ja-JP', { 
                         month: 'short', 
                         day: 'numeric', 
                         hour: '2-digit', 
-                        minute: '2-digit',
-                        timeZone: 'Asia/Tokyo' 
+                        minute: '2-digit'
                     })
                 }
                 
@@ -7696,10 +7697,10 @@ tenantPublic.get('/chat/:id', async (c) => {
                 const isOwn = msg.user_id === currentUser.id
                 // データベースの時刻はUTCなので、9時間加算してJST表示
                 const utcDate = new Date(msg.created_at + 'Z') // Zを付けてUTCとして解釈
-                const time = utcDate.toLocaleTimeString('ja-JP', { 
+                const jstDate = new Date(utcDate.getTime() + (9 * 60 * 60 * 1000)) // 9時間加算
+                const time = jstDate.toLocaleTimeString('ja-JP', { 
                     hour: '2-digit', 
-                    minute: '2-digit',
-                    timeZone: 'Asia/Tokyo'
+                    minute: '2-digit'
                 })
                 const avatarUrl = msg.avatar_url || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(msg.nickname || 'User') + '&background=random'
                 
