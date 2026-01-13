@@ -7932,21 +7932,30 @@ tenantPublic.get('/chat/:id', async (c) => {
         async function loadMembersForInvite() {
             const token = getToken()
             try {
-                // ルーム情報を取得
+                // ルーム情報を取得（最新の状態を取得）
                 const roomResponse = await fetch('/api/chat/rooms/' + roomId, {
                     headers: { 'Authorization': 'Bearer ' + token }
                 })
                 const roomData = await roomResponse.json()
+                
+                console.log('[Members Modal] Room data:', roomData)
+                console.log('[Members Modal] Room members:', roomData.room?.members)
+                
                 const currentMemberIds = roomData.room.members?.map(m => m.user_id) || []
+                console.log('[Members Modal] Current member IDs:', currentMemberIds)
                 
                 // 全メンバーを取得
                 const membersResponse = await fetch('/api/members?subdomain=' + subdomain)
                 const membersData = await membersResponse.json()
                 
+                console.log('[Members Modal] All members:', membersData.members)
+                
                 // 現在のメンバーを表示
                 const currentMembersList = document.getElementById('currentMembersList')
                 const currentMembers = membersData.members.filter(m => currentMemberIds.includes(m.id))
                 const isAdmin = currentUser && (currentUser.role === 'owner' || currentUser.role === 'admin')
+                
+                console.log('[Members Modal] Current members after filter:', currentMembers)
                 
                 if (currentMembers.length > 0) {
                     currentMembersList.innerHTML = currentMembers.map(member => \`
@@ -7974,6 +7983,9 @@ tenantPublic.get('/chat/:id', async (c) => {
                 // 招待可能なメンバーを表示
                 const availableMembersList = document.getElementById('availableMembersList')
                 const availableMembers = membersData.members.filter(m => !currentMemberIds.includes(m.id))
+                
+                console.log('[Members Modal] Available members after filter:', availableMembers)
+                
                 if (availableMembers.length > 0) {
                     availableMembersList.innerHTML = availableMembers.map(member => \`
                         <label class="flex items-center gap-3 p-3 bg-white hover:bg-gray-50 rounded-lg cursor-pointer border border-gray-200">
