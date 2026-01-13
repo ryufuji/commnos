@@ -7598,7 +7598,7 @@ tenantPublic.get('/chat/:id', async (c) => {
     </main>
     </div>
 
-    ${renderCommonScripts(subdomain)}
+    ${renderCommonScripts()}
     <script src="/static/app.js"></script>
     <script>
         const subdomain = '${subdomain}'
@@ -7609,6 +7609,37 @@ tenantPublic.get('/chat/:id', async (c) => {
         console.log('[Chat Room] subdomain:', subdomain)
         console.log('[Chat Room] roomId:', roomId)
         console.log('[Chat Room] Current URL:', window.location.href)
+
+        // 共通ヘッダーの初期化
+        function initializeCommonHeader() {
+            const token = localStorage.getItem('token')
+            const userStr = localStorage.getItem('user')
+            
+            if (token && userStr) {
+                try {
+                    const user = JSON.parse(userStr)
+                    // ログインボタンを非表示
+                    const loginButtons = document.querySelectorAll('a[href*="/login"]')
+                    loginButtons.forEach(btn => {
+                        if (btn.textContent.includes('ログイン')) {
+                            btn.style.display = 'none'
+                        }
+                    })
+                    
+                    // 通知機能を初期化
+                    if (typeof initNotifications === 'function') {
+                        initNotifications()
+                    }
+                    
+                    // モバイルメニューを初期化
+                    if (typeof initMobileMenu === 'function') {
+                        initMobileMenu()
+                    }
+                } catch (error) {
+                    console.error('Failed to initialize common header:', error)
+                }
+            }
+        }
 
         // 認証チェック
         async function checkAuth() {
@@ -7633,6 +7664,10 @@ tenantPublic.get('/chat/:id', async (c) => {
             document.getElementById('mainContent').classList.remove('hidden')
 
             currentUser = JSON.parse(userStr)
+            
+            // 共通ヘッダーを初期化
+            initializeCommonHeader()
+            
             return true
         }
 
