@@ -7237,8 +7237,10 @@ tenantPublic.get('/chat', async (c) => {
                 if (room.last_message_at) {
                     // UTCとして解釈し、9時間加算
                     const utcDate = new Date(room.last_message_at + 'Z')
-                    const jstDate = new Date(utcDate.getTime() + (9 * 60 * 60 * 1000))
-                    // ブラウザのタイムゾーンに依存しないように手動でフォーマット
+                    const jstTimestamp = utcDate.getTime() + (9 * 60 * 60 * 1000)
+                    const jstDate = new Date(jstTimestamp)
+                    
+                    // UTC基準で日付・時刻を取得（jstTimestampはJST相当のミリ秒）
                     const month = jstDate.getUTCMonth() + 1
                     const day = jstDate.getUTCDate()
                     const hour = String(jstDate.getUTCHours()).padStart(2, '0')
@@ -7698,11 +7700,12 @@ tenantPublic.get('/chat/:id', async (c) => {
                 
                 // データベースの時刻はUTCなので、9時間加算してJST表示
                 const utcDate = new Date(msg.created_at + 'Z') // Zを付けてUTCとして解釈
-                const jstDate = new Date(utcDate.getTime() + (9 * 60 * 60 * 1000)) // 9時間加算
+                const jstTimestamp = utcDate.getTime() + (9 * 60 * 60 * 1000) // 9時間加算（ミリ秒）
                 
-                // ブラウザのタイムゾーンに依存しないように手動でフォーマット
-                const hour = String(jstDate.getUTCHours()).padStart(2, '0')
-                const minute = String(jstDate.getUTCMinutes()).padStart(2, '0')
+                // ミリ秒から時・分を計算
+                const totalMinutes = Math.floor(jstTimestamp / (1000 * 60))
+                const hour = String(Math.floor(totalMinutes / 60) % 24).padStart(2, '0')
+                const minute = String(totalMinutes % 60).padStart(2, '0')
                 const time = hour + ':' + minute
                 
                 const avatarUrl = msg.avatar_url || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(msg.nickname || 'User') + '&background=random'
