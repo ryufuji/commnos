@@ -1711,6 +1711,14 @@ app.get('/dashboard', (c) => {
                     </h2>
                     <div class="grid grid-cols-2 md:grid-cols-3 gap-4">
 
+                        <a id="tenantPageLink" href="#" class="card-interactive p-6 text-center">
+                            <div class="text-4xl mb-3 text-primary-500">
+                                <i class="fas fa-home"></i>
+                            </div>
+                            <h3 class="font-bold text-gray-900 mb-2">テナントページ</h3>
+                            <p class="text-sm text-secondary-600">公開ページを表示</p>
+                        </a>
+
                         <a href="/members" class="card-interactive p-6 text-center">
                             <div class="text-4xl mb-3 text-warning-500">
                                 <i class="fas fa-user-check"></i>
@@ -1903,6 +1911,13 @@ app.get('/dashboard', (c) => {
                         </div>
                     </div>
                 \`
+
+                // テナントページリンクを設定
+                const subdomain = membership.subdomain || user.tenantId || 'test'
+                const tenantPageLink = document.getElementById('tenantPageLink')
+                if (tenantPageLink) {
+                    tenantPageLink.href = \`/tenant/home?subdomain=\${subdomain}\`
+                }
 
                 // オーナーのみサブスクリプション管理リンクを表示
                 console.log('[Dashboard] Checking subscription link visibility for role:', userRole)
