@@ -7546,6 +7546,48 @@ tenantPublic.get('/chat/:id', async (c) => {
     </main>
     </div>
 
+    <!-- メンバー招待モーダル -->
+    <div id="membersModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-lg shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div class="p-6 border-b border-gray-200">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-2xl font-bold " style="color: var(--commons-text-primary);">
+                        <i class="fas fa-user-plus mr-2 text-primary"></i>
+                        メンバーを招待
+                    </h2>
+                    <button onclick="closeMembersModal()" class="text-gray-500 hover:text-gray-700">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="p-6">
+                <div id="currentMembers" class="mb-6">
+                    <h3 class="font-semibold text-gray-700 mb-3">現在のメンバー</h3>
+                    <div id="currentMembersList" class="space-y-2">
+                        <!-- JavaScriptで動的に生成 -->
+                    </div>
+                </div>
+                
+                <div id="availableMembers">
+                    <h3 class="font-semibold text-gray-700 mb-3">招待できるメンバー</h3>
+                    <div id="availableMembersList" class="space-y-2 max-h-64 overflow-y-auto border border-gray-300 rounded-lg p-4">
+                        <!-- JavaScriptで動的に生成 -->
+                    </div>
+                </div>
+                
+                <div class="flex gap-4 pt-6 mt-6 border-t">
+                    <button onclick="inviteSelectedMembers()" class="flex-1 px-6 py-3 bg-primary text-white rounded-lg hover:bg-primary-dark transition font-semibold">
+                        <i class="fas fa-user-plus mr-2"></i>選択したメンバーを招待
+                    </button>
+                    <button onclick="closeMembersModal()" class="px-6 py-3 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition">
+                        キャンセル
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     ${renderCommonScripts()}
     <script src="/static/app.js"></script>
     <script>
@@ -7639,9 +7681,11 @@ tenantPublic.get('/chat/:id', async (c) => {
                 const data = await response.json()
                 if (data.success) {
                     const room = data.room
+                    const isAdmin = currentUser && (currentUser.role === 'owner' || currentUser.role === 'admin')
+                    
                     document.getElementById('roomInfo').innerHTML = \`
                         <div class="flex items-start justify-between">
-                            <div>
+                            <div class="flex-1">
                                 <h2 class="text-2xl font-bold  mb-2" style="color: var(--commons-text-primary);">
                                     <i class="fas fa-comments mr-2 text-primary"></i>
                                     \${room.name}
@@ -7655,6 +7699,12 @@ tenantPublic.get('/chat/:id', async (c) => {
                                     \${room.is_private ? '<span class="px-2 py-1 bg-purple-100 style="color: var(--commons-primary-dark)" rounded text-xs font-semibold"><i class="fas fa-lock mr-1"></i>非公開</span>' : '<span class="px-2 py-1 bg-green-100 text-green-700 rounded text-xs font-semibold"><i class="fas fa-globe mr-1"></i>公開</span>'}
                                 </div>
                             </div>
+                            \${isAdmin ? \`
+                                <button onclick="openMembersModal()" class="ml-4 px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary-dark transition flex items-center gap-2">
+                                    <i class="fas fa-user-plus"></i>
+                                    <span>メンバー招待</span>
+                                </button>
+                            \` : ''}
                         </div>
                     \`
                 }
@@ -7862,6 +7912,114 @@ tenantPublic.get('/chat/:id', async (c) => {
             pollingInterval = setInterval(() => {
                 loadMessages()
             }, 5000)
+        }
+
+        // メンバーモーダルを開く
+        async function openMembersModal() {
+            const modal = document.getElementById('membersModal')
+            modal.classList.remove('hidden')
+            
+            // 現在のメンバーと招待可能なメンバーを読み込む
+            await loadMembersForInvite()
+        }
+
+        // メンバーモーダルを閉じる
+        function closeMembersModal() {
+            document.getElementById('membersModal').classList.add('hidden')
+        }
+
+        // 招待用のメンバーリストを読み込む
+        async function loadMembersForInvite() {
+            const token = getToken()
+            try {
+                // ルーム情報を取得
+                const roomResponse = await fetch('/api/chat/rooms/' + roomId, {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                })
+                const roomData = await roomResponse.json()
+                const currentMemberIds = roomData.room.members?.map(m => m.user_id) || []
+                
+                // 全メンバーを取得
+                const membersResponse = await fetch('/api/members?subdomain=' + subdomain)
+                const membersData = await membersResponse.json()
+                
+                // 現在のメンバーを表示
+                const currentMembersList = document.getElementById('currentMembersList')
+                const currentMembers = membersData.members.filter(m => currentMemberIds.includes(m.id))
+                if (currentMembers.length > 0) {
+                    currentMembersList.innerHTML = currentMembers.map(member => \`
+                        <div class="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                            <img src="\${member.avatar_url || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(member.nickname || 'User') + '&background=random'}" 
+                                 alt="\${member.nickname}" 
+                                 class="w-10 h-10 rounded-full">
+                            <div class="flex-1">
+                                <div class="font-semibold">\${member.nickname}</div>
+                                <div class="text-sm text-gray-500">\${member.email}</div>
+                            </div>
+                        </div>
+                    \`).join('')
+                } else {
+                    currentMembersList.innerHTML = '<p class="text-gray-500 text-center py-4">メンバーがいません</p>'
+                }
+                
+                // 招待可能なメンバーを表示
+                const availableMembersList = document.getElementById('availableMembersList')
+                const availableMembers = membersData.members.filter(m => !currentMemberIds.includes(m.id))
+                if (availableMembers.length > 0) {
+                    availableMembersList.innerHTML = availableMembers.map(member => \`
+                        <label class="flex items-center gap-3 p-3 bg-white hover:bg-gray-50 rounded-lg cursor-pointer border border-gray-200">
+                            <input type="checkbox" name="inviteMemberIds" value="\${member.id}" class="w-4 h-4 text-primary">
+                            <img src="\${member.avatar_url || 'https://ui-avatars.com/api/?name=' + encodeURIComponent(member.nickname || 'User') + '&background=random'}" 
+                                 alt="\${member.nickname}" 
+                                 class="w-10 h-10 rounded-full">
+                            <div class="flex-1">
+                                <div class="font-semibold">\${member.nickname}</div>
+                                <div class="text-sm text-gray-500">\${member.email}</div>
+                            </div>
+                        </label>
+                    \`).join('')
+                } else {
+                    availableMembersList.innerHTML = '<p class="text-gray-500 text-center py-4">招待可能なメンバーがいません</p>'
+                }
+            } catch (error) {
+                console.error('Failed to load members:', error)
+                showToast('メンバー情報の取得に失敗しました', 'error')
+            }
+        }
+
+        // 選択したメンバーを招待
+        async function inviteSelectedMembers() {
+            const token = getToken()
+            const checkboxes = document.querySelectorAll('input[name="inviteMemberIds"]:checked')
+            const userIds = Array.from(checkboxes).map(cb => parseInt(cb.value))
+            
+            if (userIds.length === 0) {
+                showToast('招待するメンバーを選択してください', 'error')
+                return
+            }
+            
+            try {
+                const response = await fetch('/api/chat/rooms/' + roomId + '/members', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Bearer ' + token
+                    },
+                    body: JSON.stringify({ userIds })
+                })
+                
+                const data = await response.json()
+                if (data.success) {
+                    showToast(userIds.length + '人のメンバーを招待しました', 'success')
+                    closeMembersModal()
+                    await loadRoomInfo() // ルーム情報を再読み込み
+                } else {
+                    showToast(data.error || 'メンバーの招待に失敗しました', 'error')
+                }
+            } catch (error) {
+                console.error('Failed to invite members:', error)
+                showToast('メンバーの招待に失敗しました', 'error')
+            }
         }
 
         // 初期化
