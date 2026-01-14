@@ -3407,7 +3407,7 @@ tenantPublic.get('/posts/new', async (c) => {
                     const scheduledDateTime = new Date(scheduledAt)
                     const now = new Date()
                     if (scheduledDateTime <= now) {
-                        showToast('予約日時は現在より未来の日時を選択してください', 'error')
+                        showToast('過去の日時は選択できません。未来の日時を指定してください。', 'error')
                         submitBtn.disabled = false
                         submitBtn.innerHTML = '<i class="fas fa-paper-plane mr-2"></i>投稿する'
                         return

@@ -474,8 +474,20 @@ async function savePost() {
             
             if (scheduledDate && scheduledTime) {
                 // ユーザー入力を日本時間（JST）として扱う
+                const scheduledDateTime = scheduledDate + 'T' + scheduledTime + ':00'
+                const scheduledDateObj = new Date(scheduledDateTime)
+                const now = new Date()
+                
+                // 過去の日時チェック
+                if (scheduledDateObj <= now) {
+                    showToast('過去の日時は選択できません。未来の日時を指定してください。', 'error')
+                    saveBtn.disabled = false
+                    saveBtn.innerHTML = '<i class="fas fa-save mr-2"></i>更新する'
+                    return
+                }
+                
                 // ISO 8601形式で保存（タイムゾーン情報なし = ローカル時刻として扱われる）
-                data.scheduled_at = scheduledDate + 'T' + scheduledTime + ':00'
+                data.scheduled_at = scheduledDateTime
             } else {
                 showToast('予約投稿には日時の指定が必要です', 'error')
                 return
