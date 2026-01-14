@@ -310,7 +310,7 @@ tenantCustomization.post('/upload-cover', authMiddleware, requireRole('admin'), 
 
     return c.json({
       success: true,
-      cover_url: coverUrl,
+      cover_image_url: coverUrl,
       key: key
     })
   } catch (error) {
