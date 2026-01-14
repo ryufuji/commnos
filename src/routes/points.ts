@@ -166,6 +166,44 @@ points.post('/earn', authMiddleware, async (c) => {
 })
 
 /**
+ * GET /api/points/admin/members
+ * テナントの会員一覧取得（ポイント付与用）
+ */
+points.get('/admin/members', authMiddleware, requireRole('admin'), async (c) => {
+  const tenantId = c.get('tenantId')
+  const { DB } = c.env
+
+  try {
+    const members = await DB.prepare(`
+      SELECT 
+        u.id,
+        u.nickname,
+        u.email,
+        u.avatar_url,
+        tm.member_number,
+        tm.joined_at,
+        COALESCE(up.balance, 0) as current_points
+      FROM tenant_memberships tm
+      JOIN users u ON tm.user_id = u.id
+      LEFT JOIN user_points up ON up.user_id = u.id AND up.tenant_id = tm.tenant_id
+      WHERE tm.tenant_id = ? AND tm.status = 'active'
+      ORDER BY u.nickname ASC
+    `).bind(tenantId).all()
+
+    return c.json({
+      success: true,
+      members: members.results || []
+    })
+  } catch (error) {
+    console.error('[Get Members Error]', error)
+    return c.json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to get members'
+    }, 500)
+  }
+})
+
+/**
  * POST /api/points/admin/grant
  * 管理者によるポイント付与
  */

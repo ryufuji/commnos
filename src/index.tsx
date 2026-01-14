@@ -6291,18 +6291,48 @@ app.get('/points-management', (c) => {
                 <div id="grantContent" class="tab-content hidden">
                     <div class="card p-6">
                         <h3 class="font-semibold text-gray-900 mb-4">会員へのポイント付与</h3>
-                        <form id="grantForm" class="space-y-4">
-                            <div>
-                                <label class="block text-sm font-medium text-gray-700 mb-2">
-                                    会員ID
-                                </label>
-                                <input type="number" id="grantUserId" required
-                                       class="input-field"
-                                       placeholder="会員IDを入力">
+                        
+                        <!-- 会員検索 -->
+                        <div class="mb-6">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                <i class="fas fa-search mr-2 text-primary-600"></i>会員を検索
+                            </label>
+                            <input type="text" id="memberSearch" 
+                                   class="input-field"
+                                   placeholder="会員名またはメールアドレスで検索...">
+                        </div>
+
+                        <!-- 会員一覧 -->
+                        <div id="membersList" class="space-y-2 mb-6 max-h-96 overflow-y-auto border border-gray-200 rounded-lg p-4">
+                            <div class="text-center py-8 text-gray-500">
+                                <i class="fas fa-users text-4xl mb-2"></i>
+                                <p>会員を検索してください</p>
                             </div>
+                        </div>
+
+                        <!-- ポイント付与フォーム -->
+                        <form id="grantForm" class="space-y-4 border-t border-gray-200 pt-6">
+                            <input type="hidden" id="grantUserId">
+                            
+                            <div id="selectedMemberInfo" class="hidden bg-primary-50 border border-primary-200 rounded-lg p-4 mb-4">
+                                <div class="flex items-center">
+                                    <img id="selectedMemberAvatar" class="w-12 h-12 rounded-full mr-3" alt="">
+                                    <div class="flex-1">
+                                        <p class="font-semibold text-gray-900" id="selectedMemberName"></p>
+                                        <p class="text-sm text-gray-600" id="selectedMemberEmail"></p>
+                                        <p class="text-sm text-primary-600 font-medium">
+                                            現在のポイント: <span id="selectedMemberPoints">0</span>pt
+                                        </p>
+                                    </div>
+                                    <button type="button" onclick="clearSelectedMember()" class="text-gray-400 hover:text-gray-600">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </div>
+                            </div>
+
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2">
-                                    ポイント数
+                                    <i class="fas fa-coins mr-2 text-yellow-500"></i>ポイント数
                                 </label>
                                 <input type="number" id="grantPoints" required min="1"
                                        class="input-field"
@@ -6310,13 +6340,13 @@ app.get('/points-management', (c) => {
                             </div>
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2">
-                                    備考（任意）
+                                    <i class="fas fa-sticky-note mr-2 text-gray-500"></i>備考（任意）
                                 </label>
                                 <textarea id="grantNote" rows="3"
                                           class="input-field"
                                           placeholder="付与理由など"></textarea>
                             </div>
-                            <button type="submit" class="btn-primary">
+                            <button type="submit" class="btn-primary w-full">
                                 <i class="fas fa-gift mr-2"></i>
                                 ポイントを付与
                             </button>
@@ -6451,6 +6481,9 @@ app.get('/points-management', (c) => {
             let availableTags = []
             let currentRewards = []
             let currentExchanges = []
+            let allMembers = []
+            let filteredMembers = []
+            let selectedMember = null
 
             const actionLabels = {
                 // 基本アクション
@@ -7191,6 +7224,94 @@ app.get('/points-management', (c) => {
                 }
             }
 
+            // 会員一覧の読み込み
+            async function loadMembers() {
+                try {
+                    const token = localStorage.getItem('token')
+                    const response = await axios.get('/api/points/admin/members', {
+                        headers: { 'Authorization': \`Bearer \${token}\` }
+                    })
+
+                    if (response.data.success) {
+                        allMembers = response.data.members || []
+                        filteredMembers = allMembers
+                        displayMembers(filteredMembers)
+                    }
+                } catch (error) {
+                    console.error('Load members error:', error)
+                    showToast('会員の読み込みに失敗しました', 'error')
+                }
+            }
+
+            // 会員一覧の表示
+            function displayMembers(members) {
+                const container = document.getElementById('membersList')
+                
+                if (members.length === 0) {
+                    container.innerHTML = \`
+                        <div class="text-center py-8 text-gray-500">
+                            <i class="fas fa-user-slash text-4xl mb-2"></i>
+                            <p>該当する会員が見つかりません</p>
+                        </div>
+                    \`
+                    return
+                }
+
+                container.innerHTML = members.map(member => \`
+                    <div class="flex items-center p-3 hover:bg-gray-50 rounded-lg cursor-pointer transition"
+                         onclick="selectMember(\${member.id})">
+                        <img src="\${member.avatar_url || '/static/default-avatar.png'}" 
+                             class="w-10 h-10 rounded-full mr-3" 
+                             alt="\${member.nickname}">
+                        <div class="flex-1">
+                            <p class="font-medium text-gray-900">\${member.nickname}</p>
+                            <p class="text-sm text-gray-500">\${member.email}</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-sm font-medium text-primary-600">\${member.current_points}pt</p>
+                            <p class="text-xs text-gray-500">\${member.member_number || ''}</p>
+                        </div>
+                    </div>
+                \`).join('')
+            }
+
+            // 会員選択
+            window.selectMember = function(memberId) {
+                selectedMember = allMembers.find(m => m.id === memberId)
+                if (!selectedMember) return
+
+                document.getElementById('grantUserId').value = selectedMember.id
+                document.getElementById('selectedMemberAvatar').src = selectedMember.avatar_url || '/static/default-avatar.png'
+                document.getElementById('selectedMemberName').textContent = selectedMember.nickname
+                document.getElementById('selectedMemberEmail').textContent = selectedMember.email
+                document.getElementById('selectedMemberPoints').textContent = selectedMember.current_points
+                document.getElementById('selectedMemberInfo').classList.remove('hidden')
+            }
+
+            // 選択解除
+            window.clearSelectedMember = function() {
+                selectedMember = null
+                document.getElementById('grantUserId').value = ''
+                document.getElementById('selectedMemberInfo').classList.add('hidden')
+            }
+
+            // 会員検索
+            document.getElementById('memberSearch').addEventListener('input', (e) => {
+                const query = e.target.value.toLowerCase().trim()
+                
+                if (!query) {
+                    filteredMembers = allMembers
+                } else {
+                    filteredMembers = allMembers.filter(member => 
+                        member.nickname.toLowerCase().includes(query) ||
+                        member.email.toLowerCase().includes(query) ||
+                        (member.member_number && member.member_number.toLowerCase().includes(query))
+                    )
+                }
+                
+                displayMembers(filteredMembers)
+            })
+
             // ポイント付与
             document.getElementById('grantForm').addEventListener('submit', async (e) => {
                 e.preventDefault()
@@ -7198,6 +7319,16 @@ app.get('/points-management', (c) => {
                 const userId = document.getElementById('grantUserId').value
                 const points = document.getElementById('grantPoints').value
                 const note = document.getElementById('grantNote').value
+
+                if (!userId) {
+                    showToast('会員を選択してください', 'error')
+                    return
+                }
+
+                if (!points || points <= 0) {
+                    showToast('有効なポイント数を入力してください', 'error')
+                    return
+                }
 
                 try {
                     const token = localStorage.getItem('token')
@@ -7212,6 +7343,9 @@ app.get('/points-management', (c) => {
                     if (response.data.success) {
                         showToast(response.data.message, 'success')
                         document.getElementById('grantForm').reset()
+                        clearSelectedMember()
+                        // 会員一覧を再読み込みしてポイント残高を更新
+                        loadMembers()
                     }
                 } catch (error) {
                     console.error('Grant points error:', error)
@@ -7228,6 +7362,8 @@ app.get('/points-management', (c) => {
                     loadRewards()
                 } else if (tab === 'exchanges' && currentExchanges.length === 0) {
                     loadExchanges()
+                } else if (tab === 'grant' && allMembers.length === 0) {
+                    loadMembers()
                 }
             }
 
