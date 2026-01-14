@@ -1542,6 +1542,22 @@ tenantPublic.get('/home', async (c) => {
   const tenantSubtitle = String(tenant.subtitle || '')
   const heroCustomContent = String(tenant.hero_custom_content || '')
   
+  // テナントカスタマイズ設定を取得
+  let customization: any = null
+  try {
+    customization = await DB.prepare(
+      'SELECT * FROM tenant_customization WHERE tenant_id = ?'
+    ).bind(tenant.id).first()
+  } catch (e) {
+    console.log('tenant_customization table not found:', e)
+  }
+  
+  // カバー画像・ヒーロー設定
+  const coverImageUrl = customization?.cover_image_url || null
+  const coverOverlayOpacity = customization?.cover_overlay_opacity || 0.5
+  const welcomeTitle = customization?.welcome_title || tenantName
+  const welcomeSubtitle = customization?.welcome_subtitle || tenantSubtitle
+  
   // お知らせを取得（最新3件）
   let announcements: any[] = []
   try {
@@ -1643,12 +1659,24 @@ tenantPublic.get('/home', async (c) => {
     ${renderCommonHeader(tenantName, subdomain, 'home')}
 
     <!-- ヒーローセクション -->
-    <section style="background: linear-gradient(135deg, var(--commons-primary) 0%, var(--commons-primary-dark) 100%); color: white; padding: 40px 24px 32px;">
-        <div style="max-width: 1280px; margin: 0 auto;">
-            <h1 style="font-size: var(--font-size-hero); font-weight: var(--font-weight-bold); line-height: var(--line-height-tight); margin-bottom: 12px;">
-                ${tenantName}
+    <section style="position: relative; overflow: hidden; color: white; padding: ${coverImageUrl ? '120px 24px 80px' : '40px 24px 32px'};">
+        ${coverImageUrl ? `
+            <!-- カバー画像 -->
+            <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 0;">
+                <img src="${coverImageUrl}" alt="${tenantName}" style="width: 100%; height: 100%; object-fit: cover;">
+                <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, ${coverOverlayOpacity});"></div>
+            </div>
+        ` : `
+            <!-- デフォルトのグラデーション背景 -->
+            <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(135deg, var(--commons-primary) 0%, var(--commons-primary-dark) 100%); z-index: 0;"></div>
+        `}
+        
+        <!-- コンテンツ -->
+        <div style="position: relative; z-index: 1; max-width: 1280px; margin: 0 auto;">
+            <h1 style="font-size: ${coverImageUrl ? '48px' : 'var(--font-size-hero)'}; font-weight: var(--font-weight-bold); line-height: var(--line-height-tight); margin-bottom: 16px; text-shadow: ${coverImageUrl ? '2px 2px 8px rgba(0, 0, 0, 0.5)' : 'none'};">
+                ${welcomeTitle}
             </h1>
-            ${tenantSubtitle ? `<p style="font-size: var(--font-size-medium); color: rgba(255,255,255,0.9); margin-bottom: 24px;">${tenantSubtitle}</p>` : ''}
+            ${welcomeSubtitle ? `<p style="font-size: ${coverImageUrl ? '24px' : 'var(--font-size-medium)'}; color: rgba(255,255,255,0.95); margin-bottom: 24px; text-shadow: ${coverImageUrl ? '1px 1px 4px rgba(0, 0, 0, 0.5)' : 'none'};">${welcomeSubtitle}</p>` : ''}
             
             ${heroCustomContent ? `
             <!-- カスタムコンテンツエリア -->

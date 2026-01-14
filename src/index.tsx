@@ -7917,6 +7917,74 @@ app.get('/tenant-customization', (c) => {
                         </div>
                     </div>
                 </div>
+
+                <!-- カバー画像・ヒーローセクション設定 -->
+                <div class="card p-6">
+                    <h2 class="text-xl font-bold text-gray-900 mb-4">
+                        <i class="fas fa-panorama mr-2 text-primary-600"></i>
+                        カバー画像・ヒーローセクション
+                    </h2>
+                    
+                    <div class="space-y-6">
+                        <!-- カバー画像 -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">カバー画像</label>
+                            <div id="currentCoverPreview" class="border-2 border-dashed border-gray-300 rounded-lg p-6 bg-gray-50 flex items-center justify-center" style="min-height: 200px;">
+                                <div class="text-center text-gray-400">
+                                    <i class="fas fa-image text-4xl mb-2"></i>
+                                    <p class="text-sm">カバー画像が設定されていません</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">新しいカバー画像をアップロード</label>
+                            <div class="flex items-center space-x-3">
+                                <label class="flex-1 cursor-pointer">
+                                    <div class="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-primary-500 transition">
+                                        <i class="fas fa-cloud-upload-alt text-3xl text-gray-400 mb-2"></i>
+                                        <p class="text-sm text-gray-600">クリックして画像を選択</p>
+                                        <p class="text-xs text-gray-500 mt-1">JPEG、PNG、GIF、WebP（最大5MB、推奨1920×600px）</p>
+                                    </div>
+                                    <input type="file" id="coverUpload" class="hidden" accept="image/jpeg,image/png,image/gif,image/webp">
+                                </label>
+                            </div>
+                            <button id="uploadCoverBtn" class="btn-primary mt-3 hidden">
+                                <i class="fas fa-upload mr-2"></i>
+                                カバー画像をアップロード
+                            </button>
+                            <button id="removeCoverBtn" class="btn-secondary mt-3 hidden">
+                                <i class="fas fa-times mr-2"></i>
+                                カバー画像を削除
+                            </button>
+                        </div>
+
+                        <!-- オーバーレイ透明度 -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                オーバーレイ透明度: <span id="overlayValue">50</span>%
+                            </label>
+                            <input type="range" id="overlayOpacity" min="0" max="100" value="50" class="w-full">
+                            <p class="text-xs text-gray-500 mt-1">画像の上に重ねる暗い層の透明度（0%=透明、100%=完全に暗い）</p>
+                        </div>
+
+                        <!-- ウェルカムメッセージ -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">ウェルカムメッセージ（タイトル）</label>
+                            <input type="text" id="heroTitle" class="input-field" placeholder="例: ○○コミュニティへようこそ！">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">サブタイトル</label>
+                            <textarea id="heroSubtitle" rows="2" class="input-field" placeholder="例: 共に学び、成長するコミュニティ"></textarea>
+                        </div>
+
+                        <button id="saveHeroBtn" class="btn-primary w-full">
+                            <i class="fas fa-save mr-2"></i>
+                            ヒーローセクション設定を保存
+                        </button>
+                    </div>
+                </div>
             </main>
         </div>
 
@@ -7926,6 +7994,7 @@ app.get('/tenant-customization', (c) => {
             let currentCustomization = null
             let selectedLogoFile = null
             let selectedFaviconFile = null
+            let selectedCoverFile = null
 
             // 認証チェック
             function checkAuth() {
@@ -8008,6 +8077,34 @@ app.get('/tenant-customization', (c) => {
                     \`
                     document.getElementById('removeFaviconBtn').classList.add('hidden')
                 }
+
+                // カバー画像表示
+                const coverPreview = document.getElementById('currentCoverPreview')
+                if (currentCustomization.cover_image_url) {
+                    coverPreview.innerHTML = \`
+                        <img src="\${currentCustomization.cover_image_url}" 
+                             alt="Current Cover" 
+                             class="w-full h-48 object-cover rounded">
+                    \`
+                    document.getElementById('removeCoverBtn').classList.remove('hidden')
+                } else {
+                    coverPreview.innerHTML = \`
+                        <div class="text-center text-gray-400">
+                            <i class="fas fa-image text-4xl mb-2"></i>
+                            <p class="text-sm">カバー画像が設定されていません</p>
+                        </div>
+                    \`
+                    document.getElementById('removeCoverBtn').classList.add('hidden')
+                }
+
+                // オーバーレイ透明度
+                const opacity = (currentCustomization.cover_overlay_opacity || 0.5) * 100
+                document.getElementById('overlayOpacity').value = opacity
+                document.getElementById('overlayValue').textContent = Math.round(opacity)
+
+                // ヒーローメッセージ
+                document.getElementById('heroTitle').value = currentCustomization.hero_title || ''
+                document.getElementById('heroSubtitle').value = currentCustomization.hero_subtitle || ''
             }
 
             // ロゴファイル選択
@@ -8169,6 +8266,119 @@ app.get('/tenant-customization', (c) => {
                 } catch (error) {
                     console.error('Remove favicon error:', error)
                     showToast('ファビコンの削除に失敗しました', 'error')
+                }
+            })
+
+            // カバー画像をアップロード
+            document.getElementById('uploadCoverBtn').addEventListener('click', async () => {
+                if (!selectedCoverFile) return
+
+                const token = localStorage.getItem('token')
+                const formData = new FormData()
+                formData.append('cover', selectedCoverFile)
+
+                showToast('カバー画像をアップロード中...', 'info')
+
+                try {
+                    const uploadResponse = await axios.post('/api/tenant-customization/upload-cover', formData, {
+                        headers: { 
+                            'Authorization': \`Bearer \${token}\`,
+                            'Content-Type': 'multipart/form-data'
+                        }
+                    })
+
+                    if (uploadResponse.data.success) {
+                        const response = await axios.put('/api/tenant-customization', {
+                            cover_image_url: uploadResponse.data.cover_image_url
+                        }, {
+                            headers: { 'Authorization': \`Bearer \${token}\` }
+                        })
+
+                        if (response.data.success) {
+                            showToast('カバー画像をアップロードしました', 'success')
+                            selectedCoverFile = null
+                            document.getElementById('coverUpload').value = ''
+                            document.getElementById('uploadCoverBtn').classList.add('hidden')
+                            loadCustomization()
+                        }
+                    }
+                } catch (error) {
+                    console.error('Upload cover error:', error)
+                    showToast(error.response?.data?.error || 'カバー画像のアップロードに失敗しました', 'error')
+                }
+            })
+
+            // カバー画像を削除
+            document.getElementById('removeCoverBtn').addEventListener('click', async () => {
+                if (!confirm('カバー画像を削除しますか？')) return
+
+                const token = localStorage.getItem('token')
+                
+                try {
+                    const response = await axios.put('/api/tenant-customization', {
+                        cover_image_url: null
+                    }, {
+                        headers: { 'Authorization': \`Bearer \${token}\` }
+                    })
+
+                    if (response.data.success) {
+                        showToast('カバー画像を削除しました', 'success')
+                        loadCustomization()
+                    }
+                } catch (error) {
+                    console.error('Remove cover error:', error)
+                    showToast('カバー画像の削除に失敗しました', 'error')
+                }
+            })
+
+            // オーバーレイ透明度を保存
+            document.getElementById('saveOverlayBtn').addEventListener('click', async () => {
+                const opacity = parseFloat(document.getElementById('overlayOpacity').value) / 100
+                const token = localStorage.getItem('token')
+                
+                try {
+                    const response = await axios.put('/api/tenant-customization', {
+                        cover_overlay_opacity: opacity
+                    }, {
+                        headers: { 'Authorization': \`Bearer \${token}\` }
+                    })
+
+                    if (response.data.success) {
+                        showToast('オーバーレイ透明度を保存しました', 'success')
+                        loadCustomization()
+                    }
+                } catch (error) {
+                    console.error('Save overlay error:', error)
+                    showToast('オーバーレイ透明度の保存に失敗しました', 'error')
+                }
+            })
+
+            // ウェルカムメッセージを保存
+            document.getElementById('saveWelcomeBtn').addEventListener('click', async () => {
+                const welcomeTitle = document.getElementById('welcomeTitle').value.trim()
+                const welcomeSubtitle = document.getElementById('welcomeSubtitle').value.trim()
+                const token = localStorage.getItem('token')
+                
+                if (!welcomeTitle) {
+                    showToast('タイトルを入力してください', 'error')
+                    return
+                }
+
+                try {
+                    const response = await axios.put('/api/tenant-customization', {
+                        welcome_title: welcomeTitle,
+                        welcome_subtitle: welcomeSubtitle
+                    }, {
+                        headers: { 'Authorization': \`Bearer \${token}\` }
+                    })
+
+                    if (response.data.success) {
+                        showToast('ウェルカムメッセージを保存しました', 'success')
+                        loadCustomization()
+                    }
+                } catch (error) {
+                    console.error('Save welcome error:', error)
+                    showToast('ウェルカムメッセージの保存に失敗しました', 'error')
                 }
             })
 

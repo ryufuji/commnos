@@ -40,6 +40,8 @@ tenantCustomization.get('/', async (c) => {
       favicon_url: null,
       cover_image_url: null,
       cover_overlay_opacity: 0.5,
+      hero_title: null,
+      hero_subtitle: null,
       navigation_config: '{"items":["home","posts","events","members","chat","points","shop"],"order":["home","posts","events","members","chat","points","shop"]}',
       primary_color: '#00BCD4',
       primary_dark: '#0097A7',
@@ -90,6 +92,8 @@ tenantCustomization.put('/', authMiddleware, requireRole('admin'), async (c) => 
           favicon_url = COALESCE(?, favicon_url),
           cover_image_url = COALESCE(?, cover_image_url),
           cover_overlay_opacity = COALESCE(?, cover_overlay_opacity),
+          hero_title = COALESCE(?, hero_title),
+          hero_subtitle = COALESCE(?, hero_subtitle),
           navigation_config = COALESCE(?, navigation_config),
           updated_at = CURRENT_TIMESTAMP
         WHERE tenant_id = ?
@@ -98,6 +102,8 @@ tenantCustomization.put('/', authMiddleware, requireRole('admin'), async (c) => 
         data.favicon_url || null,
         data.cover_image_url || null,
         data.cover_overlay_opacity !== undefined ? data.cover_overlay_opacity : null,
+        data.hero_title || null,
+        data.hero_subtitle || null,
         data.navigation_config || null,
         tenantId
       ).run()
@@ -106,14 +112,16 @@ tenantCustomization.put('/', authMiddleware, requireRole('admin'), async (c) => 
       await DB.prepare(`
         INSERT INTO tenant_customization (
           tenant_id, logo_url, favicon_url, cover_image_url,
-          cover_overlay_opacity, navigation_config
-        ) VALUES (?, ?, ?, ?, ?, ?)
+          cover_overlay_opacity, hero_title, hero_subtitle, navigation_config
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
       `).bind(
         tenantId,
         data.logo_url || null,
         data.favicon_url || null,
         data.cover_image_url || null,
         data.cover_overlay_opacity !== undefined ? data.cover_overlay_opacity : 0.5,
+        data.hero_title || null,
+        data.hero_subtitle || null,
         data.navigation_config || '{"items":["home","posts","events","members","chat","points","shop"],"order":["home","posts","events","members","chat","points","shop"]}'
       ).run()
     }
@@ -249,6 +257,67 @@ tenantCustomization.post('/upload-favicon', authMiddleware, requireRole('admin')
     return c.json({
       success: false,
       error: error instanceof Error ? error.message : 'Failed to upload favicon'
+    }, 500)
+  }
+})
+
+/**
+ * POST /api/tenant-customization/upload-cover
+ * カバー画像アップロード（管理者専用）
+ */
+tenantCustomization.post('/upload-cover', authMiddleware, requireRole('admin'), async (c) => {
+  const tenantId = c.get('tenantId')
+  const { R2 } = c.env
+
+  try {
+    const formData = await c.req.formData()
+    const file = formData.get('cover') as File
+
+    if (!file) {
+      return c.json({ success: false, error: '画像ファイルが必要です' }, 400)
+    }
+
+    // ファイルタイプチェック
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
+    if (!allowedTypes.includes(file.type)) {
+      return c.json({
+        success: false,
+        error: '対応していないファイル形式です（JPEG、PNG、GIF、WebPのみ）'
+      }, 400)
+    }
+
+    // ファイルサイズチェック（5MB以下）
+    if (file.size > 5 * 1024 * 1024) {
+      return c.json({ success: false, error: 'ファイルサイズは5MB以下にしてください' }, 400)
+    }
+
+    // ユニークなファイル名を生成
+    const timestamp = Date.now()
+    const randomString = Math.random().toString(36).substring(7)
+    const extension = file.name.split('.').pop()
+    const key = `tenant-covers/${tenantId}/${timestamp}-${randomString}.${extension}`
+
+    // R2にアップロード
+    const arrayBuffer = await file.arrayBuffer()
+    await R2.put(key, arrayBuffer, {
+      httpMetadata: {
+        contentType: file.type
+      }
+    })
+
+    // 公開URL
+    const coverUrl = `/api/tenant-customization/images/${key}`
+
+    return c.json({
+      success: true,
+      cover_url: coverUrl,
+      key: key
+    })
+  } catch (error) {
+    console.error('[Upload Cover Error]', error)
+    return c.json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to upload cover'
     }, 500)
   }
 })
