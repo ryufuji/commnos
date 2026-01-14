@@ -6688,7 +6688,10 @@ app.get('/points-management', (c) => {
             async function loadTags() {
                 try {
                     const token = localStorage.getItem('token')
-                    const response = await axios.get('/api/tags', {
+                    const user = JSON.parse(localStorage.getItem('user') || '{}')
+                    const subdomain = user.subdomain || 'test'
+                    
+                    const response = await axios.get(\`/api/tags?subdomain=\${subdomain}\`, {
                         headers: { 'Authorization': 'Bearer ' + token }
                     })
                     if (response.data.success) {
@@ -6696,6 +6699,8 @@ app.get('/points-management', (c) => {
                     }
                 } catch (error) {
                     console.error('Load tags error:', error)
+                    // タグ読み込みエラーは致命的ではないので続行
+                    availableTags = []
                 }
             }
 
