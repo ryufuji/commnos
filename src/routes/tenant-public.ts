@@ -7987,9 +7987,12 @@ tenantPublic.get('/chat/:id', async (c) => {
                     currentMembersList.innerHTML = '<p class="text-gray-500 text-center py-4">メンバーがいません</p>'
                 }
                 
-                // 招待可能なメンバーを表示
+                // 招待可能なメンバーを表示（既にルームに参加しているメンバーと自分自身を除外）
                 const availableMembersList = document.getElementById('availableMembersList')
-                const availableMembers = membersData.members.filter(m => !currentMemberIds.includes(m.id))
+                const currentUserId = currentUser?.id
+                const availableMembers = membersData.members.filter(m => 
+                    !currentMemberIds.includes(m.id) && m.id !== currentUserId
+                )
                 
                 console.log('[Members Modal] Available members after filter:', availableMembers)
                 
