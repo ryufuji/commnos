@@ -6,6 +6,7 @@
 export type Bindings = {
   DB: D1Database
   R2: R2Bucket // Phase 2: 画像ストレージ（アバター、サムネイル）
+  REWARDS_BUCKET: R2Bucket // Phase 7: 報酬画像ストレージ
   JWT_SECRET: string
   RESEND_API_KEY: string
   STRIPE_SECRET_KEY: string

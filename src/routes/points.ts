@@ -803,4 +803,93 @@ points.post('/admin/exchanges/:id/reject', authMiddleware, requireRole('admin'),
   }
 })
 
+/**
+ * POST /api/points/admin/upload-reward-image
+ * 報酬画像アップロード
+ */
+points.post('/admin/upload-reward-image', authMiddleware, requireRole('admin'), async (c) => {
+  const tenantId = c.get('tenantId')
+  const { REWARDS_BUCKET } = c.env
+
+  try {
+    const formData = await c.req.formData()
+    const file = formData.get('image') as File
+    
+    if (!file) {
+      return c.json({ success: false, error: '画像ファイルが必要です' }, 400)
+    }
+
+    // ファイルタイプチェック
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
+    if (!allowedTypes.includes(file.type)) {
+      return c.json({ 
+        success: false, 
+        error: '対応していないファイル形式です（JPEG、PNG、GIF、WebPのみ）' 
+      }, 400)
+    }
+
+    // ファイルサイズチェック（5MB以下）
+    if (file.size > 5 * 1024 * 1024) {
+      return c.json({ success: false, error: 'ファイルサイズは5MB以下にしてください' }, 400)
+    }
+
+    // ユニークなファイル名を生成
+    const timestamp = Date.now()
+    const randomString = Math.random().toString(36).substring(7)
+    const extension = file.name.split('.').pop()
+    const key = `rewards/${tenantId}/${timestamp}-${randomString}.${extension}`
+
+    // R2にアップロード
+    const arrayBuffer = await file.arrayBuffer()
+    await REWARDS_BUCKET.put(key, arrayBuffer, {
+      httpMetadata: {
+        contentType: file.type
+      }
+    })
+
+    // 公開URL（Cloudflare R2の公開URLは設定が必要）
+    // 仮のURL形式（実際のドメインは後で設定）
+    const imageUrl = `/api/points/images/${key}`
+
+    return c.json({
+      success: true,
+      image_url: imageUrl,
+      key: key
+    })
+  } catch (error) {
+    console.error('[Upload Reward Image Error]', error)
+    return c.json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to upload image'
+    }, 500)
+  }
+})
+
+/**
+ * GET /api/points/images/:key
+ * 報酬画像取得
+ */
+points.get('/images/*', async (c) => {
+  const { REWARDS_BUCKET } = c.env
+  const path = c.req.path.replace('/api/points/images/', '')
+
+  try {
+    const object = await REWARDS_BUCKET.get(path)
+    
+    if (!object) {
+      return c.notFound()
+    }
+
+    return new Response(object.body, {
+      headers: {
+        'Content-Type': object.httpMetadata?.contentType || 'application/octet-stream',
+        'Cache-Control': 'public, max-age=31536000'
+      }
+    })
+  } catch (error) {
+    console.error('[Get Reward Image Error]', error)
+    return c.notFound()
+  }
+})
+
 export default points

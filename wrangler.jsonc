@@ -19,6 +19,10 @@
     {
       "binding": "R2",
       "bucket_name": "commons-images"
+    },
+    {
+      "binding": "REWARDS_BUCKET",
+      "bucket_name": "commons-webapp-bucket"
     }
   ]
   

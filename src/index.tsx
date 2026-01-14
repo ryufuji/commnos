@@ -6363,8 +6363,28 @@ app.get('/points-management', (c) => {
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">画像URL</label>
-                        <input type="url" id="rewardImageUrl" class="input-field" placeholder="https://example.com/image.jpg">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            <i class="fas fa-image mr-2 text-primary-600"></i>報酬画像
+                        </label>
+                        <div class="space-y-3">
+                            <div class="flex items-center space-x-3">
+                                <label class="flex-1 cursor-pointer">
+                                    <div class="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-primary-500 transition">
+                                        <i class="fas fa-cloud-upload-alt text-3xl text-gray-400 mb-2"></i>
+                                        <p class="text-sm text-gray-600">クリックして画像を選択</p>
+                                        <p class="text-xs text-gray-500 mt-1">JPEG、PNG、GIF、WebP（最大5MB）</p>
+                                    </div>
+                                    <input type="file" id="rewardImageFile" class="hidden" accept="image/jpeg,image/png,image/gif,image/webp">
+                                </label>
+                            </div>
+                            <div id="imagePreview" class="hidden">
+                                <img id="previewImage" class="w-full h-48 object-cover rounded-lg border border-gray-200" alt="プレビュー">
+                                <button type="button" onclick="clearImageUpload()" class="mt-2 text-sm text-red-600 hover:text-red-700">
+                                    <i class="fas fa-times mr-1"></i>画像を削除
+                                </button>
+                            </div>
+                            <input type="hidden" id="rewardImageUrl">
+                        </div>
                     </div>
 
                     <div>
@@ -6766,6 +6786,8 @@ app.get('/points-management', (c) => {
                 document.getElementById('rewardPoints').value = ''
                 document.getElementById('rewardStock').value = '-1'
                 document.getElementById('rewardImageUrl').value = ''
+                document.getElementById('rewardImageFile').value = ''
+                document.getElementById('imagePreview').classList.add('hidden')
                 document.getElementById('rewardDisplayOrder').value = '0'
                 document.querySelector('input[name="eligibilityType"][value="all"]').checked = true
                 document.getElementById('tagSelectionArea').classList.add('hidden')
@@ -6773,6 +6795,12 @@ app.get('/points-management', (c) => {
                 
                 renderTagSelection([])
                 document.getElementById('rewardModal').classList.remove('hidden')
+            }
+
+            function clearImageUpload() {
+                document.getElementById('rewardImageFile').value = ''
+                document.getElementById('rewardImageUrl').value = ''
+                document.getElementById('imagePreview').classList.add('hidden')
             }
 
             function closeRewardModal() {
@@ -6815,7 +6843,45 @@ app.get('/points-management', (c) => {
                         }
                     })
                 })
+
+                // 画像ファイル選択時のプレビュー
+                document.getElementById('rewardImageFile').addEventListener('change', function(e) {
+                    const file = e.target.files[0]
+                    if (file) {
+                        const reader = new FileReader()
+                        reader.onload = function(event) {
+                            document.getElementById('previewImage').src = event.target.result
+                            document.getElementById('imagePreview').classList.remove('hidden')
+                        }
+                        reader.readAsDataURL(file)
+                    }
+                })
             })
+
+            async function uploadRewardImage(file) {
+                const token = localStorage.getItem('token')
+                const formData = new FormData()
+                formData.append('image', file)
+
+                try {
+                    const response = await axios.post('/api/points/admin/upload-reward-image', formData, {
+                        headers: {
+                            'Authorization': \`Bearer \${token}\`,
+                            'Content-Type': 'multipart/form-data'
+                        }
+                    })
+
+                    if (response.data.success) {
+                        return response.data.image_url
+                    } else {
+                        throw new Error(response.data.error || '画像のアップロードに失敗しました')
+                    }
+                } catch (error) {
+                    console.error('Upload image error:', error)
+                    showToast(error.response?.data?.error || '画像のアップロードに失敗しました', 'error')
+                    return null
+                }
+            }
 
             async function saveReward() {
                 const id = document.getElementById('rewardId').value
@@ -6823,7 +6889,7 @@ app.get('/points-management', (c) => {
                 const description = document.getElementById('rewardDescription').value.trim()
                 const points_required = parseInt(document.getElementById('rewardPoints').value)
                 const stock = parseInt(document.getElementById('rewardStock').value)
-                const image_url = document.getElementById('rewardImageUrl').value.trim()
+                let image_url = document.getElementById('rewardImageUrl').value.trim()
                 const display_order = parseInt(document.getElementById('rewardDisplayOrder').value)
                 const eligibility_type = document.querySelector('input[name="eligibilityType"]:checked').value
                 
@@ -6835,6 +6901,16 @@ app.get('/points-management', (c) => {
                 if (isNaN(points_required) || points_required <= 0) {
                     showToast('有効なポイント数を入力してください', 'error')
                     return
+                }
+
+                // 新しい画像がアップロードされている場合、先にアップロード
+                const imageFile = document.getElementById('rewardImageFile').files[0]
+                if (imageFile) {
+                    showToast('画像をアップロード中...', 'info')
+                    image_url = await uploadRewardImage(imageFile)
+                    if (!image_url) {
+                        return // アップロード失敗時は中断
+                    }
                 }
 
                 // タグ選択を取得
@@ -6900,6 +6976,16 @@ app.get('/points-management', (c) => {
                 document.getElementById('rewardPoints').value = reward.points_required
                 document.getElementById('rewardStock').value = reward.stock
                 document.getElementById('rewardImageUrl').value = reward.image_url || ''
+                document.getElementById('rewardImageFile').value = ''
+                
+                // 既存画像のプレビュー表示
+                if (reward.image_url) {
+                    document.getElementById('previewImage').src = reward.image_url
+                    document.getElementById('imagePreview').classList.remove('hidden')
+                } else {
+                    document.getElementById('imagePreview').classList.add('hidden')
+                }
+                
                 document.getElementById('rewardDisplayOrder').value = reward.display_order || 0
                 document.getElementById('rewardIsActive').checked = reward.is_active
                 document.getElementById('editOnlyFields').classList.remove('hidden')
