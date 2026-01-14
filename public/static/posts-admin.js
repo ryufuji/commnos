@@ -339,7 +339,7 @@ async function editPost(postId) {
     if (editVisibilityEl) editVisibilityEl.value = post.visibility || 'public'
     
     // scheduled_atの処理
-    const editScheduledFields = document.getElementById('editScheduledFields')
+    const editScheduledFields = document.getElementById('editScheduledDateTimeField')
     const editScheduledDateEl = document.getElementById('editScheduledDate')
     const editScheduledTimeEl = document.getElementById('editScheduledTime')
     
@@ -781,7 +781,7 @@ if (document.readyState === 'loading') {
         const editStatusField = document.getElementById('editStatus')
         if (editStatusField) {
             editStatusField.addEventListener('change', function() {
-                const scheduledFields = document.getElementById('editScheduledFields')
+                const scheduledFields = document.getElementById('editScheduledDateTimeField')
                 if (scheduledFields) {
                     scheduledFields.style.display = this.value === 'scheduled' ? 'block' : 'none'
                 }
