@@ -6261,17 +6261,6 @@ app.get('/points-management', (c) => {
                             </div>
                         </div>
                     </div>
-                    <div id="rulesList" class="space-y-6"></div>
-                </div>
-                                <ul class="text-sm text-gray-600 space-y-1 list-disc list-inside">
-                                    <li>ポイント数を0にすると付与されません</li>
-                                    <li>無効にすると一時的にポイント付与を停止できます</li>
-                                    <li>変更はすぐに反映されます</li>
-                                </ul>
-                            </div>
-                        </div>
-                    </div>
-
                     <div class="card p-6">
                         <h3 class="font-semibold text-gray-900 mb-4">アクション別ポイント設定</h3>
                         <div id="rulesList" class="space-y-4"></div>
