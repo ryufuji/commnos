@@ -345,19 +345,13 @@ async function editPost(postId) {
     
     // statusがscheduledの場合、日時フィールドを表示して値をセット
     if (post.status === 'scheduled' && post.scheduled_at) {
-        // scheduled_atはUTC時間（例: "2026-01-15T14:30:00.000Z"）
-        // これを日本時間に変換して表示
-        const utcDate = new Date(post.scheduled_at)
+        // scheduled_atはローカル時刻（JST）として保存されている
+        // ISO 8601形式: "2026-01-15T23:30:00" (タイムゾーン情報なし)
+        const dateTimeStr = post.scheduled_at.replace('Z', '').replace('.000', '')
+        const [dateStr, timeStr] = dateTimeStr.split('T')
         
-        // 日本時間の年月日を取得
-        const year = utcDate.getFullYear()
-        const month = String(utcDate.getMonth() + 1).padStart(2, '0')
-        const day = String(utcDate.getDate()).padStart(2, '0')
-        const hours = String(utcDate.getHours()).padStart(2, '0')
-        const minutes = String(utcDate.getMinutes()).padStart(2, '0')
-        
-        if (editScheduledDateEl) editScheduledDateEl.value = year + '-' + month + '-' + day
-        if (editScheduledTimeEl) editScheduledTimeEl.value = hours + ':' + minutes
+        if (editScheduledDateEl) editScheduledDateEl.value = dateStr
+        if (editScheduledTimeEl) editScheduledTimeEl.value = timeStr.substring(0, 5) // "HH:MM" 形式
         if (editScheduledFields) editScheduledFields.style.display = 'block'
     } else {
         if (editScheduledFields) editScheduledFields.style.display = 'none'
@@ -479,11 +473,9 @@ async function savePost() {
             const scheduledTime = document.getElementById('editScheduledTime').value
             
             if (scheduledDate && scheduledTime) {
-                // ユーザー入力を日本時間として扱い、UTC時間に変換
-                const localDateTime = scheduledDate + 'T' + scheduledTime + ':00'
-                const localDate = new Date(localDateTime)
-                // ISO 8601形式のUTC時間に変換
-                data.scheduled_at = localDate.toISOString()
+                // ユーザー入力を日本時間（JST）として扱う
+                // ISO 8601形式で保存（タイムゾーン情報なし = ローカル時刻として扱われる）
+                data.scheduled_at = scheduledDate + 'T' + scheduledTime + ':00'
             } else {
                 showToast('予約投稿には日時の指定が必要です', 'error')
                 return
