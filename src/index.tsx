@@ -8377,7 +8377,7 @@ app.get('/tenant-customization', (c) => {
             })
 
             // ウェルカムメッセージを保存
-            document.getElementById('saveWelcomeBtn').addEventListener('click', async () => {
+            document.getElementById('saveHeroBtn').addEventListener('click', async () => {
                 const welcomeTitle = document.getElementById('heroTitle').value.trim()
                 const welcomeSubtitle = document.getElementById('heroSubtitle').value.trim()
                 const token = localStorage.getItem('token')

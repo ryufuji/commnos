@@ -1,7 +1,7 @@
 -- ============================================
 -- Phase 8: ヒーローセクション設定追加
--- ウェルカムメッセージとサブタイトル
+-- カバー画像、オーバーレイ、ウェルカムメッセージ
 -- ============================================
 
-ALTER TABLE tenant_customization ADD COLUMN hero_title TEXT;
-ALTER TABLE tenant_customization ADD COLUMN hero_subtitle TEXT;
+ALTER TABLE tenant_customization ADD COLUMN welcome_title TEXT;
+ALTER TABLE tenant_customization ADD COLUMN welcome_subtitle TEXT;
