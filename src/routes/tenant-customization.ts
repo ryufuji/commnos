@@ -92,8 +92,8 @@ tenantCustomization.put('/', authMiddleware, requireRole('admin'), async (c) => 
           favicon_url = COALESCE(?, favicon_url),
           cover_image_url = COALESCE(?, cover_image_url),
           cover_overlay_opacity = COALESCE(?, cover_overlay_opacity),
-          hero_title = COALESCE(?, hero_title),
-          hero_subtitle = COALESCE(?, hero_subtitle),
+          welcome_title = COALESCE(?, welcome_title),
+          welcome_subtitle = COALESCE(?, welcome_subtitle),
           navigation_config = COALESCE(?, navigation_config),
           updated_at = CURRENT_TIMESTAMP
         WHERE tenant_id = ?
@@ -102,8 +102,8 @@ tenantCustomization.put('/', authMiddleware, requireRole('admin'), async (c) => 
         data.favicon_url || null,
         data.cover_image_url || null,
         data.cover_overlay_opacity !== undefined ? data.cover_overlay_opacity : null,
-        data.hero_title || null,
-        data.hero_subtitle || null,
+        data.welcome_title || null,
+        data.welcome_subtitle || null,
         data.navigation_config || null,
         tenantId
       ).run()
@@ -112,7 +112,7 @@ tenantCustomization.put('/', authMiddleware, requireRole('admin'), async (c) => 
       await DB.prepare(`
         INSERT INTO tenant_customization (
           tenant_id, logo_url, favicon_url, cover_image_url,
-          cover_overlay_opacity, hero_title, hero_subtitle, navigation_config
+          cover_overlay_opacity, welcome_title, welcome_subtitle, navigation_config
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
       `).bind(
         tenantId,
@@ -120,8 +120,8 @@ tenantCustomization.put('/', authMiddleware, requireRole('admin'), async (c) => 
         data.favicon_url || null,
         data.cover_image_url || null,
         data.cover_overlay_opacity !== undefined ? data.cover_overlay_opacity : 0.5,
-        data.hero_title || null,
-        data.hero_subtitle || null,
+        data.welcome_title || null,
+        data.welcome_subtitle || null,
         data.navigation_config || '{"items":["home","posts","events","members","chat","points","shop"],"order":["home","posts","events","members","chat","points","shop"]}'
       ).run()
     }
