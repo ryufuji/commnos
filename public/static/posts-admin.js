@@ -345,12 +345,16 @@ async function editPost(postId) {
     
     // statusがscheduledの場合、日時フィールドを表示して値をセット
     if (post.status === 'scheduled' && post.scheduled_at) {
-        const scheduledDate = new Date(post.scheduled_at)
-        const year = scheduledDate.getFullYear()
-        const month = String(scheduledDate.getMonth() + 1).padStart(2, '0')
-        const day = String(scheduledDate.getDate()).padStart(2, '0')
-        const hours = String(scheduledDate.getHours()).padStart(2, '0')
-        const minutes = String(scheduledDate.getMinutes()).padStart(2, '0')
+        // scheduled_atはUTC時間（例: "2026-01-15T14:30:00.000Z"）
+        // これを日本時間に変換して表示
+        const utcDate = new Date(post.scheduled_at)
+        
+        // 日本時間の年月日を取得
+        const year = utcDate.getFullYear()
+        const month = String(utcDate.getMonth() + 1).padStart(2, '0')
+        const day = String(utcDate.getDate()).padStart(2, '0')
+        const hours = String(utcDate.getHours()).padStart(2, '0')
+        const minutes = String(utcDate.getMinutes()).padStart(2, '0')
         
         if (editScheduledDateEl) editScheduledDateEl.value = year + '-' + month + '-' + day
         if (editScheduledTimeEl) editScheduledTimeEl.value = hours + ':' + minutes
@@ -475,7 +479,11 @@ async function savePost() {
             const scheduledTime = document.getElementById('editScheduledTime').value
             
             if (scheduledDate && scheduledTime) {
-                data.scheduled_at = scheduledDate + 'T' + scheduledTime + ':00.000Z'
+                // ユーザー入力を日本時間として扱い、UTC時間に変換
+                const localDateTime = scheduledDate + 'T' + scheduledTime + ':00'
+                const localDate = new Date(localDateTime)
+                // ISO 8601形式のUTC時間に変換
+                data.scheduled_at = localDate.toISOString()
             } else {
                 showToast('予約投稿には日時の指定が必要です', 'error')
                 return
