@@ -7996,6 +7996,72 @@ app.get('/tenant-customization', (c) => {
                         </button>
                     </div>
                 </div>
+
+                <!-- カラーテーマカスタマイズ -->
+                <div class="card p-6">
+                    <h2 class="text-xl font-bold text-gray-900 mb-4">
+                        <i class="fas fa-palette mr-2 text-primary-600"></i>
+                        カラーテーマ
+                    </h2>
+                    
+                    <div class="space-y-6">
+                        <!-- プライマリカラー -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">プライマリカラー</label>
+                            <div class="flex items-center space-x-4">
+                                <input type="color" id="primaryColor" class="w-16 h-16 border-2 border-gray-300 rounded cursor-pointer" value="#00BCD4">
+                                <div class="flex-1">
+                                    <p class="text-sm text-gray-600">ブランドのメインカラーです</p>
+                                    <p class="text-xs text-gray-500 mt-1">ロゴ背景、ボタン、リンク、アクティブ状態に適用されます</p>
+                                    <p id="primaryColorValue" class="text-xs font-mono text-gray-700 mt-1">#00BCD4</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- セカンダリカラー -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">セカンダリカラー</label>
+                            <div class="flex items-center space-x-4">
+                                <input type="color" id="secondaryColor" class="w-16 h-16 border-2 border-gray-300 rounded cursor-pointer" value="#FDB714">
+                                <div class="flex-1">
+                                    <p class="text-sm text-gray-600">アクセントカラーです</p>
+                                    <p class="text-xs text-gray-500 mt-1">バッジ、強調表示、セカンダリボタンに適用されます</p>
+                                    <p id="secondaryColorValue" class="text-xs font-mono text-gray-700 mt-1">#FDB714</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- プレビュー -->
+                        <div class="border-2 border-gray-200 rounded-lg p-4 bg-gray-50">
+                            <p class="text-sm font-medium text-gray-700 mb-3">プレビュー</p>
+                            <div class="space-y-3">
+                                <!-- ボタンプレビュー -->
+                                <div class="flex items-center space-x-3">
+                                    <button id="previewPrimaryBtn" class="px-4 py-2 rounded-lg text-white font-medium" style="background-color: #00BCD4;">
+                                        プライマリボタン
+                                    </button>
+                                    <button id="previewSecondaryBtn" class="px-4 py-2 rounded-lg text-white font-medium" style="background-color: #FDB714;">
+                                        セカンダリボタン
+                                    </button>
+                                </div>
+                                <!-- リンクプレビュー -->
+                                <div>
+                                    <a id="previewLink" href="#" class="text-sm font-medium" style="color: #00BCD4;">サンプルリンク</a>
+                                </div>
+                                <!-- バッジプレビュー -->
+                                <div class="flex items-center space-x-2">
+                                    <span id="previewBadge" class="px-2 py-1 text-xs font-semibold text-white rounded" style="background-color: #FDB714;">バッジ</span>
+                                    <span class="text-xs text-gray-500">アクセント要素</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button id="saveColorThemeBtn" class="btn-primary w-full">
+                            <i class="fas fa-save mr-2"></i>
+                            カラーテーマを保存
+                        </button>
+                    </div>
+                </div>
             </main>
         </div>
 
@@ -8130,6 +8196,18 @@ app.get('/tenant-customization', (c) => {
                 // ヒーローメッセージ
                 document.getElementById('heroTitle').value = currentCustomization.welcome_title || ''
                 document.getElementById('heroSubtitle').value = currentCustomization.welcome_subtitle || ''
+
+                // カラーテーマ
+                const primaryColor = currentCustomization.primary_color || '#00BCD4'
+                const secondaryColor = currentCustomization.secondary_color || '#FDB714'
+                
+                document.getElementById('primaryColor').value = primaryColor
+                document.getElementById('secondaryColor').value = secondaryColor
+                document.getElementById('primaryColorValue').textContent = primaryColor
+                document.getElementById('secondaryColorValue').textContent = secondaryColor
+                
+                // プレビュー更新
+                updateColorPreview(primaryColor, secondaryColor)
             }
 
             // ロゴファイル選択
@@ -8441,6 +8519,55 @@ app.get('/tenant-customization', (c) => {
                 } catch (error) {
                     console.error('Save welcome error:', error)
                     showToast('ウェルカムメッセージの保存に失敗しました', 'error')
+                }
+            })
+
+            // カラーピッカーのリアルタイムプレビュー
+            function updateColorPreview(primaryColor, secondaryColor) {
+                document.getElementById('previewPrimaryBtn').style.backgroundColor = primaryColor
+                document.getElementById('previewSecondaryBtn').style.backgroundColor = secondaryColor
+                document.getElementById('previewLink').style.color = primaryColor
+                document.getElementById('previewBadge').style.backgroundColor = secondaryColor
+            }
+
+            // プライマリカラー変更
+            document.getElementById('primaryColor').addEventListener('input', (e) => {
+                const color = e.target.value
+                document.getElementById('primaryColorValue').textContent = color
+                const secondaryColor = document.getElementById('secondaryColor').value
+                updateColorPreview(color, secondaryColor)
+            })
+
+            // セカンダリカラー変更
+            document.getElementById('secondaryColor').addEventListener('input', (e) => {
+                const color = e.target.value
+                document.getElementById('secondaryColorValue').textContent = color
+                const primaryColor = document.getElementById('primaryColor').value
+                updateColorPreview(primaryColor, color)
+            })
+
+            // カラーテーマ保存
+            document.getElementById('saveColorThemeBtn').addEventListener('click', async () => {
+                const primaryColor = document.getElementById('primaryColor').value
+                const secondaryColor = document.getElementById('secondaryColor').value
+                const token = localStorage.getItem('token')
+
+                try {
+                    showToast('カラーテーマを保存中...', 'info')
+                    const response = await axios.put('/api/tenant-customization', {
+                        primary_color: primaryColor,
+                        secondary_color: secondaryColor
+                    }, {
+                        headers: { Authorization: 'Bearer ' + token }
+                    })
+
+                    if (response.data.success) {
+                        showToast('カラーテーマを保存しました', 'success')
+                        loadCustomization()
+                    }
+                } catch (error) {
+                    console.error('Save color theme error:', error)
+                    showToast('カラーテーマの保存に失敗しました', 'error')
                 }
             })
 

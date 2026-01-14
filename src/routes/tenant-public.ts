@@ -43,6 +43,64 @@ function renderCustomizationScript(subdomain: string): string {
             // data属性を設定（将来のCSS変数用）
             document.documentElement.setAttribute('data-tenant', '${subdomain}')
             
+            // カラーテーマのCSS変数を設定
+            if (custom.primary_color || custom.secondary_color) {
+              const style = document.createElement('style')
+              style.id = 'tenant-color-theme'
+              
+              let cssVars = ':root {'
+              
+              if (custom.primary_color) {
+                // プライマリカラー
+                cssVars += \`
+                  --commons-primary: \${custom.primary_color};
+                \`
+                
+                // ダークシェードを自動生成（20%暗く）
+                const primaryRgb = hexToRgb(custom.primary_color)
+                if (primaryRgb) {
+                  const darker = {
+                    r: Math.max(0, Math.floor(primaryRgb.r * 0.8)),
+                    g: Math.max(0, Math.floor(primaryRgb.g * 0.8)),
+                    b: Math.max(0, Math.floor(primaryRgb.b * 0.8))
+                  }
+                  cssVars += \`
+                    --commons-primary-dark: rgb(\${darker.r}, \${darker.g}, \${darker.b});
+                  \`
+                  
+                  // ライトシェードを自動生成（80%明るく）
+                  const lighter = {
+                    r: Math.min(255, Math.floor(primaryRgb.r + (255 - primaryRgb.r) * 0.8)),
+                    g: Math.min(255, Math.floor(primaryRgb.g + (255 - primaryRgb.g) * 0.8)),
+                    b: Math.min(255, Math.floor(primaryRgb.b + (255 - primaryRgb.b) * 0.8))
+                  }
+                  cssVars += \`
+                    --commons-primary-light: rgb(\${lighter.r}, \${lighter.g}, \${lighter.b});
+                  \`
+                }
+              }
+              
+              if (custom.secondary_color) {
+                cssVars += \`
+                  --commons-secondary: \${custom.secondary_color};
+                \`
+              }
+              
+              cssVars += '}'
+              style.textContent = cssVars
+              document.head.appendChild(style)
+            }
+            
+            // HEXカラーをRGBに変換
+            function hexToRgb(hex) {
+              const result = /^#?([a-f\\d]{2})([a-f\\d]{2})([a-f\\d]{2})$/i.exec(hex)
+              return result ? {
+                r: parseInt(result[1], 16),
+                g: parseInt(result[2], 16),
+                b: parseInt(result[3], 16)
+              } : null
+            }
+            
             // ロゴの差し替え
             if (custom.logo_url) {
               const logos = document.querySelectorAll('.commons-logo')
