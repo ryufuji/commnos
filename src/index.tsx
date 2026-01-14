@@ -6440,6 +6440,8 @@ app.get('/points-management', (c) => {
         <script>
             let currentRules = []
             let availableTags = []
+            let currentRewards = []
+            let currentExchanges = []
 
             const actionLabels = {
                 // 基本アクション
@@ -6513,6 +6515,13 @@ app.get('/points-management', (c) => {
                 // コンテンツの切り替え
                 document.querySelectorAll('.tab-content').forEach(content => content.classList.add('hidden'))
                 document.getElementById(tab + 'Content').classList.remove('hidden')
+                
+                // タブに応じてデータをロード
+                if (tab === 'rewards' && currentRewards.length === 0) {
+                    loadRewards()
+                } else if (tab === 'exchanges' && currentExchanges.length === 0) {
+                    loadExchanges()
+                }
             }
 
             async function loadRules() {
@@ -6682,7 +6691,6 @@ app.get('/points-management', (c) => {
             }
 
             // 報酬管理
-            let currentRewards = []
 
             // タグ読み込み
             async function loadTags() {
@@ -6965,7 +6973,6 @@ app.get('/points-management', (c) => {
             }
 
             // 交換申請管理
-            let currentExchanges = []
 
             async function loadExchanges() {
                 try {
