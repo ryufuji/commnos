@@ -307,16 +307,56 @@ points.get('/rewards', authMiddleware, async (c) => {
   const { DB } = c.env
 
   try {
+    // 認証済みユーザーの場合、ユーザーのタグを取得
+    const userId = c.get('userId')
+    let userTagIds: number[] = []
+    
+    if (userId) {
+      const userTags = await DB.prepare(`
+        SELECT tag_id FROM user_tag_assignments
+        WHERE user_id = ? AND tenant_id = ?
+      `).bind(userId, tenantId).all()
+      
+      userTagIds = (userTags.results || []).map((t: any) => t.tag_id)
+    }
+
+    // 全報酬を取得
     const rewards = await DB.prepare(`
-      SELECT id, name, description, points_required, image_url, stock, display_order
+      SELECT id, name, description, points_required, image_url, stock, display_order, eligibility_type, eligible_tag_ids
       FROM point_rewards
       WHERE tenant_id = ? AND is_active = 1
       ORDER BY display_order, points_required
     `).bind(tenantId).all()
 
+    // 各報酬の交換資格をチェック
+    const rewardsWithEligibility = (rewards.results || []).map((reward: any) => {
+      let canExchange = true
+      let eligibilityMessage = ''
+
+      if (reward.eligibility_type === 'tags' && reward.eligible_tag_ids) {
+        try {
+          const requiredTagIds = JSON.parse(reward.eligible_tag_ids)
+          const hasRequiredTag = requiredTagIds.some((tagId: number) => userTagIds.includes(tagId))
+          
+          if (!hasRequiredTag && userId) {
+            canExchange = false
+            eligibilityMessage = '交換対象外です（指定されたタグが必要です）'
+          }
+        } catch (e) {
+          console.error('Failed to parse eligible_tag_ids:', e)
+        }
+      }
+
+      return {
+        ...reward,
+        can_exchange: canExchange,
+        eligibility_message: eligibilityMessage
+      }
+    })
+
     return c.json({
       success: true,
-      rewards: rewards.results || []
+      rewards: rewardsWithEligibility
     })
   } catch (error) {
     console.error('[Get Rewards Error]', error)
@@ -337,7 +377,7 @@ points.get('/admin/rewards', authMiddleware, requireRole('admin'), async (c) => 
 
   try {
     const rewards = await DB.prepare(`
-      SELECT id, name, description, points_required, image_url, stock, is_active, display_order, created_at, updated_at
+      SELECT id, name, description, points_required, image_url, stock, is_active, display_order, eligibility_type, eligible_tag_ids, created_at, updated_at
       FROM point_rewards
       WHERE tenant_id = ?
       ORDER BY display_order, points_required
@@ -365,16 +405,22 @@ points.post('/admin/rewards', authMiddleware, requireRole('admin'), async (c) =>
   const { DB } = c.env
 
   try {
-    const { name, description, points_required, image_url, stock, display_order } = await c.req.json()
+    const { name, description, points_required, image_url, stock, display_order, eligibility_type, eligible_tag_ids } = await c.req.json()
 
     if (!name || !points_required || points_required <= 0) {
       return c.json({ success: false, error: '無効なパラメータです' }, 400)
     }
 
+    // eligible_tag_idsがある場合、JSON文字列に変換
+    let eligibleTagIdsStr = null
+    if (eligibility_type === 'tags' && eligible_tag_ids && Array.isArray(eligible_tag_ids)) {
+      eligibleTagIdsStr = JSON.stringify(eligible_tag_ids)
+    }
+
     await DB.prepare(`
-      INSERT INTO point_rewards (tenant_id, name, description, points_required, image_url, stock, display_order)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
-    `).bind(tenantId, name, description || null, points_required, image_url || null, stock || -1, display_order || 0).run()
+      INSERT INTO point_rewards (tenant_id, name, description, points_required, image_url, stock, display_order, eligibility_type, eligible_tag_ids)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `).bind(tenantId, name, description || null, points_required, image_url || null, stock || -1, display_order || 0, eligibility_type || 'all', eligibleTagIdsStr).run()
 
     return c.json({
       success: true,
@@ -399,13 +445,19 @@ points.put('/admin/rewards/:id', authMiddleware, requireRole('admin'), async (c)
   const { DB } = c.env
 
   try {
-    const { name, description, points_required, image_url, stock, is_active, display_order } = await c.req.json()
+    const { name, description, points_required, image_url, stock, is_active, display_order, eligibility_type, eligible_tag_ids } = await c.req.json()
+
+    // eligible_tag_idsがある場合、JSON文字列に変換
+    let eligibleTagIdsStr = null
+    if (eligibility_type === 'tags' && eligible_tag_ids && Array.isArray(eligible_tag_ids)) {
+      eligibleTagIdsStr = JSON.stringify(eligible_tag_ids)
+    }
 
     await DB.prepare(`
       UPDATE point_rewards
-      SET name = ?, description = ?, points_required = ?, image_url = ?, stock = ?, is_active = ?, display_order = ?, updated_at = CURRENT_TIMESTAMP
+      SET name = ?, description = ?, points_required = ?, image_url = ?, stock = ?, is_active = ?, display_order = ?, eligibility_type = ?, eligible_tag_ids = ?, updated_at = CURRENT_TIMESTAMP
       WHERE id = ? AND tenant_id = ?
-    `).bind(name, description || null, points_required, image_url || null, stock, is_active ? 1 : 0, display_order || 0, rewardId, tenantId).run()
+    `).bind(name, description || null, points_required, image_url || null, stock, is_active ? 1 : 0, display_order || 0, eligibility_type || 'all', eligibleTagIdsStr, rewardId, tenantId).run()
 
     return c.json({
       success: true,
@@ -461,13 +513,39 @@ points.post('/rewards/:id/exchange', authMiddleware, async (c) => {
   try {
     // 報酬情報を取得
     const reward = await DB.prepare(`
-      SELECT id, name, points_required, stock
+      SELECT id, name, points_required, stock, eligibility_type, eligible_tag_ids
       FROM point_rewards
       WHERE id = ? AND tenant_id = ? AND is_active = 1
     `).bind(rewardId, tenantId).first() as any
 
     if (!reward) {
       return c.json({ success: false, error: '報酬が見つかりません' }, 404)
+    }
+
+    // 交換資格チェック
+    if (reward.eligibility_type === 'tags' && reward.eligible_tag_ids) {
+      try {
+        const requiredTagIds = JSON.parse(reward.eligible_tag_ids)
+        
+        // ユーザーのタグを取得
+        const userTags = await DB.prepare(`
+          SELECT tag_id FROM user_tag_assignments
+          WHERE user_id = ? AND tenant_id = ?
+        `).bind(userId, tenantId).all()
+        
+        const userTagIds = (userTags.results || []).map((t: any) => t.tag_id)
+        const hasRequiredTag = requiredTagIds.some((tagId: number) => userTagIds.includes(tagId))
+        
+        if (!hasRequiredTag) {
+          return c.json({ 
+            success: false, 
+            error: 'この報酬の交換資格がありません（必要なタグを持っていません）' 
+          }, 403)
+        }
+      } catch (e) {
+        console.error('Failed to check eligibility:', e)
+        return c.json({ success: false, error: '交換資格の確認に失敗しました' }, 500)
+      }
     }
 
     // 在庫確認

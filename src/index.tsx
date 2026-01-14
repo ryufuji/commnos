@@ -6337,10 +6337,109 @@ app.get('/points-management', (c) => {
             </main>
         </div>
 
+        <!-- 報酬作成/編集モーダル -->
+        <div id="rewardModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div class="bg-white rounded-lg shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                <div class="sticky top-0 bg-white border-b border-gray-200 p-6">
+                    <h2 id="rewardModalTitle" class="text-2xl font-bold text-gray-900">報酬を作成</h2>
+                </div>
+                <div class="p-6 space-y-4">
+                    <input type="hidden" id="rewardId">
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            報酬名 <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" id="rewardName" class="input-field" placeholder="例: Amazonギフト券 500円分" required>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">説明</label>
+                        <textarea id="rewardDescription" class="input-field" rows="3" placeholder="報酬の詳細説明"></textarea>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                必要ポイント <span class="text-red-500">*</span>
+                            </label>
+                            <input type="number" id="rewardPoints" class="input-field" min="1" placeholder="100" required>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                在庫数 <span class="text-xs text-gray-500">(-1で無制限)</span>
+                            </label>
+                            <input type="number" id="rewardStock" class="input-field" value="-1">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">画像URL</label>
+                        <input type="url" id="rewardImageUrl" class="input-field" placeholder="https://example.com/image.jpg">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">表示順</label>
+                        <input type="number" id="rewardDisplayOrder" class="input-field" value="0" min="0">
+                    </div>
+
+                    <!-- 交換対象設定 -->
+                    <div class="border-t border-gray-200 pt-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-3">
+                            <i class="fas fa-users mr-2 text-primary-600"></i>交換対象者
+                        </label>
+                        
+                        <div class="space-y-3">
+                            <label class="flex items-start p-3 border-2 border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition">
+                                <input type="radio" name="eligibilityType" value="all" class="mt-1 w-4 h-4 text-primary-600" checked>
+                                <div class="ml-3">
+                                    <span class="font-semibold text-gray-900">全会員</span>
+                                    <p class="text-xs text-gray-500 mt-1">すべての会員が交換できます</p>
+                                </div>
+                            </label>
+                            
+                            <label class="flex items-start p-3 border-2 border-gray-200 rounded-lg cursor-pointer hover:bg-gray-50 transition">
+                                <input type="radio" name="eligibilityType" value="tags" class="mt-1 w-4 h-4 text-primary-600">
+                                <div class="ml-3 flex-1">
+                                    <span class="font-semibold text-gray-900">特定のタグを持つ会員のみ</span>
+                                    <p class="text-xs text-gray-500 mt-1">指定したタグを持つ会員のみ交換できます</p>
+                                    
+                                    <div id="tagSelectionArea" class="mt-3 hidden">
+                                        <div id="availableTags" class="space-y-2 max-h-40 overflow-y-auto"></div>
+                                        <p id="noTagsMessage" class="hidden text-xs text-gray-500 mt-2">
+                                            タグが登録されていません。先にタグを作成してください。
+                                        </p>
+                                    </div>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div id="editOnlyFields" class="hidden">
+                        <label class="flex items-center gap-2">
+                            <input type="checkbox" id="rewardIsActive" class="w-4 h-4 text-primary-600 rounded">
+                            <span class="text-sm font-medium text-gray-700">有効にする</span>
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="border-t border-gray-200 p-6 flex justify-end gap-3">
+                    <button onclick="closeRewardModal()" class="btn-secondary">
+                        キャンセル
+                    </button>
+                    <button onclick="saveReward()" class="btn-primary">
+                        <i class="fas fa-check mr-2"></i>
+                        <span id="saveRewardButtonText">作成</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
         <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
         <script src="/static/app.js"></script>
         <script>
             let currentRules = []
+            let availableTags = []
 
             const actionLabels = {
                 // 基本アクション
@@ -6585,6 +6684,21 @@ app.get('/points-management', (c) => {
             // 報酬管理
             let currentRewards = []
 
+            // タグ読み込み
+            async function loadTags() {
+                try {
+                    const token = localStorage.getItem('token')
+                    const response = await axios.get('/api/tags', {
+                        headers: { 'Authorization': 'Bearer ' + token }
+                    })
+                    if (response.data.success) {
+                        availableTags = response.data.tags || []
+                    }
+                } catch (error) {
+                    console.error('Load tags error:', error)
+                }
+            }
+
             async function loadRewards() {
                 try {
                     const token = localStorage.getItem('token')
@@ -6642,29 +6756,116 @@ app.get('/points-management', (c) => {
             }
 
             function showCreateRewardModal() {
-                const name = prompt('報酬名を入力してください：')
-                if (!name) return
+                document.getElementById('rewardModalTitle').textContent = '報酬を作成'
+                document.getElementById('saveRewardButtonText').textContent = '作成'
+                document.getElementById('rewardId').value = ''
+                document.getElementById('rewardName').value = ''
+                document.getElementById('rewardDescription').value = ''
+                document.getElementById('rewardPoints').value = ''
+                document.getElementById('rewardStock').value = '-1'
+                document.getElementById('rewardImageUrl').value = ''
+                document.getElementById('rewardDisplayOrder').value = '0'
+                document.querySelector('input[name="eligibilityType"][value="all"]').checked = true
+                document.getElementById('tagSelectionArea').classList.add('hidden')
+                document.getElementById('editOnlyFields').classList.add('hidden')
+                
+                renderTagSelection([])
+                document.getElementById('rewardModal').classList.remove('hidden')
+            }
 
-                const description = prompt('説明を入力してください（任意）：')
-                const pointsRequired = prompt('必要ポイント数を入力してください：')
-                if (!pointsRequired) return
+            function closeRewardModal() {
+                document.getElementById('rewardModal').classList.add('hidden')
+            }
 
-                const pointsNum = parseInt(pointsRequired)
-                if (isNaN(pointsNum) || pointsNum <= 0) {
-                    showToast('無効なポイント数です', 'error')
+            function renderTagSelection(selectedTagIds = []) {
+                const container = document.getElementById('availableTags')
+                const noTagsMsg = document.getElementById('noTagsMessage')
+                
+                if (availableTags.length === 0) {
+                    container.innerHTML = ''
+                    noTagsMsg.classList.remove('hidden')
+                    return
+                }
+                
+                noTagsMsg.classList.add('hidden')
+                container.innerHTML = availableTags.map(tag => \`
+                    <label class="flex items-center gap-2 p-2 hover:bg-gray-50 rounded cursor-pointer">
+                        <input type="checkbox" class="tag-checkbox w-4 h-4 text-primary-600 rounded" 
+                               value="\${tag.id}" \${selectedTagIds.includes(tag.id) ? 'checked' : ''}>
+                        <span class="inline-flex items-center px-2 py-1 rounded text-xs font-semibold" 
+                              style="background-color: \${tag.color}15; color: \${tag.color};">
+                            \${tag.name}
+                        </span>
+                        <span class="text-xs text-gray-500">\${tag.description || ''}</span>
+                    </label>
+                \`).join('')
+            }
+
+            // タグ選択ラジオボタンの切り替え
+            document.addEventListener('DOMContentLoaded', () => {
+                document.querySelectorAll('input[name="eligibilityType"]').forEach(radio => {
+                    radio.addEventListener('change', (e) => {
+                        const tagArea = document.getElementById('tagSelectionArea')
+                        if (e.target.value === 'tags') {
+                            tagArea.classList.remove('hidden')
+                        } else {
+                            tagArea.classList.add('hidden')
+                        }
+                    })
+                })
+            })
+
+            async function saveReward() {
+                const id = document.getElementById('rewardId').value
+                const name = document.getElementById('rewardName').value.trim()
+                const description = document.getElementById('rewardDescription').value.trim()
+                const points_required = parseInt(document.getElementById('rewardPoints').value)
+                const stock = parseInt(document.getElementById('rewardStock').value)
+                const image_url = document.getElementById('rewardImageUrl').value.trim()
+                const display_order = parseInt(document.getElementById('rewardDisplayOrder').value)
+                const eligibility_type = document.querySelector('input[name="eligibilityType"]:checked').value
+                
+                if (!name) {
+                    showToast('報酬名を入力してください', 'error')
+                    return
+                }
+                
+                if (isNaN(points_required) || points_required <= 0) {
+                    showToast('有効なポイント数を入力してください', 'error')
                     return
                 }
 
-                const stock = prompt('在庫数を入力してください（-1で無制限）：', '-1')
-                const stockNum = parseInt(stock)
+                // タグ選択を取得
+                let eligible_tag_ids = null
+                if (eligibility_type === 'tags') {
+                    const checkedBoxes = document.querySelectorAll('.tag-checkbox:checked')
+                    eligible_tag_ids = Array.from(checkedBoxes).map(cb => parseInt(cb.value))
+                    
+                    if (eligible_tag_ids.length === 0) {
+                        showToast('交換対象のタグを少なくとも1つ選択してください', 'error')
+                        return
+                    }
+                }
 
-                createReward({
+                const rewardData = {
                     name,
                     description: description || null,
-                    points_required: pointsNum,
-                    stock: stockNum,
-                    display_order: 0
-                })
+                    points_required,
+                    image_url: image_url || null,
+                    stock,
+                    display_order,
+                    eligibility_type,
+                    eligible_tag_ids
+                }
+
+                if (id) {
+                    // 編集
+                    rewardData.is_active = document.getElementById('rewardIsActive').checked
+                    await updateReward(id, rewardData)
+                } else {
+                    // 新規作成
+                    await createReward(rewardData)
+                }
             }
 
             async function createReward(data) {
@@ -6676,6 +6877,7 @@ app.get('/points-management', (c) => {
 
                     if (response.data.success) {
                         showToast('報酬を作成しました', 'success')
+                        closeRewardModal()
                         loadRewards()
                     }
                 } catch (error) {
@@ -6688,39 +6890,48 @@ app.get('/points-management', (c) => {
                 const reward = currentRewards.find(r => r.id === id)
                 if (!reward) return
 
-                const name = prompt('報酬名を入力してください：', reward.name)
-                if (!name) return
-
-                const description = prompt('説明を入力してください（任意）：', reward.description || '')
-                const pointsRequired = prompt('必要ポイント数を入力してください：', reward.points_required)
-                if (!pointsRequired) return
-
-                const pointsNum = parseInt(pointsRequired)
-                if (isNaN(pointsNum) || pointsNum <= 0) {
-                    showToast('無効なポイント数です', 'error')
-                    return
+                document.getElementById('rewardModalTitle').textContent = '報酬を編集'
+                document.getElementById('saveRewardButtonText').textContent = '更新'
+                document.getElementById('rewardId').value = reward.id
+                document.getElementById('rewardName').value = reward.name
+                document.getElementById('rewardDescription').value = reward.description || ''
+                document.getElementById('rewardPoints').value = reward.points_required
+                document.getElementById('rewardStock').value = reward.stock
+                document.getElementById('rewardImageUrl').value = reward.image_url || ''
+                document.getElementById('rewardDisplayOrder').value = reward.display_order || 0
+                document.getElementById('rewardIsActive').checked = reward.is_active
+                document.getElementById('editOnlyFields').classList.remove('hidden')
+                
+                // 交換対象設定
+                const eligibilityType = reward.eligibility_type || 'all'
+                document.querySelector(\`input[name="eligibilityType"][value="\${eligibilityType}"]\`).checked = true
+                
+                let selectedTagIds = []
+                if (eligibilityType === 'tags' && reward.eligible_tag_ids) {
+                    try {
+                        selectedTagIds = JSON.parse(reward.eligible_tag_ids)
+                        document.getElementById('tagSelectionArea').classList.remove('hidden')
+                    } catch (e) {
+                        console.error('Failed to parse eligible_tag_ids:', e)
+                    }
+                } else {
+                    document.getElementById('tagSelectionArea').classList.add('hidden')
                 }
+                
+                renderTagSelection(selectedTagIds)
+                document.getElementById('rewardModal').classList.remove('hidden')
+            }
 
-                const stock = prompt('在庫数を入力してください（-1で無制限）：', reward.stock)
-                const stockNum = parseInt(stock)
-
-                const isActive = confirm('この報酬を有効にしますか？')
-
+            async function updateReward(id, data) {
                 try {
                     const token = localStorage.getItem('token')
-                    const response = await axios.put(\`/api/points/admin/rewards/\${id}\`, {
-                        name,
-                        description: description || null,
-                        points_required: pointsNum,
-                        stock: stockNum,
-                        is_active: isActive,
-                        display_order: reward.display_order
-                    }, {
+                    const response = await axios.put(\`/api/points/admin/rewards/\${id}\`, data, {
                         headers: { 'Authorization': 'Bearer ' + token }
                     })
 
                     if (response.data.success) {
                         showToast('報酬を更新しました', 'success')
+                        closeRewardModal()
                         loadRewards()
                     }
                 } catch (error) {
@@ -6935,6 +7146,7 @@ app.get('/points-management', (c) => {
 
             // 初期化
             document.addEventListener('DOMContentLoaded', () => {
+                loadTags()
                 loadRules()
             })
         </script>
