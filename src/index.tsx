@@ -8103,8 +8103,8 @@ app.get('/tenant-customization', (c) => {
                 document.getElementById('overlayValue').textContent = Math.round(opacity)
 
                 // ヒーローメッセージ
-                document.getElementById('heroTitle').value = currentCustomization.hero_title || ''
-                document.getElementById('heroSubtitle').value = currentCustomization.hero_subtitle || ''
+                document.getElementById('heroTitle').value = currentCustomization.welcome_title || ''
+                document.getElementById('heroSubtitle').value = currentCustomization.welcome_subtitle || ''
             }
 
             // ロゴファイル選択
@@ -8140,6 +8140,24 @@ app.get('/tenant-customization', (c) => {
                     }
                     reader.readAsDataURL(selectedFaviconFile)
                     document.getElementById('uploadFaviconBtn').classList.remove('hidden')
+                }
+            })
+
+            // カバー画像ファイル選択
+            document.getElementById('coverUpload').addEventListener('change', (e) => {
+                selectedCoverFile = e.target.files[0]
+                if (selectedCoverFile) {
+                    // プレビュー表示
+                    const reader = new FileReader()
+                    reader.onload = (event) => {
+                        document.getElementById('currentCoverPreview').innerHTML = \`
+                            <img src="\${event.target.result}" 
+                                 alt="Cover Preview" 
+                                 class="w-full h-48 object-cover rounded">
+                        \`
+                    }
+                    reader.readAsDataURL(selectedCoverFile)
+                    document.getElementById('uploadCoverBtn').classList.remove('hidden')
                 }
             })
 
@@ -8331,6 +8349,11 @@ app.get('/tenant-customization', (c) => {
                 }
             })
 
+            // オーバーレイ透明度スライダーの値更新
+            document.getElementById('overlayOpacity').addEventListener('input', (e) => {
+                document.getElementById('overlayValue').textContent = e.target.value
+            })
+
             // オーバーレイ透明度を保存
             document.getElementById('saveOverlayBtn').addEventListener('click', async () => {
                 const opacity = parseFloat(document.getElementById('overlayOpacity').value) / 100
@@ -8355,8 +8378,8 @@ app.get('/tenant-customization', (c) => {
 
             // ウェルカムメッセージを保存
             document.getElementById('saveWelcomeBtn').addEventListener('click', async () => {
-                const welcomeTitle = document.getElementById('welcomeTitle').value.trim()
-                const welcomeSubtitle = document.getElementById('welcomeSubtitle').value.trim()
+                const welcomeTitle = document.getElementById('heroTitle').value.trim()
+                const welcomeSubtitle = document.getElementById('heroSubtitle').value.trim()
                 const token = localStorage.getItem('token')
                 
                 if (!welcomeTitle) {
