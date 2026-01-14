@@ -50,7 +50,7 @@ adminPosts.get('/', async (c) => {
     const postsResult = await c.env.DB.prepare(`
       SELECT 
         p.id, p.title, p.content, p.excerpt, p.thumbnail_url, p.video_url,
-        p.status, p.visibility, p.published_at, p.view_count, p.created_at, p.updated_at,
+        p.status, p.visibility, p.published_at, p.scheduled_at, p.view_count, p.created_at, p.updated_at,
         u.nickname as author_name, u.avatar_url as author_avatar,
         COUNT(DISTINCT l.id) as like_count,
         COUNT(DISTINCT cm.id) as comment_count
