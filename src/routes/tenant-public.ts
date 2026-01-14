@@ -58,6 +58,9 @@ function renderCommonHeader(tenantName: string, subdomain: string, activePage: s
                 <a href="/tenant/chat?subdomain=${subdomain}" class="commons-nav-link ${isActive('chat')}">
                     <i class="fas fa-comments mr-2"></i>チャット
                 </a>
+                <a href="/tenant/points?subdomain=${subdomain}" class="commons-nav-link ${isActive('points')}">
+                    <i class="fas fa-coins mr-2"></i>ポイント
+                </a>
                 <a href="/tenant/shop?subdomain=${subdomain}" class="commons-nav-link ${isActive('shop')}">
                     <i class="fas fa-shopping-bag mr-2"></i>ショップ
                 </a>
@@ -124,6 +127,10 @@ function renderCommonHeader(tenantName: string, subdomain: string, activePage: s
             <a href="/tenant/chat?subdomain=${subdomain}" class="commons-mobile-nav-link ${isActive('chat')}">
                 <i class="fas fa-comments"></i>
                 <span>チャット</span>
+            </a>
+            <a href="/tenant/points?subdomain=${subdomain}" class="commons-mobile-nav-link ${isActive('points')}">
+                <i class="fas fa-coins"></i>
+                <span>ポイント</span>
             </a>
             <a href="/tenant/shop?subdomain=${subdomain}" class="commons-mobile-nav-link ${isActive('shop')}">
                 <i class="fas fa-shopping-bag"></i>
@@ -9484,6 +9491,375 @@ tenantPublic.get('/events', async (c) => {
 
     <!-- フッター -->
     ${renderCommonFooter(tenantName, subdomain)}
+</body>
+</html>
+  `)
+})
+
+// ============================================
+// ポイントページ（マイポイント）
+// ============================================
+tenantPublic.get('/points', async (c) => {
+  const subdomain = c.req.query('subdomain')
+  if (!subdomain) {
+    return c.text('サブドメインが指定されていません', 400)
+  }
+
+  const { DB } = c.env
+  
+  // テナント情報を取得
+  const tenant = await DB.prepare(`
+    SELECT id, name, subdomain FROM tenants WHERE subdomain = ? AND status = 'active'
+  `).bind(subdomain).first() as any
+  
+  if (!tenant) {
+    return c.text('テナントが見つかりません', 404)
+  }
+
+  return c.html(`
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>マイポイント - ${tenant.name}</title>
+    ${renderCommonScripts()}
+</head>
+<body class="bg-gray-50">
+    ${renderCommonHeader(tenant.name, subdomain, 'points')}
+
+    <main class="container-custom py-8">
+        <!-- ログイン促進 -->
+        <div id="loginPrompt" class="hidden bg-white rounded-lg shadow-md p-8 text-center">
+            <i class="fas fa-lock text-6xl text-gray-300 mb-4"></i>
+            <h2 class="text-2xl font-bold mb-4">ポイント機能のご利用にはログインが必要です</h2>
+            <a href="/tenant/login?subdomain=${subdomain}&redirect=/tenant/points?subdomain=${subdomain}" class="btn-primary inline-block">
+                <i class="fas fa-sign-in-alt mr-2"></i>ログイン
+            </a>
+        </div>
+
+        <!-- メインコンテンツ -->
+        <div id="mainContent" class="hidden">
+            <!-- ポイント残高 -->
+            <div class="bg-gradient-to-r from-blue-500 to-blue-600 text-white rounded-lg shadow-lg p-8 mb-8">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm opacity-90 mb-2">現在の保有ポイント</p>
+                        <p class="text-5xl font-bold"><span id="currentBalance">0</span>P</p>
+                    </div>
+                    <i class="fas fa-coins text-6xl opacity-30"></i>
+                </div>
+                <div class="mt-6 flex gap-4 text-sm">
+                    <div>
+                        <p class="opacity-75">累計獲得</p>
+                        <p class="font-bold text-lg"><span id="totalEarned">0</span>P</p>
+                    </div>
+                    <div>
+                        <p class="opacity-75">累計使用</p>
+                        <p class="font-bold text-lg"><span id="totalSpent">0</span>P</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- タブ -->
+            <div class="bg-white rounded-lg shadow-md mb-8">
+                <div class="border-b border-gray-200">
+                    <nav class="flex">
+                        <button onclick="showTab('rewards')" id="rewardsTab" class="flex-1 py-4 text-center font-semibold border-b-2 border-blue-500 text-blue-600">
+                            <i class="fas fa-gift mr-2"></i>報酬一覧
+                        </button>
+                        <button onclick="showTab('history')" id="historyTab" class="flex-1 py-4 text-center font-semibold border-b-2 border-transparent text-gray-500 hover:text-gray-700">
+                            <i class="fas fa-history mr-2"></i>獲得履歴
+                        </button>
+                        <button onclick="showTab('exchanges')" id="exchangesTab" class="flex-1 py-4 text-center font-semibold border-b-2 border-transparent text-gray-500 hover:text-gray-700">
+                            <i class="fas fa-exchange-alt mr-2"></i>交換履歴
+                        </button>
+                    </nav>
+                </div>
+
+                <!-- 報酬一覧タブ -->
+                <div id="rewardsContent" class="p-6">
+                    <div id="rewardsList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <p class="col-span-full text-center text-gray-500 py-8">読み込み中...</p>
+                    </div>
+                </div>
+
+                <!-- 獲得履歴タブ -->
+                <div id="historyContent" class="hidden p-6">
+                    <div id="historyList" class="space-y-3">
+                        <p class="text-center text-gray-500 py-8">読み込み中...</p>
+                    </div>
+                </div>
+
+                <!-- 交換履歴タブ -->
+                <div id="exchangesContent" class="hidden p-6">
+                    <div id="exchangesList" class="space-y-3">
+                        <p class="text-center text-gray-500 py-8">読み込み中...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 交換確認モーダル -->
+    <div id="exchangeModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-lg shadow-2xl max-w-md w-full p-6">
+            <h2 class="text-2xl font-bold mb-4">報酬と交換しますか？</h2>
+            <div class="bg-gray-50 border border-gray-200 rounded-lg p-4 mb-6">
+                <p class="font-bold text-gray-900 text-lg" id="exchangeRewardName"></p>
+                <p class="text-sm text-gray-600 mt-1" id="exchangeRewardDescription"></p>
+                <p class="text-2xl font-bold text-blue-600 mt-3">
+                    <span id="exchangeRewardPoints"></span>P
+                </p>
+            </div>
+            <p class="text-sm text-gray-600 mb-6">
+                この報酬と交換すると、ポイントが消費されます。交換後は管理者の承認をお待ちください。
+            </p>
+            <div class="flex gap-3">
+                <button onclick="closeExchangeModal()" class="flex-1 btn-ghost">
+                    キャンセル
+                </button>
+                <button onclick="confirmExchange()" class="flex-1 btn-primary">
+                    <i class="fas fa-check mr-2"></i>交換する
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/app.js"></script>
+    <script>
+        const subdomain = '${subdomain}'
+        let currentRewardId = null
+
+        // タブ切り替え
+        function showTab(tab) {
+            ['rewards', 'history', 'exchanges'].forEach(t => {
+                document.getElementById(t + 'Tab').className = 'flex-1 py-4 text-center font-semibold border-b-2 border-transparent text-gray-500 hover:text-gray-700'
+                document.getElementById(t + 'Content').classList.add('hidden')
+            })
+            document.getElementById(tab + 'Tab').className = 'flex-1 py-4 text-center font-semibold border-b-2 border-blue-500 text-blue-600'
+            document.getElementById(tab + 'Content').classList.remove('hidden')
+        }
+
+        // 認証チェック
+        function checkAuth() {
+            const token = localStorage.getItem('token')
+            if (!token) {
+                document.getElementById('loginPrompt').classList.remove('hidden')
+                document.getElementById('mainContent').classList.add('hidden')
+                return false
+            }
+            document.getElementById('loginPrompt').classList.add('hidden')
+            document.getElementById('mainContent').classList.remove('hidden')
+            return true
+        }
+
+        // ポイント残高取得
+        async function loadBalance() {
+            const token = localStorage.getItem('token')
+            try {
+                const response = await axios.get('/api/points/balance', {
+                    headers: { 'Authorization': \`Bearer \${token}\` }
+                })
+                if (response.data.success) {
+                    const balance = response.data.balance
+                    document.getElementById('currentBalance').textContent = balance.balance || 0
+                    document.getElementById('totalEarned').textContent = balance.total_earned || 0
+                    document.getElementById('totalSpent').textContent = balance.total_spent || 0
+                }
+            } catch (error) {
+                console.error('Failed to load balance:', error)
+            }
+        }
+
+        // 報酬一覧取得
+        async function loadRewards() {
+            const token = localStorage.getItem('token')
+            try {
+                const response = await axios.get('/api/points/rewards', {
+                    headers: { 'Authorization': \`Bearer \${token}\` }
+                })
+                if (response.data.success) {
+                    renderRewards(response.data.rewards)
+                }
+            } catch (error) {
+                console.error('Failed to load rewards:', error)
+            }
+        }
+
+        function renderRewards(rewards) {
+            const list = document.getElementById('rewardsList')
+            if (rewards.length === 0) {
+                list.innerHTML = '<p class="col-span-full text-center text-gray-500 py-8">報酬がまだ登録されていません</p>'
+                return
+            }
+
+            list.innerHTML = rewards.map(reward => \`
+                <div class="bg-white border border-gray-200 rounded-lg overflow-hidden hover:shadow-lg transition">
+                    \${reward.image_url ? \`<img src="\${reward.image_url}" alt="\${reward.name}" class="w-full h-48 object-cover">\` : ''}
+                    <div class="p-4">
+                        <h3 class="font-bold text-lg mb-2">\${reward.name}</h3>
+                        <p class="text-sm text-gray-600 mb-3">\${reward.description || ''}</p>
+                        <div class="flex items-center justify-between">
+                            <p class="text-2xl font-bold text-blue-600">\${reward.points_required}P</p>
+                            \${reward.stock === 0 ? 
+                                '<span class="text-red-500 text-sm font-semibold">在庫なし</span>' : 
+                                \`<button onclick="openExchangeModal(\${reward.id}, '\${reward.name}', '\${reward.description || ''}', \${reward.points_required})" class="btn-primary text-sm">
+                                    <i class="fas fa-exchange-alt mr-1"></i>交換
+                                </button>\`
+                            }
+                        </div>
+                        \${reward.stock > 0 && reward.stock !== -1 ? \`<p class="text-xs text-gray-500 mt-2">在庫: \${reward.stock}個</p>\` : ''}
+                    </div>
+                </div>
+            \`).join('')
+        }
+
+        // 獲得履歴取得
+        async function loadHistory() {
+            const token = localStorage.getItem('token')
+            try {
+                const response = await axios.get('/api/points/transactions', {
+                    headers: { 'Authorization': \`Bearer \${token}\` }
+                })
+                if (response.data.success) {
+                    renderHistory(response.data.transactions)
+                }
+            } catch (error) {
+                console.error('Failed to load history:', error)
+            }
+        }
+
+        function renderHistory(transactions) {
+            const list = document.getElementById('historyList')
+            if (transactions.length === 0) {
+                list.innerHTML = '<p class="text-center text-gray-500 py-8">履歴がありません</p>'
+                return
+            }
+
+            list.innerHTML = transactions.map(tx => \`
+                <div class="flex items-center justify-between p-4 bg-white border border-gray-200 rounded-lg">
+                    <div class="flex-1">
+                        <p class="font-semibold">\${getReasonLabel(tx.reason)}</p>
+                        <p class="text-xs text-gray-500">\${new Date(tx.created_at).toLocaleString('ja-JP')}</p>
+                        \${tx.note ? \`<p class="text-xs text-gray-600 mt-1">\${tx.note}</p>\` : ''}
+                    </div>
+                    <div class="text-right">
+                        <p class="\${tx.action_type === 'earn' ? 'text-green-600' : 'text-red-600'} font-bold text-lg">
+                            \${tx.action_type === 'earn' ? '+' : '-'}\${tx.points}P
+                        </p>
+                        <p class="text-xs text-gray-500">残高: \${tx.balance_after}P</p>
+                    </div>
+                </div>
+            \`).join('')
+        }
+
+        function getReasonLabel(reason) {
+            const labels = {
+                'post_create': '投稿作成',
+                'comment_create': 'コメント投稿',
+                'site_visit': 'サイト訪問',
+                'admin_grant': '管理者付与',
+                'reward_exchange': '報酬交換',
+                'exchange_rejected': '交換却下（返却）'
+            }
+            return labels[reason] || reason
+        }
+
+        // 交換履歴取得
+        async function loadExchanges() {
+            const token = localStorage.getItem('token')
+            try {
+                const response = await axios.get('/api/points/exchanges', {
+                    headers: { 'Authorization': \`Bearer \${token}\` }
+                })
+                if (response.data.success) {
+                    renderExchanges(response.data.exchanges)
+                }
+            } catch (error) {
+                console.error('Failed to load exchanges:', error)
+            }
+        }
+
+        function renderExchanges(exchanges) {
+            const list = document.getElementById('exchangesList')
+            if (exchanges.length === 0) {
+                list.innerHTML = '<p class="text-center text-gray-500 py-8">交換履歴がありません</p>'
+                return
+            }
+
+            list.innerHTML = exchanges.map(ex => \`
+                <div class="p-4 bg-white border border-gray-200 rounded-lg">
+                    <div class="flex items-start justify-between mb-2">
+                        <div class="flex-1">
+                            <p class="font-bold">\${ex.reward_name}</p>
+                            <p class="text-sm text-gray-600 mt-1">\${ex.reward_description || ''}</p>
+                        </div>
+                        <span class="px-3 py-1 rounded-full text-xs font-semibold \${
+                            ex.status === 'approved' ? 'bg-green-100 text-green-800' :
+                            ex.status === 'rejected' ? 'bg-red-100 text-red-800' :
+                            'bg-yellow-100 text-yellow-800'
+                        }">
+                            \${ex.status === 'approved' ? '承認済み' : ex.status === 'rejected' ? '却下' : '承認待ち'}
+                        </span>
+                    </div>
+                    <div class="flex items-center justify-between text-sm">
+                        <p class="text-gray-500">\${new Date(ex.created_at).toLocaleString('ja-JP')}</p>
+                        <p class="font-bold text-blue-600">\${ex.points_spent}P</p>
+                    </div>
+                    \${ex.admin_note ? \`<p class="mt-2 text-xs text-gray-600 bg-gray-50 p-2 rounded">メモ: \${ex.admin_note}</p>\` : ''}
+                </div>
+            \`).join('')
+        }
+
+        // 交換モーダル
+        function openExchangeModal(rewardId, name, description, points) {
+            currentRewardId = rewardId
+            document.getElementById('exchangeRewardName').textContent = name
+            document.getElementById('exchangeRewardDescription').textContent = description
+            document.getElementById('exchangeRewardPoints').textContent = points
+            document.getElementById('exchangeModal').classList.remove('hidden')
+        }
+
+        function closeExchangeModal() {
+            document.getElementById('exchangeModal').classList.add('hidden')
+            currentRewardId = null
+        }
+
+        async function confirmExchange() {
+            if (!currentRewardId) return
+
+            const token = localStorage.getItem('token')
+            try {
+                const response = await axios.post(\`/api/points/rewards/\${currentRewardId}/exchange\`, {}, {
+                    headers: { 'Authorization': \`Bearer \${token}\` }
+                })
+                if (response.data.success) {
+                    showToast(response.data.message, 'success')
+                    closeExchangeModal()
+                    loadBalance()
+                    loadRewards()
+                    loadExchanges()
+                } else {
+                    showToast(response.data.error || '交換に失敗しました', 'error')
+                }
+            } catch (error) {
+                console.error('Failed to exchange:', error)
+                showToast(error.response?.data?.error || '交換に失敗しました', 'error')
+            }
+        }
+
+        // 初期化
+        if (checkAuth()) {
+            initializeCommonHeader()
+            loadBalance()
+            loadRewards()
+            loadHistory()
+            loadExchanges()
+        }
+    </script>
+
+    ${renderCommonFooter(tenant.name, subdomain)}
 </body>
 </html>
   `)
