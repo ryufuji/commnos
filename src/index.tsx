@@ -1783,6 +1783,14 @@ app.get('/dashboard', (c) => {
                             <p class="text-sm text-secondary-600">特定商取引法・商品管理・注文管理</p>
                         </a>
 
+                        <a href="/tenant-customization" class="card-interactive p-6 text-center">
+                            <div class="text-4xl mb-3" style="color: var(--commons-primary);">
+                                <i class="fas fa-palette"></i>
+                            </div>
+                            <h3 class="font-bold text-gray-900 mb-2">デザインカスタマイズ</h3>
+                            <p class="text-sm text-secondary-600">ロゴ・ファビコンの設定</p>
+                        </a>
+
                         <a href="/profile" class="card-interactive p-6 text-center">
                             <div class="text-4xl mb-3 text-info-500">
                                 <i class="fas fa-user-edit"></i>
@@ -7761,6 +7769,413 @@ app.get('/tenant/points', (c) => {
                 loadBalance()
                 loadTransactions()
             })
+        </script>
+    </body>
+    </html>
+  `)
+})
+
+// ============================================
+// テナントカスタマイズページ (/tenant-customization)
+// ============================================
+app.get('/tenant-customization', (c) => {
+  return c.html(`
+    <!DOCTYPE html>
+    <html lang="ja" data-theme="light">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>デザインカスタマイズ - Commons</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <script src="/static/tailwind-config.js"></script>
+        <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+        <link href="/static/commons-theme.css" rel="stylesheet">
+        <link href="/static/commons-components.css" rel="stylesheet">
+    </head>
+    <body class="bg-gray-50">
+        <div class="min-h-screen flex flex-col">
+            <!-- Header -->
+            <header class="bg-white border-b border-gray-200">
+                <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
+                    <div class="flex items-center justify-between">
+                        <a href="/dashboard" class="text-gray-600 hover:text-gray-900 transition">
+                            <i class="fas fa-arrow-left mr-2"></i>
+                            ダッシュボードに戻る
+                        </a>
+                        <h1 class="text-2xl font-bold text-gray-900">
+                            <i class="fas fa-palette mr-2 text-primary-600"></i>
+                            デザインカスタマイズ
+                        </h1>
+                        <div></div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Main Content -->
+            <main class="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-8">
+                <!-- 説明カード -->
+                <div class="card p-6 mb-6 bg-primary-50 border-primary-200">
+                    <div class="flex items-start">
+                        <i class="fas fa-info-circle text-primary-600 text-xl mr-3 mt-1"></i>
+                        <div>
+                            <h3 class="font-semibold text-gray-900 mb-2">デザインカスタマイズについて</h3>
+                            <p class="text-sm text-gray-700 mb-2">
+                                テナントの独自性を高めるため、ロゴとファビコンをカスタマイズできます。
+                            </p>
+                            <ul class="text-sm text-gray-700 list-disc list-inside space-y-1">
+                                <li><strong>ロゴ</strong>：ヘッダーに表示されるブランドロゴ（推奨サイズ: 横200px × 縦50px）</li>
+                                <li><strong>ファビコン</strong>：ブラウザタブに表示されるアイコン（推奨サイズ: 32px × 32px）</li>
+                                <li>変更は即座にテナントページに反映されます</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ロゴ設定 -->
+                <div class="card p-6 mb-6">
+                    <h2 class="text-xl font-bold text-gray-900 mb-4">
+                        <i class="fas fa-image mr-2 text-primary-600"></i>
+                        ロゴ画像
+                    </h2>
+                    
+                    <div class="space-y-4">
+                        <!-- 現在のロゴ表示 -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">現在のロゴ</label>
+                            <div id="currentLogoPreview" class="border-2 border-dashed border-gray-300 rounded-lg p-6 bg-gray-50 flex items-center justify-center" style="min-height: 120px;">
+                                <div class="text-center text-gray-400">
+                                    <i class="fas fa-image text-4xl mb-2"></i>
+                                    <p class="text-sm">ロゴが設定されていません</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- ロゴアップロード -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">新しいロゴをアップロード</label>
+                            <div class="flex items-center space-x-3">
+                                <label class="flex-1 cursor-pointer">
+                                    <div class="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-primary-500 transition">
+                                        <i class="fas fa-cloud-upload-alt text-3xl text-gray-400 mb-2"></i>
+                                        <p class="text-sm text-gray-600">クリックして画像を選択</p>
+                                        <p class="text-xs text-gray-500 mt-1">JPEG、PNG、GIF、WebP、SVG（最大2MB）</p>
+                                    </div>
+                                    <input type="file" id="logoUpload" class="hidden" accept="image/jpeg,image/png,image/gif,image/webp,image/svg+xml">
+                                </label>
+                            </div>
+                            <button id="uploadLogoBtn" class="btn-primary mt-3 hidden">
+                                <i class="fas fa-upload mr-2"></i>
+                                ロゴをアップロード
+                            </button>
+                            <button id="removeLogoBtn" class="btn-secondary mt-3 hidden">
+                                <i class="fas fa-times mr-2"></i>
+                                ロゴを削除
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ファビコン設定 -->
+                <div class="card p-6">
+                    <h2 class="text-xl font-bold text-gray-900 mb-4">
+                        <i class="fas fa-star mr-2 text-primary-600"></i>
+                        ファビコン
+                    </h2>
+                    
+                    <div class="space-y-4">
+                        <!-- 現在のファビコン表示 -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">現在のファビコン</label>
+                            <div id="currentFaviconPreview" class="border-2 border-dashed border-gray-300 rounded-lg p-6 bg-gray-50 flex items-center justify-center" style="width: 120px; height: 120px;">
+                                <div class="text-center text-gray-400">
+                                    <i class="fas fa-star text-3xl"></i>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- ファビコンアップロード -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">新しいファビコンをアップロード</label>
+                            <div class="flex items-center space-x-3">
+                                <label class="flex-1 cursor-pointer">
+                                    <div class="border-2 border-dashed border-gray-300 rounded-lg p-4 text-center hover:border-primary-500 transition">
+                                        <i class="fas fa-cloud-upload-alt text-3xl text-gray-400 mb-2"></i>
+                                        <p class="text-sm text-gray-600">クリックして画像を選択</p>
+                                        <p class="text-xs text-gray-500 mt-1">ICO、PNG、SVG（最大1MB、推奨32×32px）</p>
+                                    </div>
+                                    <input type="file" id="faviconUpload" class="hidden" accept="image/x-icon,image/vnd.microsoft.icon,image/png,image/svg+xml">
+                                </label>
+                            </div>
+                            <button id="uploadFaviconBtn" class="btn-primary mt-3 hidden">
+                                <i class="fas fa-upload mr-2"></i>
+                                ファビコンをアップロード
+                            </button>
+                            <button id="removeFaviconBtn" class="btn-secondary mt-3 hidden">
+                                <i class="fas fa-times mr-2"></i>
+                                ファビコンを削除
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+
+        <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+        <script src="/static/app.js"></script>
+        <script>
+            let currentCustomization = null
+            let selectedLogoFile = null
+            let selectedFaviconFile = null
+
+            // 認証チェック
+            function checkAuth() {
+                const token = localStorage.getItem('token')
+                const user = JSON.parse(localStorage.getItem('user') || 'null')
+                
+                if (!token || !user) {
+                    window.location.href = '/login'
+                    return false
+                }
+                
+                // 管理者権限チェック
+                if (user.role !== 'owner' && user.role !== 'admin') {
+                    showToast('管理者権限が必要です', 'error')
+                    setTimeout(() => {
+                        window.location.href = '/dashboard'
+                    }, 2000)
+                    return false
+                }
+                
+                return true
+            }
+
+            // カスタマイズ設定を読み込み
+            async function loadCustomization() {
+                const token = localStorage.getItem('token')
+                const user = JSON.parse(localStorage.getItem('user') || '{}')
+                const subdomain = user.subdomain || 'test'
+
+                try {
+                    const response = await axios.get(\`/api/tenant-customization?subdomain=\${subdomain}\`)
+                    
+                    if (response.data.success) {
+                        currentCustomization = response.data.customization
+                        displayCustomization()
+                    }
+                } catch (error) {
+                    console.error('Load customization error:', error)
+                    showToast('設定の読み込みに失敗しました', 'error')
+                }
+            }
+
+            // カスタマイズ設定を表示
+            function displayCustomization() {
+                if (!currentCustomization) return
+
+                // ロゴ表示
+                const logoPreview = document.getElementById('currentLogoPreview')
+                if (currentCustomization.logo_url) {
+                    logoPreview.innerHTML = \`
+                        <img src="\${currentCustomization.logo_url}" 
+                             alt="Current Logo" 
+                             class="max-h-28 max-w-full object-contain">
+                    \`
+                    document.getElementById('removeLogoBtn').classList.remove('hidden')
+                } else {
+                    logoPreview.innerHTML = \`
+                        <div class="text-center text-gray-400">
+                            <i class="fas fa-image text-4xl mb-2"></i>
+                            <p class="text-sm">ロゴが設定されていません</p>
+                        </div>
+                    \`
+                    document.getElementById('removeLogoBtn').classList.add('hidden')
+                }
+
+                // ファビコン表示
+                const faviconPreview = document.getElementById('currentFaviconPreview')
+                if (currentCustomization.favicon_url) {
+                    faviconPreview.innerHTML = \`
+                        <img src="\${currentCustomization.favicon_url}" 
+                             alt="Current Favicon" 
+                             class="w-16 h-16 object-contain">
+                    \`
+                    document.getElementById('removeFaviconBtn').classList.remove('hidden')
+                } else {
+                    faviconPreview.innerHTML = \`
+                        <div class="text-center text-gray-400">
+                            <i class="fas fa-star text-3xl"></i>
+                        </div>
+                    \`
+                    document.getElementById('removeFaviconBtn').classList.add('hidden')
+                }
+            }
+
+            // ロゴファイル選択
+            document.getElementById('logoUpload').addEventListener('change', (e) => {
+                selectedLogoFile = e.target.files[0]
+                if (selectedLogoFile) {
+                    // プレビュー表示
+                    const reader = new FileReader()
+                    reader.onload = (event) => {
+                        document.getElementById('currentLogoPreview').innerHTML = \`
+                            <img src="\${event.target.result}" 
+                                 alt="Logo Preview" 
+                                 class="max-h-28 max-w-full object-contain">
+                        \`
+                    }
+                    reader.readAsDataURL(selectedLogoFile)
+                    document.getElementById('uploadLogoBtn').classList.remove('hidden')
+                }
+            })
+
+            // ファビコンファイル選択
+            document.getElementById('faviconUpload').addEventListener('change', (e) => {
+                selectedFaviconFile = e.target.files[0]
+                if (selectedFaviconFile) {
+                    // プレビュー表示
+                    const reader = new FileReader()
+                    reader.onload = (event) => {
+                        document.getElementById('currentFaviconPreview').innerHTML = \`
+                            <img src="\${event.target.result}" 
+                                 alt="Favicon Preview" 
+                                 class="w-16 h-16 object-contain">
+                        \`
+                    }
+                    reader.readAsDataURL(selectedFaviconFile)
+                    document.getElementById('uploadFaviconBtn').classList.remove('hidden')
+                }
+            })
+
+            // ロゴをアップロード
+            document.getElementById('uploadLogoBtn').addEventListener('click', async () => {
+                if (!selectedLogoFile) return
+
+                const token = localStorage.getItem('token')
+                const formData = new FormData()
+                formData.append('logo', selectedLogoFile)
+
+                try {
+                    showToast('ロゴをアップロード中...', 'info')
+                    
+                    const uploadResponse = await axios.post('/api/tenant-customization/upload-logo', formData, {
+                        headers: {
+                            'Authorization': \`Bearer \${token}\`,
+                            'Content-Type': 'multipart/form-data'
+                        }
+                    })
+
+                    if (uploadResponse.data.success) {
+                        // 設定を更新
+                        const updateResponse = await axios.put('/api/tenant-customization', {
+                            logo_url: uploadResponse.data.logo_url
+                        }, {
+                            headers: { 'Authorization': \`Bearer \${token}\` }
+                        })
+
+                        if (updateResponse.data.success) {
+                            showToast('ロゴを更新しました', 'success')
+                            selectedLogoFile = null
+                            document.getElementById('logoUpload').value = ''
+                            document.getElementById('uploadLogoBtn').classList.add('hidden')
+                            loadCustomization()
+                        }
+                    }
+                } catch (error) {
+                    console.error('Upload logo error:', error)
+                    showToast(error.response?.data?.error || 'ロゴのアップロードに失敗しました', 'error')
+                }
+            })
+
+            // ファビコンをアップロード
+            document.getElementById('uploadFaviconBtn').addEventListener('click', async () => {
+                if (!selectedFaviconFile) return
+
+                const token = localStorage.getItem('token')
+                const formData = new FormData()
+                formData.append('favicon', selectedFaviconFile)
+
+                try {
+                    showToast('ファビコンをアップロード中...', 'info')
+                    
+                    const uploadResponse = await axios.post('/api/tenant-customization/upload-favicon', formData, {
+                        headers: {
+                            'Authorization': \`Bearer \${token}\`,
+                            'Content-Type': 'multipart/form-data'
+                        }
+                    })
+
+                    if (uploadResponse.data.success) {
+                        // 設定を更新
+                        const updateResponse = await axios.put('/api/tenant-customization', {
+                            favicon_url: uploadResponse.data.favicon_url
+                        }, {
+                            headers: { 'Authorization': \`Bearer \${token}\` }
+                        })
+
+                        if (updateResponse.data.success) {
+                            showToast('ファビコンを更新しました', 'success')
+                            selectedFaviconFile = null
+                            document.getElementById('faviconUpload').value = ''
+                            document.getElementById('uploadFaviconBtn').classList.add('hidden')
+                            loadCustomization()
+                        }
+                    }
+                } catch (error) {
+                    console.error('Upload favicon error:', error)
+                    showToast(error.response?.data?.error || 'ファビコンのアップロードに失敗しました', 'error')
+                }
+            })
+
+            // ロゴを削除
+            document.getElementById('removeLogoBtn').addEventListener('click', async () => {
+                if (!confirm('ロゴを削除しますか？')) return
+
+                const token = localStorage.getItem('token')
+                
+                try {
+                    const response = await axios.put('/api/tenant-customization', {
+                        logo_url: null
+                    }, {
+                        headers: { 'Authorization': \`Bearer \${token}\` }
+                    })
+
+                    if (response.data.success) {
+                        showToast('ロゴを削除しました', 'success')
+                        loadCustomization()
+                    }
+                } catch (error) {
+                    console.error('Remove logo error:', error)
+                    showToast('ロゴの削除に失敗しました', 'error')
+                }
+            })
+
+            // ファビコンを削除
+            document.getElementById('removeFaviconBtn').addEventListener('click', async () => {
+                if (!confirm('ファビコンを削除しますか？')) return
+
+                const token = localStorage.getItem('token')
+                
+                try {
+                    const response = await axios.put('/api/tenant-customization', {
+                        favicon_url: null
+                    }, {
+                        headers: { 'Authorization': \`Bearer \${token}\` }
+                    })
+
+                    if (response.data.success) {
+                        showToast('ファビコンを削除しました', 'success')
+                        loadCustomization()
+                    }
+                } catch (error) {
+                    console.error('Remove favicon error:', error)
+                    showToast('ファビコンの削除に失敗しました', 'error')
+                }
+            })
+
+            // 初期化
+            if (checkAuth()) {
+                loadCustomization()
+            }
         </script>
     </body>
     </html>

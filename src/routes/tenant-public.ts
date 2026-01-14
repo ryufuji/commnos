@@ -26,6 +26,66 @@ function renderCommonScripts(): string {
 }
 
 /**
+ * テナントカスタマイズ適用スクリプトを生成
+ * @param subdomain - サブドメイン
+ */
+function renderCustomizationScript(subdomain: string): string {
+  return `
+    <script id="tenant-customization-loader">
+      (async function() {
+        try {
+          const response = await fetch('/api/tenant-customization?subdomain=${subdomain}')
+          const data = await response.json()
+          
+          if (data.success && data.customization) {
+            const custom = data.customization
+            
+            // data属性を設定（将来のCSS変数用）
+            document.documentElement.setAttribute('data-tenant', '${subdomain}')
+            
+            // ロゴの差し替え
+            if (custom.logo_url) {
+              const logos = document.querySelectorAll('.commons-logo')
+              logos.forEach(logo => {
+                const icon = logo.querySelector('i')
+                const span = logo.querySelector('span')
+                if (icon) {
+                  const img = document.createElement('img')
+                  img.src = custom.logo_url
+                  img.alt = 'Logo'
+                  img.style.height = '40px'
+                  img.style.width = 'auto'
+                  img.style.maxWidth = '200px'
+                  img.style.objectFit = 'contain'
+                  icon.replaceWith(img)
+                }
+                // テナント名のテキストを非表示にしてロゴのみ表示
+                if (span && custom.logo_url) {
+                  span.style.display = 'none'
+                }
+              })
+            }
+            
+            // ファビコンの設定
+            if (custom.favicon_url) {
+              let link = document.querySelector('link[rel="icon"]')
+              if (!link) {
+                link = document.createElement('link')
+                link.rel = 'icon'
+                document.head.appendChild(link)
+              }
+              link.href = custom.favicon_url
+            }
+          }
+        } catch (error) {
+          console.error('Failed to load tenant customization:', error)
+        }
+      })()
+    </script>
+  `
+}
+
+/**
  * 統一ヘッダーHTMLを生成
  * @param tenantName - テナント名
  * @param subdomain - サブドメイン
@@ -35,6 +95,7 @@ function renderCommonHeader(tenantName: string, subdomain: string, activePage: s
   const isActive = (page: string) => activePage === page ? 'active' : ''
   
   return `
+    ${renderCustomizationScript(subdomain)}
     <header class="commons-header">
         <div class="commons-header-inner">
             <a href="/tenant/home?subdomain=${subdomain}" class="commons-logo">
