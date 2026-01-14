@@ -41,6 +41,7 @@ import points from './routes/points' // ポイントシステム
 import shop from './routes/shop' // Phase 7 - ショップシステム
 import events from './routes/events' // イベント管理
 import tags from './routes/tags' // ユーザータグ機能
+import tenantCustomization from './routes/tenant-customization' // テナントカスタマイズ
 
 const app = new Hono<AppContext>()
 
@@ -132,6 +133,9 @@ app.route('/api/events', events)
 
 // ユーザータグルート
 app.route('/api/tags', tags)
+
+// テナントカスタマイズルート
+app.route('/api/tenant-customization', tenantCustomization)
 
 // --------------------------------------------
 // ルーティングロジック
