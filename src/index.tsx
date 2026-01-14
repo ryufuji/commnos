@@ -7929,11 +7929,13 @@ app.get('/tenant-customization', (c) => {
                         <!-- カバー画像 -->
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">カバー画像</label>
-                            <div id="currentCoverPreview" class="border-2 border-dashed border-gray-300 rounded-lg p-6 bg-gray-50 flex items-center justify-center" style="min-height: 200px;">
-                                <div class="text-center text-gray-400">
+                            <div id="currentCoverPreview" class="border-2 border-dashed border-gray-300 rounded-lg p-6 bg-gray-50 flex items-center justify-center relative overflow-hidden" style="min-height: 200px;">
+                                <div class="text-center text-gray-400 relative z-10">
                                     <i class="fas fa-image text-4xl mb-2"></i>
                                     <p class="text-sm">カバー画像が設定されていません</p>
                                 </div>
+                                <!-- オーバーレイプレビュー -->
+                                <div id="overlayPreview" class="absolute inset-0 bg-black pointer-events-none hidden" style="opacity: 0.5;"></div>
                             </div>
                         </div>
 
@@ -7965,7 +7967,16 @@ app.get('/tenant-customization', (c) => {
                                 オーバーレイ透明度: <span id="overlayValue">50</span>%
                             </label>
                             <input type="range" id="overlayOpacity" min="0" max="100" value="50" class="w-full">
-                            <p class="text-xs text-gray-500 mt-1">画像の上に重ねる暗い層の透明度（0%=透明、100%=完全に暗い）</p>
+                            <p class="text-xs text-gray-500 mt-1">
+                                画像の上に重ねる暗い層の透明度<br>
+                                0% = 透明（画像がそのまま見える）<br>
+                                100% = 完全に暗い（画像がほとんど見えない）<br>
+                                <strong>スライダーを動かすと上のプレビューで確認できます</strong>
+                            </p>
+                            <button id="saveOverlayBtn" class="btn-secondary mt-3">
+                                <i class="fas fa-save mr-2"></i>
+                                透明度を保存
+                            </button>
                         </div>
 
                         <!-- ウェルカムメッセージ -->
@@ -8080,19 +8091,27 @@ app.get('/tenant-customization', (c) => {
 
                 // カバー画像表示
                 const coverPreview = document.getElementById('currentCoverPreview')
+                const overlayPreview = document.getElementById('overlayPreview')
+                
                 if (currentCustomization.cover_image_url) {
                     coverPreview.innerHTML = \`
                         <img src="\${currentCustomization.cover_image_url}" 
                              alt="Current Cover" 
-                             class="w-full h-48 object-cover rounded">
+                             class="absolute inset-0 w-full h-full object-cover">
+                        <div class="absolute inset-0 bg-black pointer-events-none" id="overlayPreview" style="opacity: \${currentCustomization.cover_overlay_opacity || 0.5};"></div>
+                        <div class="relative z-10 text-white text-center">
+                            <i class="fas fa-check-circle text-4xl mb-2"></i>
+                            <p class="text-sm">カバー画像設定済み</p>
+                        </div>
                     \`
                     document.getElementById('removeCoverBtn').classList.remove('hidden')
                 } else {
                     coverPreview.innerHTML = \`
-                        <div class="text-center text-gray-400">
+                        <div class="text-center text-gray-400 relative z-10">
                             <i class="fas fa-image text-4xl mb-2"></i>
                             <p class="text-sm">カバー画像が設定されていません</p>
                         </div>
+                        <div class="absolute inset-0 bg-black pointer-events-none hidden" id="overlayPreview" style="opacity: 0.5;"></div>
                     \`
                     document.getElementById('removeCoverBtn').classList.add('hidden')
                 }
@@ -8101,6 +8120,12 @@ app.get('/tenant-customization', (c) => {
                 const opacity = (currentCustomization.cover_overlay_opacity || 0.5) * 100
                 document.getElementById('overlayOpacity').value = opacity
                 document.getElementById('overlayValue').textContent = Math.round(opacity)
+                
+                // オーバーレイプレビューの初期値を設定
+                const overlayEl = document.getElementById('overlayPreview')
+                if (overlayEl) {
+                    overlayEl.style.opacity = currentCustomization.cover_overlay_opacity || 0.5
+                }
 
                 // ヒーローメッセージ
                 document.getElementById('heroTitle').value = currentCustomization.welcome_title || ''
@@ -8150,10 +8175,16 @@ app.get('/tenant-customization', (c) => {
                     // プレビュー表示
                     const reader = new FileReader()
                     reader.onload = (event) => {
+                        const currentOpacity = document.getElementById('overlayOpacity').value / 100
                         document.getElementById('currentCoverPreview').innerHTML = \`
                             <img src="\${event.target.result}" 
                                  alt="Cover Preview" 
-                                 class="w-full h-48 object-cover rounded">
+                                 class="absolute inset-0 w-full h-full object-cover">
+                            <div class="absolute inset-0 bg-black pointer-events-none" id="overlayPreview" style="opacity: \${currentOpacity};"></div>
+                            <div class="relative z-10 text-white text-center">
+                                <i class="fas fa-eye text-4xl mb-2"></i>
+                                <p class="text-sm">プレビュー（アップロード前）</p>
+                            </div>
                         \`
                     }
                     reader.readAsDataURL(selectedCoverFile)
@@ -8351,7 +8382,15 @@ app.get('/tenant-customization', (c) => {
 
             // オーバーレイ透明度スライダーの値更新
             document.getElementById('overlayOpacity').addEventListener('input', (e) => {
-                document.getElementById('overlayValue').textContent = e.target.value
+                const value = e.target.value
+                document.getElementById('overlayValue').textContent = value
+                
+                // リアルタイムプレビュー更新
+                const overlayEl = document.getElementById('overlayPreview')
+                if (overlayEl) {
+                    overlayEl.style.opacity = value / 100
+                    overlayEl.classList.remove('hidden')
+                }
             })
 
             // オーバーレイ透明度を保存
