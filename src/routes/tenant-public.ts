@@ -130,7 +130,7 @@ function renderCommonHeader(tenantName: string, subdomain: string, activePage: s
             <div class="commons-header-actions">
                 <div class="relative" id="notificationMenuContainer">
                     <button id="notificationBtn" class="relative p-2 hover:bg-gray-100 rounded-full transition">
-                        <i class="fas fa-bell text-xl" style="color: var(--commons-text-secondary);"></i>
+                        <i class="fas fa-bell text-xl" style="color: #6B7280;"></i>
                         <span id="notificationBadge" class="hidden absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold w-5 h-5 rounded-full flex items-center justify-center"></span>
                     </button>
                     <div id="notificationDropdown" class="hidden absolute right-0 mt-2 w-96 bg-white rounded-lg shadow-xl border border-gray-100 z-50" style="max-height: 500px; overflow-y: auto;">
