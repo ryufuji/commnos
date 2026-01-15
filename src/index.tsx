@@ -1743,6 +1743,14 @@ app.get('/dashboard', (c) => {
                             <p class="text-sm text-secondary-600">投稿の作成・編集・削除</p>
                         </a>
 
+                        <a href="/events-admin" class="card-interactive p-6 text-center">
+                            <div class="text-4xl mb-3 text-blue-500">
+                                <i class="fas fa-calendar-alt"></i>
+                            </div>
+                            <h3 class="font-bold text-gray-900 mb-2">イベント管理</h3>
+                            <p class="text-sm text-secondary-600">イベントの作成・編集・削除</p>
+                        </a>
+
                         <a href="/surveys" class="card-interactive p-6 text-center">
                             <div class="text-4xl mb-3 text-accent-500">
                                 <i class="fas fa-poll"></i>
@@ -2931,6 +2939,217 @@ app.get('/posts-admin', (c) => {
         <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
         <script src="/static/app.js"></script>
         <script src="/static/posts-admin.js"></script>
+    </body>
+    </html>
+  `)
+})
+
+// --------------------------------------------
+// イベント管理ページ（管理者専用）
+// --------------------------------------------
+
+app.get('/events-admin', (c) => {
+  return c.html(`
+    <!DOCTYPE html>
+    <html lang="ja" data-theme="light">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>イベント管理 - Commons</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <script src="/static/tailwind-config.js"></script>
+        <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+        <link href="/static/commons-theme.css" rel="stylesheet">
+        <link href="/static/commons-components.css" rel="stylesheet">
+    </head>
+    <body class="bg-gray-50">
+        <!-- ヘッダー -->
+        <header class="bg-white shadow-sm sticky top-0 z-50">
+            <div class="container mx-auto px-4 py-4">
+                <div class="flex items-center justify-between">
+                    <h1 class="text-2xl font-bold text-gray-900">
+                        <i class="fas fa-calendar-alt mr-2 text-blue-600"></i>
+                        イベント管理
+                    </h1>
+                    <div class="flex gap-2">
+                        <button onclick="openCreateModal()" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition">
+                            <i class="fas fa-plus mr-2"></i>イベント作成
+                        </button>
+                        <a href="/dashboard" class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition">
+                            <i class="fas fa-arrow-left mr-2"></i>ダッシュボード
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- メインコンテンツ -->
+        <main class="container mx-auto px-4 py-8">
+            <!-- イベント一覧 -->
+            <div id="eventsList" class="space-y-4">
+                <div class="text-center py-12">
+                    <i class="fas fa-spinner fa-spin text-4xl text-gray-400 mb-4"></i>
+                    <p class="text-gray-600">読み込み中...</p>
+                </div>
+            </div>
+        </main>
+
+        <!-- イベント作成/編集モーダル -->
+        <div id="eventModal" class="hidden fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div class="bg-white rounded-lg shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto my-8">
+                <div class="p-6 border-b border-gray-200">
+                    <div class="flex justify-between items-center">
+                        <h2 id="modalTitle" class="text-2xl font-bold text-gray-900">
+                            <i class="fas fa-calendar-plus mr-2 text-blue-600"></i>
+                            イベント作成
+                        </h2>
+                        <button onclick="closeEventModal()" class="text-gray-500 hover:text-gray-700">
+                            <i class="fas fa-times text-xl"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <form id="eventForm" class="p-6 space-y-6">
+                    <input type="hidden" id="eventId">
+                    
+                    <!-- タイトル -->
+                    <div>
+                        <label for="title" class="block text-sm font-medium text-gray-700 mb-2">
+                            イベント名 <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" id="title" required maxlength="200"
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                            placeholder="例: 新年会2026">
+                    </div>
+
+                    <!-- 説明 -->
+                    <div>
+                        <label for="description" class="block text-sm font-medium text-gray-700 mb-2">
+                            説明
+                        </label>
+                        <textarea id="description" rows="5" maxlength="5000"
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                            placeholder="イベントの詳細を入力してください"></textarea>
+                    </div>
+
+                    <!-- 日時 -->
+                    <div class="grid md:grid-cols-2 gap-4">
+                        <div>
+                            <label for="startDate" class="block text-sm font-medium text-gray-700 mb-2">
+                                開始日 <span class="text-red-500">*</span>
+                            </label>
+                            <input type="date" id="startDate" required
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label for="startTime" class="block text-sm font-medium text-gray-700 mb-2">
+                                開始時刻 <span class="text-red-500">*</span>
+                            </label>
+                            <input type="time" id="startTime" required
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label for="endDate" class="block text-sm font-medium text-gray-700 mb-2">
+                                終了日
+                            </label>
+                            <input type="date" id="endDate"
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div>
+                            <label for="endTime" class="block text-sm font-medium text-gray-700 mb-2">
+                                終了時刻
+                            </label>
+                            <input type="time" id="endTime"
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                        </div>
+                    </div>
+
+                    <!-- 開催場所 -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            開催形式
+                        </label>
+                        <select id="locationType" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                            <option value="physical">対面開催</option>
+                            <option value="online">オンライン</option>
+                            <option value="hybrid">ハイブリッド</option>
+                        </select>
+                    </div>
+
+                    <div id="locationFields">
+                        <label for="locationName" class="block text-sm font-medium text-gray-700 mb-2">
+                            場所名
+                        </label>
+                        <input type="text" id="locationName" maxlength="200"
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                            placeholder="例: 東京会議室A">
+                        
+                        <label for="locationAddress" class="block text-sm font-medium text-gray-700 mb-2 mt-4">
+                            住所
+                        </label>
+                        <input type="text" id="locationAddress" maxlength="500"
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                            placeholder="例: 東京都渋谷区...">
+                    </div>
+
+                    <div id="onlineFields" class="hidden">
+                        <label for="locationUrl" class="block text-sm font-medium text-gray-700 mb-2">
+                            オンラインURL
+                        </label>
+                        <input type="url" id="locationUrl" maxlength="500"
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                            placeholder="例: https://zoom.us/j/...">
+                    </div>
+
+                    <!-- 定員 -->
+                    <div>
+                        <label for="maxParticipants" class="block text-sm font-medium text-gray-700 mb-2">
+                            定員
+                        </label>
+                        <input type="number" id="maxParticipants" min="0"
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                            placeholder="未設定の場合は無制限">
+                    </div>
+
+                    <!-- 公開設定 -->
+                    <div class="grid md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                公開状態
+                            </label>
+                            <select id="isPublished" class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                                <option value="1">公開</option>
+                                <option value="0">非公開</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                閲覧権限
+                            </label>
+                            <select id="isMemberOnly" class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                                <option value="0">全員</option>
+                                <option value="1">会員のみ</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- アクションボタン -->
+                    <div class="flex justify-end gap-2 pt-4 border-t">
+                        <button type="button" onclick="closeEventModal()" class="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">
+                            キャンセル
+                        </button>
+                        <button type="submit" id="saveBtn" class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2">
+                            <i class="fas fa-save"></i>
+                            <span>保存する</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+        <script src="/static/app.js"></script>
+        <script src="/static/events-admin.js"></script>
     </body>
     </html>
   `)
