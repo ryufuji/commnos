@@ -42,6 +42,7 @@ import shop from './routes/shop' // Phase 7 - ショップシステム
 import events from './routes/events' // イベント管理
 import tags from './routes/tags' // ユーザータグ機能
 import tenantCustomization from './routes/tenant-customization' // テナントカスタマイズ
+import backup from './routes/backup' // データバックアップ
 
 const app = new Hono<AppContext>()
 
@@ -130,6 +131,9 @@ app.route('/api/shop', shop)
 
 // イベント管理ルート
 app.route('/api/events', events)
+
+// データバックアップルート
+app.route('/api/backup', backup)
 
 // ユーザータグルート
 app.route('/api/tags', tags)
@@ -1799,6 +1803,14 @@ app.get('/dashboard', (c) => {
                             <p class="text-sm text-secondary-600">ロゴ・ファビコンの設定</p>
                         </a>
 
+                        <a href="/backup-admin" class="card-interactive p-6 text-center">
+                            <div class="text-4xl mb-3 text-red-500">
+                                <i class="fas fa-database"></i>
+                            </div>
+                            <h3 class="font-bold text-gray-900 mb-2">データバックアップ</h3>
+                            <p class="text-sm text-secondary-600">バックアップ・復元</p>
+                        </a>
+
                         <a href="/profile" class="card-interactive p-6 text-center">
                             <div class="text-4xl mb-3 text-info-500">
                                 <i class="fas fa-user-edit"></i>
@@ -3150,6 +3162,161 @@ app.get('/events-admin', (c) => {
         <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
         <script src="/static/app.js"></script>
         <script src="/static/events-admin.js"></script>
+    </body>
+    </html>
+  `)
+})
+
+// --------------------------------------------
+// バックアップ管理ページ（管理者専用）
+// --------------------------------------------
+
+app.get('/backup-admin', (c) => {
+  return c.html(`
+    <!DOCTYPE html>
+    <html lang="ja" data-theme="light">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>データバックアップ - Commons</title>
+        <script src="https://cdn.tailwindcss.com"></script>
+        <script src="/static/tailwind-config.js"></script>
+        <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+        <link href="/static/commons-theme.css" rel="stylesheet">
+        <link href="/static/commons-components.css" rel="stylesheet">
+    </head>
+    <body class="bg-gray-50">
+        <!-- ヘッダー -->
+        <header class="bg-white shadow-sm sticky top-0 z-50">
+            <div class="container mx-auto px-4 py-4">
+                <div class="flex items-center justify-between">
+                    <h1 class="text-2xl font-bold text-gray-900">
+                        <i class="fas fa-database mr-2 text-blue-600"></i>
+                        データバックアップ
+                    </h1>
+                    <div class="flex gap-2">
+                        <a href="/dashboard" class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition">
+                            <i class="fas fa-arrow-left mr-2"></i>ダッシュボード
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- メインコンテンツ -->
+        <main class="container mx-auto px-4 py-8 max-w-4xl">
+            <!-- バックアップエクスポート -->
+            <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+                <h2 class="text-xl font-bold text-gray-900 mb-4 flex items-center">
+                    <i class="fas fa-download mr-2 text-green-600"></i>
+                    バックアップをエクスポート
+                </h2>
+                <p class="text-gray-600 mb-4">
+                    現在のテナントデータ（投稿、会員、イベント、設定など）を全てJSONファイルとしてエクスポートします。
+                </p>
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                    <div class="flex items-start">
+                        <i class="fas fa-info-circle text-blue-600 mt-1 mr-3"></i>
+                        <div class="text-sm text-blue-900">
+                            <p class="font-medium mb-1">バックアップに含まれるデータ：</p>
+                            <ul class="list-disc list-inside space-y-1 text-blue-800">
+                                <li>テナント情報・カスタマイズ設定</li>
+                                <li>会員情報・メンバーシップ</li>
+                                <li>投稿・コメント・いいね</li>
+                                <li>イベント・参加者情報</li>
+                                <li>ポイントシステム・報酬</li>
+                                <li>ショップ商品・注文履歴</li>
+                                <li>アンケート・回答データ</li>
+                                <li>チャットメッセージ</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <button id="exportBtn" onclick="exportBackup()" class="w-full px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition flex items-center justify-center gap-2 text-lg font-medium">
+                    <i class="fas fa-download"></i>
+                    <span>バックアップをダウンロード</span>
+                </button>
+            </div>
+
+            <!-- バックアップインポート -->
+            <div class="bg-white rounded-lg shadow-md p-6">
+                <h2 class="text-xl font-bold text-gray-900 mb-4 flex items-center">
+                    <i class="fas fa-upload mr-2 text-orange-600"></i>
+                    バックアップをリストア（復元）
+                </h2>
+                <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+                    <div class="flex items-start">
+                        <i class="fas fa-exclamation-triangle text-yellow-600 mt-1 mr-3"></i>
+                        <div class="text-sm text-yellow-900">
+                            <p class="font-medium mb-1">⚠️ 重要な注意事項：</p>
+                            <ul class="list-disc list-inside space-y-1 text-yellow-800">
+                                <li><strong>現在のデータは全て削除されます</strong></li>
+                                <li>バックアップファイルのデータで完全に上書きされます</li>
+                                <li>この操作は取り消せません</li>
+                                <li>必ず事前にバックアップをエクスポートしてください</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                <div class="mb-4">
+                    <label for="backupFile" class="block text-sm font-medium text-gray-700 mb-2">
+                        バックアップファイルを選択
+                    </label>
+                    <input type="file" id="backupFile" accept=".json" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                    <p class="text-sm text-gray-500 mt-2">
+                        <i class="fas fa-file-code mr-1"></i>
+                        JSON形式のバックアップファイルのみアップロード可能
+                    </p>
+                </div>
+                <button id="restoreBtn" onclick="restoreBackup()" class="w-full px-6 py-3 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition flex items-center justify-center gap-2 text-lg font-medium">
+                    <i class="fas fa-upload"></i>
+                    <span>バックアップから復元</span>
+                </button>
+            </div>
+
+            <!-- 使い方ガイド -->
+            <div class="bg-white rounded-lg shadow-md p-6 mt-6">
+                <h2 class="text-xl font-bold text-gray-900 mb-4 flex items-center">
+                    <i class="fas fa-question-circle mr-2 text-purple-600"></i>
+                    使い方ガイド
+                </h2>
+                <div class="space-y-4 text-gray-700">
+                    <div>
+                        <h3 class="font-bold text-gray-900 mb-2">
+                            <i class="fas fa-chevron-right text-blue-600 mr-2"></i>
+                            定期的なバックアップ
+                        </h3>
+                        <p class="text-sm">
+                            重要なデータを失わないために、定期的にバックアップをダウンロードして保管してください。
+                            推奨頻度：週1回〜月1回
+                        </p>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-gray-900 mb-2">
+                            <i class="fas fa-chevron-right text-blue-600 mr-2"></i>
+                            バックアップファイルの保管
+                        </h3>
+                        <p class="text-sm">
+                            ダウンロードしたJSONファイルは、安全な場所（クラウドストレージ、外部ハードディスクなど）に保管してください。
+                        </p>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-gray-900 mb-2">
+                            <i class="fas fa-chevron-right text-blue-600 mr-2"></i>
+                            リストア前の確認
+                        </h3>
+                        <p class="text-sm">
+                            リストアを実行する前に、必ず現在のデータをバックアップしてください。
+                            リストアは現在のデータを完全に上書きします。
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+        <script src="/static/app.js"></script>
+        <script src="/static/backup-admin.js"></script>
     </body>
     </html>
   `)
