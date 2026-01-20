@@ -4710,6 +4710,7 @@ tenantPublic.get('/posts/:id', async (c) => {
                 }
             })
         }
+    })
     </script>
     
     ${renderCommonFooter(tenantName, subdomain)}
