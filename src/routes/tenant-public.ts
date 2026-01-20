@@ -4384,6 +4384,27 @@ tenantPublic.get('/posts/:id', async (c) => {
                     </div>
                 `
             }).join('')}
+            
+            <!-- コメント投稿フォーム -->
+            <div class="mt-8 border-t pt-6">
+                <h3 class="text-lg font-bold mb-4" style="color: var(--commons-text-primary);">
+                    <i class="fas fa-edit mr-2"></i>コメントを投稿
+                </h3>
+                <div id="commentFormContainer">
+                    <form id="commentForm" class="space-y-4">
+                        <textarea id="commentContent" rows="4" required
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            placeholder="コメントを入力してください..."></textarea>
+                        <div class="flex justify-end">
+                            <button type="submit" id="commentSubmitBtn"
+                                class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition flex items-center gap-2">
+                                <i class="fas fa-paper-plane"></i>
+                                <span>投稿する</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
         </div>
     </main>
 
@@ -4580,6 +4601,69 @@ tenantPublic.get('/posts/:id', async (c) => {
                 }
             })
         })
+        
+        // コメント投稿機能
+        const commentForm = document.getElementById('commentForm')
+        if (commentForm) {
+            commentForm.addEventListener('submit', async (e) => {
+                e.preventDefault()
+                
+                const token = localStorage.getItem('token')
+                if (!token) {
+                    // ログインしていない場合
+                    if (confirm('コメント投稿には会員登録が必要です。\\n\\n今すぐ登録しますか？')) {
+                        window.location.href = '/register?subdomain=' + subdomain
+                    }
+                    return
+                }
+                
+                const contentInput = document.getElementById('commentContent')
+                const submitBtn = document.getElementById('commentSubmitBtn')
+                const content = contentInput.value.trim()
+                
+                if (!content) {
+                    alert('コメントを入力してください')
+                    return
+                }
+                
+                try {
+                    submitBtn.disabled = true
+                    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>投稿中...'
+                    
+                    const response = await axios.post('/api/posts/${postId}/comments', {
+                        content: content
+                    }, {
+                        headers: { 'Authorization': 'Bearer ' + token }
+                    })
+                    
+                    if (response.data.success) {
+                        // 成功メッセージ
+                        alert(response.data.message || 'コメントを投稿しました')
+                        // ページをリロードして新しいコメントを表示
+                        window.location.reload()
+                    }
+                } catch (error) {
+                    console.error('Comment post error:', error)
+                    if (error.response && error.response.status === 401) {
+                        // 認証エラー
+                        if (confirm('ログインセッションが切れました。\\n\\n再度ログインしますか？')) {
+                            window.location.href = '/login?subdomain=' + subdomain
+                        }
+                    } else if (error.response && error.response.status === 403) {
+                        // 権限エラー（会員ではない）
+                        alert('コメント投稿には会員登録が必要です。')
+                        if (confirm('会員登録ページに移動しますか？')) {
+                            window.location.href = '/register?subdomain=' + subdomain
+                        }
+                    } else {
+                        alert('コメントの投稿に失敗しました。もう一度お試しください。')
+                    }
+                } finally {
+                    submitBtn.disabled = false
+                    submitBtn.innerHTML = '<i class="fas fa-paper-plane"></i><span>投稿する</span>'
+                }
+            })
+        }
     </script>
     
     ${renderCommonFooter(tenantName, subdomain)}
