@@ -4654,7 +4654,7 @@ tenantPublic.get('/posts/:id', async (c) => {
                     if (response.data.success) {
                         // 成功メッセージ
                         const message = response.data.message || 'コメントを投稿しました'
-                        console.log('[Comment Form] Showing alert:', message)
+                        console.log('[Comment Form] Showing toast:', message)
                         console.log('[Comment Form] Current URL:', window.location.href)
                         
                         // トースト通知を使用（alertの代わり）
@@ -4664,11 +4664,20 @@ tenantPublic.get('/posts/:id', async (c) => {
                             alert(message)
                         }
                         
-                        console.log('[Comment Form] Reloading page...')
+                        console.log('[Comment Form] Reloading with subdomain parameter...')
+                        
+                        // subdomainパラメータを保持してリロード
+                        const currentUrl = new URL(window.location.href)
+                        const subdomain = currentUrl.searchParams.get('subdomain')
                         
                         // 少し待ってからリロード（トーストを表示する時間を確保）
                         setTimeout(() => {
-                            window.location.reload()
+                            if (subdomain) {
+                                // subdomainパラメータを明示的に付与
+                                window.location.href = window.location.pathname + '?subdomain=' + subdomain
+                            } else {
+                                window.location.reload()
+                            }
                         }, 1000)
                     } else {
                         console.error('[Comment Form] API returned success:false', response.data)
