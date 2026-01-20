@@ -4525,7 +4525,19 @@ tenantPublic.get('/posts/:id', async (c) => {
                         }
                     } else if (error.response && error.response.status === 500) {
                         // サーバーエラー
-                        alert('申し訳ございません。サーバーでエラーが発生しました。\\n\\nログインしていない場合は、会員登録をお願いします。')
+                        console.error('[Like Error Debug]', error.response.data)
+                        const debugInfo = error.response.data?.debug
+                        let errorMessage = '申し訳ございません。サーバーでエラーが発生しました。'
+                        
+                        if (debugInfo) {
+                            errorMessage += '\\n\\nデバッグ情報:'
+                            errorMessage += '\\n- エラー: ' + debugInfo.message
+                            errorMessage += '\\n- 投稿ID: ' + debugInfo.postId
+                            errorMessage += '\\n- ユーザーID: ' + debugInfo.userId
+                            errorMessage += '\\n- テナントID: ' + debugInfo.tenantId
+                        }
+                        
+                        alert(errorMessage)
                         if (confirm('会員登録ページに移動しますか？')) {
                             window.location.href = '/register?subdomain=' + subdomain
                         }

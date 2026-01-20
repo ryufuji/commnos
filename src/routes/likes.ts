@@ -108,6 +108,19 @@ likes.post('/posts/:postId', authMiddleware, async (c) => {
         userId,
         tenantId
       })
+      
+      // デバッグ用: エラーメッセージをクライアントに返す
+      return c.json({
+        success: false,
+        error: 'いいねの処理中にエラーが発生しました',
+        debug: {
+          message: error.message,
+          postId,
+          userId,
+          tenantId,
+          hasDB: !!c.env.DB
+        }
+      }, 500)
     }
     
     return c.json({
