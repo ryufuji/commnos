@@ -19,8 +19,25 @@ likes.post('/posts/:postId', authMiddleware, async (c) => {
   const tenantId = c.get('tenantId')
   const { DB } = c.env
 
+  console.log('[Like Post] Debug info:', {
+    postId,
+    userId,
+    tenantId,
+    hasDB: !!DB
+  })
+
   if (!postId || isNaN(postId)) {
     return c.json({ success: false, error: 'Invalid post ID' }, 400)
+  }
+
+  if (!userId) {
+    console.error('[Like Post] userId is missing from auth context')
+    return c.json({ success: false, error: 'Authentication required - userId missing' }, 401)
+  }
+
+  if (!tenantId) {
+    console.error('[Like Post] tenantId is missing from auth context')
+    return c.json({ success: false, error: 'Authentication required - tenantId missing' }, 401)
   }
 
   try {
@@ -28,6 +45,12 @@ likes.post('/posts/:postId', authMiddleware, async (c) => {
     const post = await DB.prepare(
       'SELECT id, user_id, title FROM posts WHERE id = ? AND tenant_id = ?'
     ).bind(postId, tenantId).first()
+
+    console.log('[Like Post] Post lookup result:', {
+      found: !!post,
+      postId,
+      tenantId
+    })
 
     if (!post) {
       return c.json({ success: false, error: 'Post not found' }, 404)

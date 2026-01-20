@@ -4673,14 +4673,19 @@ tenantPublic.get('/posts/:id', async (c) => {
                         
                         // subdomainパラメータを保持してリロード
                         const currentUrl = new URL(window.location.href)
-                        const subdomain = currentUrl.searchParams.get('subdomain')
+                        const subdomainParam = currentUrl.searchParams.get('subdomain')
+                        
+                        console.log('[Comment Form] subdomain from URL:', subdomainParam)
                         
                         // 少し待ってからリロード（トーストを表示する時間を確保）
                         setTimeout(() => {
-                            if (subdomain) {
+                            if (subdomainParam) {
                                 // subdomainパラメータを明示的に付与
-                                window.location.href = window.location.pathname + '?subdomain=' + subdomain
+                                const reloadUrl = window.location.pathname + '?subdomain=' + subdomainParam
+                                console.log('[Comment Form] Reloading to:', reloadUrl)
+                                window.location.href = reloadUrl
                             } else {
+                                console.log('[Comment Form] No subdomain found, using reload()')
                                 window.location.reload()
                             }
                         }, 1000)
