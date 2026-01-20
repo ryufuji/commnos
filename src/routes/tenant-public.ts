@@ -4518,6 +4518,8 @@ tenantPublic.get('/posts/:id', async (c) => {
                     }
                 } catch (error) {
                     console.error('Like error:', error)
+                    console.error('Like error details:', error.response?.data)
+                    
                     if (error.response && error.response.status === 401) {
                         // 認証エラー（トークン期限切れなど）
                         if (confirm('ログインセッションが切れました。\\n\\n再度ログインしますか？')) {
@@ -4525,7 +4527,24 @@ tenantPublic.get('/posts/:id', async (c) => {
                         }
                     } else if (error.response && error.response.status === 500) {
                         // サーバーエラー
-                        alert('申し訳ございません。サーバーでエラーが発生しました。\\n\\nログインしていない場合は、会員登録をお願いします。')
+                        const errorData = error.response.data
+                        let message = '申し訳ございません。サーバーでエラーが発生しました。'
+                        
+                        if (errorData && errorData.error) {
+                            message += '\\n\\nエラー: ' + errorData.error
+                        }
+                        
+                        if (errorData && errorData.details) {
+                            message += '\\n\\n詳細:'
+                            message += '\\n- 投稿ID: ' + errorData.details.postId
+                            message += '\\n- ユーザーID: ' + errorData.details.userId
+                            message += '\\n- テナントID: ' + errorData.details.tenantId
+                            if (errorData.details.errorMessage) {
+                                message += '\\n- エラーメッセージ: ' + errorData.details.errorMessage
+                            }
+                        }
+                        
+                        alert(message)
                         if (confirm('会員登録ページに移動しますか？')) {
                             window.location.href = '/register?subdomain=' + subdomain
                         }

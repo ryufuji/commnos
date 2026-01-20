@@ -19,6 +19,8 @@ likes.post('/posts/:postId', authMiddleware, async (c) => {
   const tenantId = c.get('tenantId')
   const { DB } = c.env
 
+  console.log('[Like Post] Starting like request:', { postId, userId, tenantId })
+
   if (!postId || isNaN(postId)) {
     return c.json({ success: false, error: 'Invalid post ID' }, 400)
   }
@@ -35,9 +37,12 @@ likes.post('/posts/:postId', authMiddleware, async (c) => {
 
   try {
     // 投稿が存在し、同じテナントに属しているか確認
+    console.log('[Like Post] Checking if post exists...')
     const post = await DB.prepare(
       'SELECT id, user_id, title FROM posts WHERE id = ? AND tenant_id = ?'
     ).bind(postId, tenantId).first()
+
+    console.log('[Like Post] Post found:', !!post)
 
     if (!post) {
       return c.json({ success: false, error: 'Post not found' }, 404)
@@ -45,12 +50,17 @@ likes.post('/posts/:postId', authMiddleware, async (c) => {
 
     // いいねを追加（既に存在する場合はエラー）
     try {
-      await DB.prepare(
+      console.log('[Like Post] Attempting to insert like:', { tenantId, postId, userId })
+      
+      const insertResult = await DB.prepare(
         'INSERT INTO post_likes (tenant_id, post_id, user_id) VALUES (?, ?, ?)'
       ).bind(tenantId, postId, userId).run()
+      
+      console.log('[Like Post] Insert result:', insertResult)
 
       // 通知を作成（投稿者が自分でない場合）
       if (post.user_id !== userId) {
+        console.log('[Like Post] Creating notification...')
         const actor = await DB.prepare(
           'SELECT nickname FROM users WHERE id = ?'
         ).bind(userId).first()
@@ -95,6 +105,18 @@ likes.post('/posts/:postId', authMiddleware, async (c) => {
         userId,
         tenantId
       })
+      
+      // デバッグ用: エラー詳細を返す
+      return c.json({
+        success: false,
+        error: error.message || 'いいねの処理中にエラーが発生しました',
+        details: {
+          postId,
+          userId,
+          tenantId,
+          errorMessage: error.message
+        }
+      }, 500)
     }
     
     return c.json({
