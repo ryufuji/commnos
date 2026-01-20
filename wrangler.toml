@@ -1,0 +1,17 @@
+name = "commons-webapp"
+compatibility_date = "2025-12-25"
+compatibility_flags = ["nodejs_compat"]
+pages_build_output_dir = "./dist"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "commons-webapp-production"
+database_id = "5dc36696-29ca-4e6e-9cb9-6bcd63a37a2e"
+
+[[r2_buckets]]
+binding = "R2"
+bucket_name = "commons-images"
+
+[[r2_buckets]]
+binding = "REWARDS_BUCKET"
+bucket_name = "commons-webapp-bucket"
