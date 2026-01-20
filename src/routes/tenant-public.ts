@@ -4483,7 +4483,7 @@ tenantPublic.get('/posts/:id', async (c) => {
                 
                 if (!token) {
                     // ログインしていない場合
-                    if (confirm('いいね機能を利用するには会員登録が必要です。\n\n今すぐ登録しますか？')) {
+                    if (confirm('いいね機能を利用するには会員登録が必要です。\\n\\n今すぐ登録しますか？')) {
                         window.location.href = '/register?subdomain=' + subdomain
                     }
                     return
@@ -4520,12 +4520,12 @@ tenantPublic.get('/posts/:id', async (c) => {
                     console.error('Like error:', error)
                     if (error.response && error.response.status === 401) {
                         // 認証エラー（トークン期限切れなど）
-                        if (confirm('ログインセッションが切れました。\n\n再度ログインしますか？')) {
+                        if (confirm('ログインセッションが切れました。\\n\\n再度ログインしますか？')) {
                             window.location.href = '/login?subdomain=' + subdomain
                         }
                     } else if (error.response && error.response.status === 500) {
                         // サーバーエラー
-                        alert('申し訳ございません。サーバーでエラーが発生しました。\n\nログインしていない場合は、会員登録をお願いします。')
+                        alert('申し訳ございません。サーバーでエラーが発生しました。\\n\\nログインしていない場合は、会員登録をお願いします。')
                         if (confirm('会員登録ページに移動しますか？')) {
                             window.location.href = '/register?subdomain=' + subdomain
                         }
@@ -4548,7 +4548,7 @@ tenantPublic.get('/posts/:id', async (c) => {
                 const token = localStorage.getItem('token')
                 if (!token) {
                     // ログインしていない場合
-                    if (confirm('いいね機能を利用するには会員登録が必要です。\n\n今すぐ登録しますか？')) {
+                    if (confirm('いいね機能を利用するには会員登録が必要です。\\n\\n今すぐ登録しますか？')) {
                         window.location.href = '/register?subdomain=' + subdomain
                     }
                     return
@@ -4589,12 +4589,12 @@ tenantPublic.get('/posts/:id', async (c) => {
                     console.error('Comment like error:', error)
                     if (error.response && error.response.status === 401) {
                         // 認証エラー
-                        if (confirm('ログインセッションが切れました。\n\n再度ログインしますか？')) {
+                        if (confirm('ログインセッションが切れました。\\n\\n再度ログインしますか？')) {
                             window.location.href = '/login?subdomain=' + subdomain
                         }
                     } else if (error.response && error.response.status === 500) {
                         // サーバーエラー
-                        alert('申し訳ございません。サーバーでエラーが発生しました。\n\nログインしていない場合は、会員登録をお願いします。')
+                        alert('申し訳ございません。サーバーでエラーが発生しました。\\n\\nログインしていない場合は、会員登録をお願いします。')
                         if (confirm('会員登録ページに移動しますか？')) {
                             window.location.href = '/register?subdomain=' + subdomain
                         }
