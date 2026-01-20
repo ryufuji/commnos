@@ -573,7 +573,7 @@ app.get('/register', (c) => {
                             <input type="text" name="communityName" required
                                    maxlength="100"
                                    class="input-field"
-                                   placeholder="ゴルフサークル「あみーず」">
+                                   placeholder="例：読書クラブ、ランニングサークル、地域交流会">
                         </div>
 
                         <!-- サブタイトル -->
@@ -584,7 +584,7 @@ app.get('/register', (c) => {
                             </label>
                             <input type="text" name="subtitle"
                                    class="input-field"
-                                   placeholder="週末ゴルフ仲間">
+                                   placeholder="例：みんなで楽しく読書を語り合う会">
                         </div>
 
                         <!-- 公開設定 -->
