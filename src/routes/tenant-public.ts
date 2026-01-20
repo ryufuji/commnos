@@ -4385,7 +4385,6 @@ tenantPublic.get('/posts/:id', async (c) => {
                 `
             }).join('')}
             
-            ${/* コメント投稿フォーム */ ''}
             <div class="mt-8 border-t pt-6">
                 <h3 class="text-lg font-bold mb-4" style="color: var(--commons-text-primary);">
                     <i class="fas fa-edit mr-2"></i>コメントを投稿
@@ -4478,7 +4477,10 @@ tenantPublic.get('/posts/:id', async (c) => {
             
             // いいねボタンのクリックイベント
             likeButton.addEventListener('click', async () => {
+                console.log('[Like Button] Clicked!')
                 const token = localStorage.getItem('token')
+                console.log('[Like Button] Token:', token ? 'exists' : 'not found')
+                
                 if (!token) {
                     // ログインしていない場合
                     if (confirm('いいね機能を利用するには会員登録が必要です。\n\n今すぐ登録しますか？')) {
@@ -4489,12 +4491,14 @@ tenantPublic.get('/posts/:id', async (c) => {
                 
                 try {
                     likeButton.disabled = true
+                    console.log('[Like Button] Sending request, isLiked:', isLiked)
                     
                     if (isLiked) {
                         // いいねを取り消す
                         const response = await axios.delete('/api/likes/posts/' + postId, {
                             headers: { 'Authorization': 'Bearer ' + token }
                         })
+                        console.log('[Like Button] Unlike response:', response.data)
                         if (response.data.success) {
                             currentLikeCount = response.data.likeCount
                             isLiked = false
@@ -4505,6 +4509,7 @@ tenantPublic.get('/posts/:id', async (c) => {
                         const response = await axios.post('/api/likes/posts/' + postId, {}, {
                             headers: { 'Authorization': 'Bearer ' + token }
                         })
+                        console.log('[Like Button] Like response:', response.data)
                         if (response.data.success) {
                             currentLikeCount = response.data.likeCount
                             isLiked = true
@@ -4604,11 +4609,16 @@ tenantPublic.get('/posts/:id', async (c) => {
         
         // コメント投稿機能
         const commentForm = document.getElementById('commentForm')
+        console.log('[Comment Form] Form element:', commentForm ? 'found' : 'NOT FOUND')
+        
         if (commentForm) {
             commentForm.addEventListener('submit', async (e) => {
                 e.preventDefault()
+                console.log('[Comment Form] Submit triggered')
                 
                 const token = localStorage.getItem('token')
+                console.log('[Comment Form] Token:', token ? 'exists' : 'not found')
+                
                 if (!token) {
                     // ログインしていない場合
                     if (confirm('コメント投稿には会員登録が必要です。\\n\\n今すぐ登録しますか？')) {
@@ -4621,6 +4631,8 @@ tenantPublic.get('/posts/:id', async (c) => {
                 const submitBtn = document.getElementById('commentSubmitBtn')
                 const content = contentInput.value.trim()
                 
+                console.log('[Comment Form] Content:', content)
+                
                 if (!content) {
                     alert('コメントを入力してください')
                     return
@@ -4630,11 +4642,14 @@ tenantPublic.get('/posts/:id', async (c) => {
                     submitBtn.disabled = true
                     submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>投稿中...'
                     
+                    console.log('[Comment Form] Posting to API...')
                     const response = await axios.post('/api/posts/${postId}/comments', {
                         content: content
                     }, {
                         headers: { 'Authorization': 'Bearer ' + token }
                     })
+                    
+                    console.log('[Comment Form] Response:', response.data)
                     
                     if (response.data.success) {
                         // 成功メッセージ
