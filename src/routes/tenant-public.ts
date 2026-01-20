@@ -4653,9 +4653,31 @@ tenantPublic.get('/posts/:id', async (c) => {
                     
                     if (response.data.success) {
                         // 成功メッセージ
-                        alert(response.data.message || 'コメントを投稿しました')
-                        // ページをリロードして新しいコメントを表示
-                        window.location.reload()
+                        const message = response.data.message || 'コメントを投稿しました'
+                        console.log('[Comment Form] Showing alert:', message)
+                        console.log('[Comment Form] Current URL:', window.location.href)
+                        
+                        // トースト通知を使用（alertの代わり）
+                        if (typeof showToast === 'function') {
+                            showToast(message, 'success')
+                        } else {
+                            alert(message)
+                        }
+                        
+                        console.log('[Comment Form] Reloading page...')
+                        
+                        // 少し待ってからリロード（トーストを表示する時間を確保）
+                        setTimeout(() => {
+                            window.location.reload()
+                        }, 1000)
+                    } else {
+                        console.error('[Comment Form] API returned success:false', response.data)
+                        const errorMsg = 'コメントの投稿に失敗しました：' + (response.data.error || '不明なエラー')
+                        if (typeof showToast === 'function') {
+                            showToast(errorMsg, 'error')
+                        } else {
+                            alert(errorMsg)
+                        }
                     }
                 } catch (error) {
                     console.error('Comment post error:', error)
