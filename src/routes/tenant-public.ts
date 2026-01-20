@@ -4390,7 +4390,7 @@ tenantPublic.get('/posts/:id', async (c) => {
                     <i class="fas fa-edit mr-2"></i>コメントを投稿
                 </h3>
                 <div id="commentFormContainer">
-                    <form id="commentForm" class="space-y-4">
+                    <form id="commentForm" class="space-y-4" data-post-id="${postId}">
                         <textarea id="commentContent" rows="4" required
                             class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                             placeholder="コメントを入力してください..."></textarea>
@@ -4612,6 +4612,11 @@ tenantPublic.get('/posts/:id', async (c) => {
         console.log('[Comment Form] Form element:', commentForm ? 'found' : 'NOT FOUND')
         
         if (commentForm) {
+            const postId = commentForm.dataset.postId
+            const subdomain = '${subdomain}'
+            
+            console.log('[Comment Form] postId:', postId, 'subdomain:', subdomain)
+            
             commentForm.addEventListener('submit', async (e) => {
                 e.preventDefault()
                 console.log('[Comment Form] Submit triggered')
@@ -4643,7 +4648,7 @@ tenantPublic.get('/posts/:id', async (c) => {
                     submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>投稿中...'
                     
                     console.log('[Comment Form] Posting to API...')
-                    const response = await axios.post('/api/posts/${postId}/comments', {
+                    const response = await axios.post('/api/posts/' + postId + '/comments', {
                         content: content
                     }, {
                         headers: { 'Authorization': 'Bearer ' + token }
