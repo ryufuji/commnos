@@ -19,13 +19,6 @@ likes.post('/posts/:postId', authMiddleware, async (c) => {
   const tenantId = c.get('tenantId')
   const { DB } = c.env
 
-  console.log('[Like Post] Debug info:', {
-    postId,
-    userId,
-    tenantId,
-    hasDB: !!DB
-  })
-
   if (!postId || isNaN(postId)) {
     return c.json({ success: false, error: 'Invalid post ID' }, 400)
   }
@@ -45,12 +38,6 @@ likes.post('/posts/:postId', authMiddleware, async (c) => {
     const post = await DB.prepare(
       'SELECT id, user_id, title FROM posts WHERE id = ? AND tenant_id = ?'
     ).bind(postId, tenantId).first()
-
-    console.log('[Like Post] Post lookup result:', {
-      found: !!post,
-      postId,
-      tenantId
-    })
 
     if (!post) {
       return c.json({ success: false, error: 'Post not found' }, 404)
@@ -108,19 +95,6 @@ likes.post('/posts/:postId', authMiddleware, async (c) => {
         userId,
         tenantId
       })
-      
-      // デバッグ用: エラーメッセージをクライアントに返す
-      return c.json({
-        success: false,
-        error: 'いいねの処理中にエラーが発生しました',
-        debug: {
-          message: error.message,
-          postId,
-          userId,
-          tenantId,
-          hasDB: !!c.env.DB
-        }
-      }, 500)
     }
     
     return c.json({
