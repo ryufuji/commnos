@@ -718,3 +718,4 @@ npm run deploy
 - 支払い失敗時の通知・リマインダーシステム
 - 誕生日メール自動送信機能
 - プロフィールのメールアドレス編集機能
+# Trigger production deployment
