@@ -4385,7 +4385,7 @@ tenantPublic.get('/posts/:id', async (c) => {
                 `
             }).join('')}
             
-            <!-- コメント投稿フォーム -->
+            ${/* コメント投稿フォーム */ ''}
             <div class="mt-8 border-t pt-6">
                 <h3 class="text-lg font-bold mb-4" style="color: var(--commons-text-primary);">
                     <i class="fas fa-edit mr-2"></i>コメントを投稿
