@@ -40,6 +40,7 @@ import analytics from './routes/analytics' // 統計ダッシュボード
 import points from './routes/points' // ポイントシステム
 import shop from './routes/shop' // Phase 7 - ショップシステム
 import events from './routes/events' // イベント管理
+import debug from './routes/debug' // デバッグ用
 import tags from './routes/tags' // ユーザータグ機能
 import tenantCustomization from './routes/tenant-customization' // テナントカスタマイズ
 import backup from './routes/backup' // データバックアップ
@@ -131,6 +132,7 @@ app.route('/api/shop', shop)
 
 // イベント管理ルート
 app.route('/api/events', events)
+app.route('/api/debug', debug)
 
 // データバックアップルート
 app.route('/api/backup', backup)
