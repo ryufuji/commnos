@@ -4219,10 +4219,14 @@ tenantPublic.get('/posts/:id', async (c) => {
   const authorName = String(post.author_name || '不明')
   const authorAvatar = String(post.author_avatar || '')
   const viewCount = post.view_count || 0
-  const createdDate = new Date(String(post.created_at)).toLocaleDateString('ja-JP', {
+  // UTC → JST変換（+9時間）
+  const createdDateUTC = new Date(String(post.created_at))
+  const createdDateJST = new Date(createdDateUTC.getTime() + 9 * 60 * 60 * 1000)
+  const createdDate = createdDateJST.toLocaleDateString('ja-JP', {
     year: 'numeric',
     month: 'long',
-    day: 'numeric'
+    day: 'numeric',
+    timeZone: 'Asia/Tokyo'
   })
   
   return c.html(`<!DOCTYPE html>
@@ -4344,12 +4348,16 @@ tenantPublic.get('/posts/:id', async (c) => {
                 const commentUserAvatar = String(comment.user_avatar || '')
                 const commentContent = String(comment.content || '')
                 const commentLikeCount = Number(comment.like_count || 0)
-                const commentDate = new Date(String(comment.created_at)).toLocaleDateString('ja-JP', {
+                // UTC → JST変換（+9時間）
+                const commentDateUTC = new Date(String(comment.created_at))
+                const commentDateJST = new Date(commentDateUTC.getTime() + 9 * 60 * 60 * 1000)
+                const commentDate = commentDateJST.toLocaleDateString('ja-JP', {
                     year: 'numeric',
                     month: 'long',
                     day: 'numeric',
                     hour: '2-digit',
-                    minute: '2-digit'
+                    minute: '2-digit',
+                    timeZone: 'Asia/Tokyo'
                 })
                 
                 return `
