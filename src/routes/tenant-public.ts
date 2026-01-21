@@ -4219,14 +4219,13 @@ tenantPublic.get('/posts/:id', async (c) => {
   const authorName = String(post.author_name || '不明')
   const authorAvatar = String(post.author_avatar || '')
   const viewCount = post.view_count || 0
-  // UTC → JST変換（+9時間）
+  // データベースの時刻はUTC。表示用にJST（UTC+9）に変換
   const createdDateUTC = new Date(String(post.created_at))
   const createdDateJST = new Date(createdDateUTC.getTime() + 9 * 60 * 60 * 1000)
   const createdDate = createdDateJST.toLocaleDateString('ja-JP', {
     year: 'numeric',
     month: 'long',
-    day: 'numeric',
-    timeZone: 'Asia/Tokyo'
+    day: 'numeric'
   })
   
   return c.html(`<!DOCTYPE html>
@@ -4348,7 +4347,7 @@ tenantPublic.get('/posts/:id', async (c) => {
                 const commentUserAvatar = String(comment.user_avatar || '')
                 const commentContent = String(comment.content || '')
                 const commentLikeCount = Number(comment.like_count || 0)
-                // UTC → JST変換（+9時間）
+                // データベースの時刻はUTC。表示用にJST（UTC+9）に変換
                 const commentDateUTC = new Date(String(comment.created_at))
                 const commentDateJST = new Date(commentDateUTC.getTime() + 9 * 60 * 60 * 1000)
                 const commentDate = commentDateJST.toLocaleDateString('ja-JP', {
@@ -4356,8 +4355,7 @@ tenantPublic.get('/posts/:id', async (c) => {
                     month: 'long',
                     day: 'numeric',
                     hour: '2-digit',
-                    minute: '2-digit',
-                    timeZone: 'Asia/Tokyo'
+                    minute: '2-digit'
                 })
                 
                 return `
