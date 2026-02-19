@@ -521,6 +521,12 @@ function updateHeaderLoginState() {
             <a href="/tenant/notifications?subdomain=${subdomain}" class="block px-4 py-2 hover:bg-gray-50 transition" style="color: var(--commons-text-primary);">
               <i class="fas fa-bell mr-2" style="color: var(--commons-primary);"></i>通知
             </a>
+            <a href="/tenant/points?subdomain=${subdomain}" class="block px-4 py-2 hover:bg-gray-50 transition" style="color: var(--commons-text-primary);">
+              <i class="fas fa-coins mr-2" style="color: var(--commons-primary);"></i>ポイント交換
+            </a>
+            <a href="/tenant/member-plans?subdomain=${subdomain}" class="block px-4 py-2 hover:bg-gray-50 transition" style="color: var(--commons-text-primary);">
+              <i class="fas fa-crown mr-2" style="color: var(--commons-primary);"></i>プラン選択
+            </a>
             ${role === 'owner' || role === 'admin' ? `
             <a href="/dashboard" class="block px-4 py-2 hover:bg-gray-50 transition" style="color: var(--commons-text-primary);">
               <i class="fas fa-tachometer-alt mr-2" style="color: var(--commons-primary);"></i>ダッシュボード
@@ -583,6 +589,14 @@ function updateHeaderLoginState() {
           <a href="/tenant/mypage?subdomain=${subdomain}" class="commons-mobile-nav-link">
             <i class="fas fa-user"></i>
             <span>マイページ</span>
+          </a>
+          <a href="/tenant/points?subdomain=${subdomain}" class="commons-mobile-nav-link">
+            <i class="fas fa-coins"></i>
+            <span>ポイント交換</span>
+          </a>
+          <a href="/tenant/member-plans?subdomain=${subdomain}" class="commons-mobile-nav-link">
+            <i class="fas fa-crown"></i>
+            <span>プラン選択</span>
           </a>
           ${role === 'owner' || role === 'admin' ? `
           <a href="/dashboard" class="commons-mobile-nav-link">

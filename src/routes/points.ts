@@ -930,4 +930,74 @@ points.get('/images/*', async (c) => {
   }
 })
 
+/**
+ * GET /api/points/ranking
+ * ポイントランキング取得
+ */
+points.get('/ranking', authMiddleware, async (c) => {
+  const tenantId = c.get('tenantId')
+  const userId = c.get('userId')
+  const { DB } = c.env
+
+  try {
+    // 上位50名のランキングを取得（オーナー・管理者を除外）
+    const ranking = await DB.prepare(`
+      SELECT 
+        up.user_id,
+        up.balance,
+        up.total_earned,
+        u.nickname,
+        u.avatar_url,
+        tm.role
+      FROM user_points up
+      INNER JOIN users u ON up.user_id = u.id
+      LEFT JOIN tenant_memberships tm ON up.user_id = tm.user_id AND up.tenant_id = tm.tenant_id
+      WHERE up.tenant_id = ? 
+        AND (tm.role IS NULL OR tm.role NOT IN ('owner', 'admin'))
+      ORDER BY up.balance DESC
+      LIMIT 50
+    `).bind(tenantId).all()
+
+    // 自分の順位を取得（オーナー・管理者を除外してカウント）
+    const myRank = await DB.prepare(`
+      SELECT COUNT(*) + 1 as rank
+      FROM user_points up
+      LEFT JOIN tenant_memberships tm ON up.user_id = tm.user_id AND up.tenant_id = tm.tenant_id
+      WHERE up.tenant_id = ? 
+        AND (tm.role IS NULL OR tm.role NOT IN ('owner', 'admin'))
+        AND up.balance > (
+          SELECT balance FROM user_points WHERE user_id = ? AND tenant_id = ?
+        )
+    `).bind(tenantId, userId, tenantId).first() as any
+
+    // 自分の情報を取得
+    const myInfo = await DB.prepare(`
+      SELECT 
+        up.user_id,
+        up.balance,
+        up.total_earned,
+        u.nickname,
+        u.avatar_url,
+        tm.role
+      FROM user_points up
+      INNER JOIN users u ON up.user_id = u.id
+      LEFT JOIN tenant_memberships tm ON up.user_id = tm.user_id AND up.tenant_id = tm.tenant_id
+      WHERE up.user_id = ? AND up.tenant_id = ?
+    `).bind(userId, tenantId).first() as any
+
+    return c.json({
+      success: true,
+      ranking: ranking.results || [],
+      myRank: myRank?.rank || 0,
+      myInfo: myInfo || null
+    })
+  } catch (error) {
+    console.error('[Get Points Ranking Error]', error)
+    return c.json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Failed to get ranking'
+    }, 500)
+  }
+})
+
 export default points

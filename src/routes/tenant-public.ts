@@ -177,11 +177,8 @@ function renderCommonHeader(tenantName: string, subdomain: string, activePage: s
                 <a href="/tenant/chat?subdomain=${subdomain}" class="commons-nav-link ${isActive('chat')}">
                     <i class="fas fa-comments mr-2"></i>チャット
                 </a>
-                <a href="/tenant/points?subdomain=${subdomain}" class="commons-nav-link ${isActive('points')}">
-                    <i class="fas fa-coins mr-2"></i>ポイント
-                </a>
-                <a href="/tenant/shop?subdomain=${subdomain}" class="commons-nav-link ${isActive('shop')}">
-                    <i class="fas fa-shopping-bag mr-2"></i>ショップ
+                <a href="/tenant/mypage?subdomain=${subdomain}" class="commons-nav-link ${isActive('mypage')}">
+                    <i class="fas fa-user mr-2"></i>マイページ
                 </a>
             </nav>
             
@@ -209,10 +206,16 @@ function renderCommonHeader(tenantName: string, subdomain: string, activePage: s
                 <button id="commonsMobileMenuBtn" class="commons-mobile-menu-btn md:hidden">
                     <i class="fas fa-bars"></i>
                 </button>
-                <a href="/login?subdomain=${subdomain}" class="hidden md:block px-6 py-2 rounded-full font-semibold transition" 
-                   style="background: var(--commons-primary); color: white;">
-                    ログイン
-                </a>
+                <div class="hidden md:flex items-center gap-3">
+                    <a href="/tenant/register?subdomain=${subdomain}" class="px-4 py-2 rounded-full font-semibold transition border-2" 
+                       style="border-color: var(--commons-primary); color: var(--commons-primary);">
+                        新規登録
+                    </a>
+                    <a href="/tenant/login?subdomain=${subdomain}" class="px-6 py-2 rounded-full font-semibold transition" 
+                       style="background: var(--commons-primary); color: white;">
+                        ログイン
+                    </a>
+                </div>
             </div>
         </div>
     </header>
@@ -247,6 +250,10 @@ function renderCommonHeader(tenantName: string, subdomain: string, activePage: s
                 <i class="fas fa-comments"></i>
                 <span>チャット</span>
             </a>
+            <a href="/tenant/mypage?subdomain=${subdomain}" class="commons-mobile-nav-link ${isActive('mypage')}">
+                <i class="fas fa-user"></i>
+                <span>マイページ</span>
+            </a>
             <a href="/tenant/points?subdomain=${subdomain}" class="commons-mobile-nav-link ${isActive('points')}">
                 <i class="fas fa-coins"></i>
                 <span>ポイント</span>
@@ -255,10 +262,16 @@ function renderCommonHeader(tenantName: string, subdomain: string, activePage: s
                 <i class="fas fa-shopping-bag"></i>
                 <span>ショップ</span>
             </a>
-            <a href="/login?subdomain=${subdomain}" class="commons-mobile-nav-link" style="margin-top: 24px; padding-top: 24px; border-top: 1px solid var(--commons-border-light);">
-                <i class="fas fa-sign-in-alt"></i>
-                <span>ログイン</span>
-            </a>
+            <div style="margin-top: 24px; padding-top: 24px; border-top: 1px solid var(--commons-border-light);">
+                <a href="/tenant/register?subdomain=${subdomain}" class="commons-mobile-nav-link" style="margin-bottom: 8px;">
+                    <i class="fas fa-user-plus"></i>
+                    <span>新規登録</span>
+                </a>
+                <a href="/tenant/login?subdomain=${subdomain}" class="commons-mobile-nav-link">
+                    <i class="fas fa-sign-in-alt"></i>
+                    <span>ログイン</span>
+                </a>
+            </div>
         </nav>
     </div>
   `
@@ -685,14 +698,14 @@ tenantPublic.get('/login', async (c) => {
 
                     <div style="text-align: center; margin-bottom: 16px;">
                         <p style="color: var(--commons-text-secondary); margin-bottom: 16px;">まだアカウントをお持ちでない方</p>
-                        <a href="/register?subdomain=${subdomain}" class="btn-secondary">
+                        <a href="/tenant/register?subdomain=${subdomain}" class="btn-secondary">
                             <i class="fas fa-user-plus mr-2"></i>
                             新規登録
                         </a>
                     </div>
                     
                     <div class="back-link">
-                        <a href="/home?subdomain=${subdomain}" class="link">
+                        <a href="/tenant/home?subdomain=${subdomain}" class="link">
                             <i class="fas fa-arrow-left mr-1"></i>
                             ホームに戻る
                         </a>
@@ -856,11 +869,15 @@ tenantPublic.get('/login', async (c) => {
 // テナント会員登録ページ
 // --------------------------------------------
 tenantPublic.get('/register', async (c) => {
-  const { DB } = c.env
-  const subdomain = c.req.query('subdomain')
-  
-  if (!subdomain) {
-    return c.html(`<!DOCTYPE html>
+  try {
+    console.log('[REGISTER] Request received')
+    const { DB } = c.env
+    const subdomain = c.req.query('subdomain')
+    console.log('[REGISTER] Subdomain:', subdomain)
+    
+    if (!subdomain) {
+      console.log('[REGISTER] No subdomain provided')
+      return c.html(`<!DOCTYPE html>
 <html lang="ja" data-theme="light">
 <head>
     <meta charset="UTF-8">
@@ -905,21 +922,29 @@ tenantPublic.get('/register', async (c) => {
   const tenantSubtitle = String(tenant.subtitle || '')
   
   // アクティブな入会時アンケートを取得
-  const survey = await c.env.DB.prepare(`
-    SELECT * FROM surveys 
-    WHERE tenant_id = ? AND survey_type = 'join' AND is_active = 1
-    ORDER BY created_at DESC
-    LIMIT 1
-  `).bind(tenant.id).first()
-  
+  let survey: any = null
   let surveyQuestions: any[] = []
-  if (survey) {
-    const questions = await c.env.DB.prepare(`
-      SELECT * FROM survey_questions 
-      WHERE survey_id = ? 
-      ORDER BY question_order ASC
-    `).bind(survey.id).all()
-    surveyQuestions = questions.results || []
+  try {
+    survey = await c.env.DB.prepare(`
+      SELECT * FROM surveys 
+      WHERE tenant_id = ? AND type = 'join' AND is_active = 1
+      ORDER BY created_at DESC
+      LIMIT 1
+    `).bind(tenant.id).first()
+    
+    if (survey) {
+      const questions = await c.env.DB.prepare(`
+        SELECT * FROM survey_questions 
+        WHERE survey_id = ? 
+        ORDER BY question_order ASC
+      `).bind(survey.id).all()
+      surveyQuestions = questions.results || []
+    }
+  } catch (e) {
+    console.log('[REGISTER] Survey feature not available:', e)
+    // アンケート機能が利用できない場合はスキップ
+    survey = null
+    surveyQuestions = []
   }
   
   return c.html(`<!DOCTYPE html>
@@ -1414,7 +1439,7 @@ tenantPublic.get('/register', async (c) => {
                 <p style="color: var(--commons-text-secondary); margin-bottom: 8px;">
                     すでにアカウントをお持ちですか？
                 </p>
-                <a href="/login?subdomain=${subdomain}" class="link" style="font-weight: 600; font-size: 16px;">
+                <a href="/tenant/login?subdomain=${subdomain}" class="link" style="font-weight: 600; font-size: 16px;">
                     ログイン
                 </a>
             </div>
@@ -1531,6 +1556,21 @@ tenantPublic.get('/register', async (c) => {
     </script>
 </body>
 </html>`)
+  } catch (error) {
+    console.error('[REGISTER] Error:', error)
+    return c.html(`<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>エラー - Commons</title>
+</head>
+<body>
+    <h1>エラーが発生しました</h1>
+    <p>${error instanceof Error ? error.message : 'Unknown error'}</p>
+    <pre>${error instanceof Error ? error.stack : ''}</pre>
+</body>
+</html>`, 500)
+  }
 })
 
 // --------------------------------------------
@@ -2130,7 +2170,7 @@ tenantPublic.get('/home', async (c) => {
                 ${tenantName}で新しいつながりを見つけ、充実した時間を過ごしませんか？
             </p>
             <div style="display: flex; gap: 16px; justify-content: center; flex-wrap: wrap;">
-                <a href="/login?subdomain=${subdomain}" 
+                <a href="/tenant/login?subdomain=${subdomain}" 
                    style="display: inline-block; padding: 16px 48px; background: var(--commons-primary); color: white; border-radius: var(--radius-full); font-size: var(--font-size-medium); font-weight: var(--font-weight-semibold); text-decoration: none; transition: all var(--transition-normal); box-shadow: var(--shadow-medium);"
                    onmouseover="this.style.background='var(--commons-primary-dark)'; this.style.transform='translateY(-4px)'; this.style.boxShadow='var(--shadow-strong)'"
                    onmouseout="this.style.background='var(--commons-primary)'; this.style.transform='translateY(0)'; this.style.boxShadow='var(--shadow-medium)'">
@@ -2178,7 +2218,88 @@ tenantPublic.get('/home', async (c) => {
         </div>
     </footer>
 
+    <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+    <script src="/static/walkthrough.js"></script>
     <script src="/static/app.js"></script>
+    <script>
+        const subdomain = '${subdomain}'
+        
+        // ウォークスルーを開始
+        function startWalkthroughIfNeeded() {
+            // CommonsWalkthroughが定義されていない場合は待機
+            if (typeof window.CommonsWalkthrough === 'undefined') {
+                console.log('CommonsWalkthrough is not loaded yet, waiting...')
+                setTimeout(startWalkthroughIfNeeded, 100)
+                return
+            }
+            
+            // ログインしていない場合はスキップ
+            const token = localStorage.getItem('token')
+            if (!token) {
+                return
+            }
+            
+            // 既に完了している場合はスキップ
+            if (window.CommonsWalkthrough.isCompleted()) {
+                return
+            }
+            
+            const walkthrough = new window.CommonsWalkthrough()
+            walkthrough.init([
+                {
+                    icon: '👋',
+                    title: 'Commonsへようこそ！',
+                    description: 'このコミュニティの使い方をご案内します。簡単なツアーでCommonsの機能を確認しましょう。'
+                },
+                {
+                    icon: '📰',
+                    title: '投稿一覧',
+                    description: 'コミュニティのメンバーが投稿した記事や情報が表示されます。気になる投稿をクリックして詳細を確認できます。',
+                    target: '#latest-posts-section'
+                },
+                {
+                    icon: '📌',
+                    title: 'ピン留め投稿',
+                    description: '重要な投稿がピン留めされています。見逃せない情報はここでチェック！',
+                    target: '#pinned-posts-section'
+                },
+                {
+                    icon: '📢',
+                    title: 'お知らせ',
+                    description: 'コミュニティからの重要なお知らせが表示されます。定期的にチェックしましょう。',
+                    target: '.announcements-section'
+                },
+                {
+                    icon: '📅',
+                    title: 'イベント',
+                    description: '次回開催されるイベントの情報です。参加登録はイベント詳細ページから行えます。',
+                    target: '#next-event-section'
+                },
+                {
+                    icon: '👥',
+                    title: 'アクティブメンバー',
+                    description: '最近ログインしたメンバーが表示されます。プロフィールをクリックして詳細を確認できます。',
+                    target: '#active-members-section'
+                },
+                {
+                    icon: '🎉',
+                    title: '準備完了！',
+                    description: 'これでCommonsの使い方はバッチリです。さっそくコミュニティを楽しみましょう！'
+                }
+            ])
+            walkthrough.start()
+        }
+        
+        // DOMContentLoadedではなくwindow.onloadで確実に実行
+        if (document.readyState === 'complete') {
+            // 0.5秒遅延して開始
+            setTimeout(startWalkthroughIfNeeded, 500)
+        } else {
+            window.addEventListener('load', () => {
+                setTimeout(startWalkthroughIfNeeded, 500)
+            })
+        }
+    </script>
 </body>
 </html>
   `)
@@ -4456,7 +4577,9 @@ tenantPublic.get('/posts/:id', async (c) => {
             // いいね情報を読み込み
             async function loadLikeStatus() {
                 try {
-                    const response = await axios.get('/api/likes/posts/' + postId + '?subdomain=' + subdomain)
+                    const token = localStorage.getItem('token')
+                    const headers = token ? { 'Authorization': 'Bearer ' + token } : {}
+                    const response = await axios.get('/api/likes/posts/' + postId + '?subdomain=' + subdomain, { headers })
                     if (response.data.success) {
                         currentLikeCount = response.data.likeCount || 0
                         isLiked = response.data.liked || false
@@ -4568,21 +4691,54 @@ tenantPublic.get('/posts/:id', async (c) => {
         
         // コメントのいいね機能
         const commentLikeButtons = document.querySelectorAll('.comment-like-btn')
+        console.log('[Comment Like] Found', commentLikeButtons.length, 'comment like buttons')
+        const commentSubdomain = '${subdomain}'
         commentLikeButtons.forEach(button => {
+            const commentId = button.dataset.commentId
+            console.log('[Comment Like] Processing button for comment:', commentId)
+            const likeIcon = button.querySelector('i')
+            const likeText = button.querySelector('.comment-like-text')
+            const likeCountSpan = button.querySelector('.comment-like-count')
+            
+            // コメントのいいね状態を読み込み
+            async function loadCommentLikeStatus() {
+                try {
+                    console.log('[Comment Like] Loading status for comment:', commentId)
+                    const token = localStorage.getItem('token')
+                    const headers = token ? { 'Authorization': 'Bearer ' + token } : {}
+                    const response = await axios.get('/api/likes/comments/' + commentId + '?subdomain=' + commentSubdomain, { headers })
+                    console.log('[Comment Like] Response for comment', commentId, ':', response.data)
+                    if (response.data.success) {
+                        likeCountSpan.textContent = '(' + response.data.likeCount + ')'
+                        if (response.data.liked) {
+                            console.log('[Comment Like] Setting liked state for comment:', commentId)
+                            likeIcon.className = 'fas fa-thumbs-up mr-1'
+                            likeText.textContent = 'いいね済み'
+                            button.classList.add('text-blue-600')
+                        } else {
+                            console.log('[Comment Like] Setting not-liked state for comment:', commentId)
+                            likeIcon.className = 'far fa-thumbs-up mr-1'
+                            likeText.textContent = 'いいね'
+                            button.classList.remove('text-blue-600')
+                        }
+                    }
+                } catch (error) {
+                    console.error('[Comment Like] Failed to load status for comment', commentId, ':', error)
+                }
+            }
+            
+            // ページ読み込み時にいいね状態を取得
+            loadCommentLikeStatus()
+            
             button.addEventListener('click', async (e) => {
                 const token = localStorage.getItem('token')
                 if (!token) {
                     // ログインしていない場合
                     if (confirm('いいね機能を利用するには会員登録が必要です。\\n\\n今すぐ登録しますか？')) {
-                        window.location.href = '/register?subdomain=' + subdomain
+                        window.location.href = '/register?subdomain=' + commentSubdomain
                     }
                     return
                 }
-                
-                const commentId = button.dataset.commentId
-                const likeIcon = button.querySelector('i')
-                const likeText = button.querySelector('.comment-like-text')
-                const likeCountSpan = button.querySelector('.comment-like-count')
                 
                 try {
                     button.disabled = true
@@ -4615,13 +4771,13 @@ tenantPublic.get('/posts/:id', async (c) => {
                     if (error.response && error.response.status === 401) {
                         // 認証エラー
                         if (confirm('ログインセッションが切れました。\\n\\n再度ログインしますか？')) {
-                            window.location.href = '/login?subdomain=' + subdomain
+                            window.location.href = '/login?subdomain=' + commentSubdomain
                         }
                     } else if (error.response && error.response.status === 500) {
                         // サーバーエラー
                         alert('申し訳ございません。サーバーでエラーが発生しました。\\n\\nログインしていない場合は、会員登録をお願いします。')
                         if (confirm('会員登録ページに移動しますか？')) {
-                            window.location.href = '/register?subdomain=' + subdomain
+                            window.location.href = '/register?subdomain=' + commentSubdomain
                         }
                     } else {
                         alert('エラーが発生しました。もう一度お試しください。')
@@ -5515,7 +5671,7 @@ tenantPublic.get('/members/:memberId', async (c) => {
     '<a href="/tenant/events?subdomain=' + subdomain + '" class="text-gray-600 hover:text-blue-600"><i class="fas fa-calendar-alt mr-1"></i>イベント</a>' +
     '<a href="/tenant/members?subdomain=' + subdomain + '" class="text-blue-600 font-semibold"><i class="fas fa-users mr-1"></i>メンバー</a>' +
     '<a href="/tenant/chat?subdomain=' + subdomain + '" class="text-gray-600 hover:text-blue-600"><i class="fas fa-comments mr-1"></i>チャット</a>' +
-    '<a href="/login?subdomain=' + subdomain + '" id="headerLoginBtn" class="text-gray-600 hover:text-blue-600"><i class="fas fa-sign-in-alt mr-1"></i>ログイン</a>' +
+    '<a href="/tenant/login?subdomain=' + subdomain + '" id="headerLoginBtn" class="text-gray-600 hover:text-blue-600"><i class="fas fa-sign-in-alt mr-1"></i>ログイン</a>' +
     '</nav></div></div></header>' +
     '<main class="container mx-auto px-4 py-8">' +
     '<div class="bg-white rounded-lg shadow-lg p-8 mb-8">' +
@@ -5589,17 +5745,34 @@ tenantPublic.get('/mypage', async (c) => {
     return c.text('Tenant not found', 404)
   }
   
+  // テーマ設定を取得
+  const customization = await DB.prepare(
+    'SELECT * FROM tenant_customization WHERE tenant_id = ?'
+  ).bind(tenant.id).first() as any
+  
+  const themePreset = customization?.theme_preset || 'modern-business'
+  
   // クライアント側で認証チェックと投稿取得を行うため、
   // サーバー側では空のテンプレートを返す
   return c.html(`<!DOCTYPE html>
-<html lang="ja" data-theme="light">
+<html lang="ja" data-theme="${themePreset}">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>マイページ - ${tenant.name}</title>
+    <link rel="stylesheet" href="/static/commons-theme.css">
+    <link rel="stylesheet" href="/static/commons-components.css">
     <script src="https://cdn.tailwindcss.com"></script>
-        <script src="/static/tailwind-config.js"></script>
+    <script src="/static/tailwind-config.js"></script>
     <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+      :root {
+        color-scheme: light;
+      }
+      [data-theme="dark"] {
+        color-scheme: dark;
+      }
+    </style>
 </head>
 <body class="bg-gray-50 min-h-screen">
     <!-- ローディング画面 -->
@@ -5615,36 +5788,14 @@ tenantPublic.get('/mypage', async (c) => {
         <div class="text-center">
             <h1 class="text-3xl font-bold  mb-4" style="color: var(--commons-text-primary);">ログインが必要です</h1>
             <p class="text-gray-600 mb-6">マイページにアクセスするにはログインしてください</p>
-            <a href="/login?subdomain=${subdomain}" class="inline-block px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+            <a href="/tenant/login?subdomain=${subdomain}" class="inline-block px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
                 ログインページへ
             </a>
         </div>
     </div>
     
     <!-- ヘッダー -->
-    <header class="bg-white shadow-sm sticky top-0 z-40">
-        <div class="container mx-auto px-4 py-4">
-            <div class="flex items-center justify-between">
-                <a href="/tenant/home?subdomain=${subdomain}" class="text-2xl font-bold text-blue-600">
-                    ${tenant.name}
-                </a>
-                <nav class="hidden md:flex items-center space-x-6">
-                    <a href="/tenant/home?subdomain=${subdomain}" class="text-gray-600 hover:text-blue-600">
-                        <i class="fas fa-home mr-1"></i>ホーム
-                    </a>
-                    <a href="/tenant/posts?subdomain=${subdomain}" class="text-gray-600 hover:text-blue-600">
-                        <i class="fas fa-newspaper mr-1"></i>投稿
-                    </a>
-                    <a href="/tenant/members?subdomain=${subdomain}" class="text-gray-600 hover:text-blue-600">
-                        <i class="fas fa-users mr-1"></i>メンバー
-                    </a>
-                    <a href="/tenant/mypage?subdomain=${subdomain}" class="text-blue-600 font-semibold">
-                        <i class="fas fa-user mr-1"></i>マイページ
-                    </a>
-                </nav>
-            </div>
-        </div>
-    </header>
+    ${renderCommonHeader(tenant.name, subdomain, 'mypage')}
 
     <!-- メインコンテンツ -->
     <main class="container mx-auto px-4 py-8">
@@ -5657,94 +5808,67 @@ tenantPublic.get('/mypage', async (c) => {
         </div>
         
         <!-- 会員証 -->
-        <div class="mb-8">
-            <div id="memberCard" class="max-w-2xl mx-auto bg-gradient-to-br from-blue-600 to-purple-700 rounded-2xl shadow-2xl overflow-hidden">
-                <div class="p-8 text-white">
-                    <div class="flex items-center justify-between mb-6">
-                        <div>
-                            <h2 class="text-2xl font-bold mb-1">${tenant.name}</h2>
-                            <p class="text-blue-100 text-sm">会員証 / Member Card</p>
+        <div class="mb-6">
+            <div id="memberCard" class="max-w-md mx-auto bg-gradient-to-br from-blue-600 to-purple-700 rounded-lg shadow-lg overflow-hidden">
+                <div class="p-4 text-white">
+                    <div class="flex items-center gap-3 mb-3">
+                        <div class="w-10 h-10 bg-white/20 rounded-full flex items-center justify-center text-lg">
+                            <i class="fas fa-user"></i>
                         </div>
-                        <div class="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center backdrop-blur-sm">
-                            <i class="fas fa-id-card text-4xl"></i>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-xs text-blue-100">会員名</p>
+                            <p id="cardNickname" class="font-bold truncate">読み込み中...</p>
                         </div>
-                    </div>
-                    
-                    <div class="space-y-4">
-                        <!-- ユーザー情報 -->
-                        <div class="bg-white/10 backdrop-blur-sm rounded-lg p-4">
-                            <div class="flex items-center gap-4">
-                                <div class="w-20 h-20 bg-white/20 rounded-full flex items-center justify-center text-4xl">
-                                    <i class="fas fa-user"></i>
-                                </div>
-                                <div class="flex-1">
-                                    <p class="text-sm text-blue-100 mb-1">会員名</p>
-                                    <p id="cardNickname" class="text-2xl font-bold">読み込み中...</p>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="grid grid-cols-2 gap-4">
-                            <div class="bg-white/10 backdrop-blur-sm rounded-lg p-4">
-                                <p class="text-sm text-blue-100 mb-1">会員番号</p>
-                                <p id="cardMemberNumber" class="text-xl font-bold font-mono">----</p>
-                            </div>
-                            <div class="bg-white/10 backdrop-blur-sm rounded-lg p-4">
-                                <p class="text-sm text-blue-100 mb-1">役割</p>
-                                <p id="cardRole" class="text-xl font-bold">----</p>
-                            </div>
-                        </div>
-                        
-                        <div class="grid grid-cols-2 gap-4">
-                            <div class="bg-white/10 backdrop-blur-sm rounded-lg p-4">
-                                <p class="text-sm text-blue-100 mb-1">入会日</p>
-                                <p id="cardJoinedAt" class="text-lg font-semibold">----</p>
-                            </div>
-                            <div class="bg-white/10 backdrop-blur-sm rounded-lg p-4">
-                                <p class="text-sm text-blue-100 mb-1">有効期限</p>
-                                <p id="cardExpiresAt" class="text-lg font-semibold">----</p>
-                            </div>
+                        <div class="text-right">
+                            <p class="text-xs text-blue-100">ID</p>
+                            <p id="cardUserId" class="font-mono text-sm font-bold">----</p>
                         </div>
                     </div>
                     
-                    <div class="mt-6 flex items-center justify-between">
-                        <div class="text-xs text-blue-100 font-mono">
-                            ID: <span id="cardUserId">----</span>
+                    <div class="grid grid-cols-2 gap-1.5 text-xs">
+                        <div class="bg-white/10 backdrop-blur-sm rounded p-1.5">
+                            <p class="text-blue-100 text-[10px]">会員番号</p>
+                            <p id="cardMemberNumber" class="font-mono text-xs font-semibold">----</p>
                         </div>
-                        <div class="w-16 h-16 bg-white/90 rounded-lg flex items-center justify-center">
-                            <i class="fas fa-qrcode text-3xl text-blue-600"></i>
+                        <div class="bg-white/10 backdrop-blur-sm rounded p-1.5">
+                            <p class="text-blue-100 text-[10px]">役割</p>
+                            <p id="cardRole" class="font-semibold text-xs">----</p>
+                        </div>
+                        <div class="bg-white/10 backdrop-blur-sm rounded p-1.5">
+                            <p class="text-blue-100 text-[10px]">入会日</p>
+                            <p id="cardJoinedAt" class="font-semibold text-xs">----</p>
+                        </div>
+                        <div class="bg-white/10 backdrop-blur-sm rounded p-1.5">
+                            <p class="text-blue-100 text-[10px]">ステータス</p>
+                            <p id="cardExpiresAt" class="font-semibold text-xs">----</p>
                         </div>
                     </div>
                 </div>
                 
-                <div class="bg-white/10 backdrop-blur-sm px-8 py-3 flex items-center justify-between text-sm">
+                <div class="bg-white/10 backdrop-blur-sm px-3 py-1.5 flex items-center justify-between text-xs">
                     <span class="text-blue-100">
-                        <i class="fas fa-shield-alt mr-2"></i>会員認証済み
+                        <i class="fas fa-shield-alt mr-1"></i>認証済み
                     </span>
-                    <span class="text-blue-100 font-mono">
-                        Commons Platform
-                    </span>
+                    <a href="/tenant/profile?subdomain=${subdomain}" class="text-white hover:text-blue-100 transition">
+                        <i class="fas fa-edit mr-1"></i>編集
+                    </a>
                 </div>
             </div>
         </div>
         
-        <!-- 統計カード -->
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-            <div class="bg-white rounded-lg shadow-sm p-6 border-l-4 border-blue-500">
-                <div id="totalPosts" class="text-3xl font-bold text-blue-600 mb-1">0</div>
-                <div class="text-sm text-gray-600">総投稿数</div>
-            </div>
-            <div class="bg-white rounded-lg shadow-sm p-6 border-l-4 border-green-500">
-                <div id="publishedPosts" class="text-3xl font-bold text-green-600 mb-1">0</div>
-                <div class="text-sm text-gray-600">公開中</div>
-            </div>
-            <div class="bg-white rounded-lg shadow-sm p-6 border-l-4 border-yellow-500">
-                <div id="draftPosts" class="text-3xl font-bold text-yellow-600 mb-1">0</div>
-                <div class="text-sm text-gray-600">下書き</div>
-            </div>
+        <!-- アクティビティ統計 -->
+        <div class="grid grid-cols-2 gap-4 mb-8">
             <div class="bg-white rounded-lg shadow-sm p-6 border-l-4 border-purple-500">
-                <div id="totalViews" class="text-3xl font-bold style="color: var(--commons-primary)" mb-1">0</div>
-                <div class="text-sm text-gray-600">総閲覧数</div>
+                <div id="totalPoints" class="text-3xl font-bold text-purple-600 mb-1">0</div>
+                <div class="text-sm text-gray-600">
+                    <i class="fas fa-gift mr-1"></i>ポイント残高
+                </div>
+            </div>
+            <div class="bg-white rounded-lg shadow-sm p-6 border-l-4 border-pink-500">
+                <div id="totalLikes" class="text-3xl font-bold text-pink-600 mb-1">0</div>
+                <div class="text-sm text-gray-600">
+                    <i class="fas fa-heart mr-1"></i>いいねした投稿
+                </div>
             </div>
         </div>
         
@@ -5752,16 +5876,58 @@ tenantPublic.get('/mypage', async (c) => {
         <div class="bg-white rounded-lg shadow-sm mb-6">
             <div class="border-b border-gray-200">
                 <nav class="flex">
-                    <button class="px-6 py-4 text-blue-600 border-b-2 border-blue-600 font-semibold">
-                        <i class="fas fa-newspaper mr-2"></i>投稿
+                    <button id="tabLikes" class="tab-button px-6 py-4 text-blue-600 border-b-2 border-blue-600 font-semibold">
+                        <i class="fas fa-heart mr-2"></i>いいねした投稿
+                    </button>
+                    <button id="tabPoints" class="tab-button px-6 py-4 text-gray-600 hover:text-blue-600 transition">
+                        <i class="fas fa-gift mr-2"></i>ポイント履歴
+                    </button>
+                    <button id="tabRanking" class="tab-button px-6 py-4 text-gray-600 hover:text-blue-600 transition">
+                        <i class="fas fa-trophy mr-2"></i>ランキング
                     </button>
                 </nav>
             </div>
         </div>
         
-        <!-- 投稿一覧 -->
-        <div id="postsList" class="space-y-4">
-            <div class="text-center py-12 text-gray-600">読み込み中...</div>
+        <!-- タブコンテンツ -->
+        <div id="tabContent">
+            <!-- いいねした投稿 -->
+            <div id="likedPostsContent" class="tab-content">
+                <div id="likedPostsList" class="space-y-4">
+                    <div class="text-center py-12 text-gray-600">読み込み中...</div>
+                </div>
+            </div>
+            
+            <!-- ポイント履歴 -->
+            <div id="pointsHistoryContent" class="tab-content hidden">
+                <div class="bg-white rounded-lg shadow-sm p-6">
+                    <h3 class="text-lg font-bold mb-4">
+                        <i class="fas fa-history mr-2"></i>ポイント獲得履歴
+                    </h3>
+                    <div id="pointsHistoryList" class="space-y-3">
+                        <div class="text-center py-12 text-gray-600">読み込み中...</div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- ランキング -->
+            <div id="rankingContent" class="tab-content hidden">
+                <div class="bg-white rounded-lg shadow-sm p-6">
+                    <h3 class="text-lg font-bold mb-6">
+                        <i class="fas fa-trophy mr-2 text-yellow-500"></i>ポイントランキング
+                    </h3>
+                    
+                    <!-- 自分の順位 -->
+                    <div id="myRankCard" class="bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg p-4 mb-6 border-2 border-blue-200">
+                        <div class="text-center py-8 text-gray-600">読み込み中...</div>
+                    </div>
+                    
+                    <!-- ランキングリスト -->
+                    <div id="rankingList" class="space-y-2">
+                        <div class="text-center py-12 text-gray-600">読み込み中...</div>
+                    </div>
+                </div>
+            </div>
         </div>
     </main>
 
@@ -5848,52 +6014,87 @@ tenantPublic.get('/mypage', async (c) => {
             document.getElementById('cardUserId').textContent = user.id || '----'
         }
         
-        // 投稿を読み込み
-        async function loadPosts() {
+        // タブ切り替え
+        function switchTab(tabName) {
+            // タブボタンの状態を更新
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                btn.classList.remove('text-blue-600', 'border-b-2', 'border-blue-600')
+                btn.classList.add('text-gray-600')
+            })
+            
+            // タブコンテンツを切り替え
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.add('hidden')
+            })
+            
+            if (tabName === 'likes') {
+                document.getElementById('tabLikes').classList.add('text-blue-600', 'border-b-2', 'border-blue-600')
+                document.getElementById('tabLikes').classList.remove('text-gray-600')
+                document.getElementById('likedPostsContent').classList.remove('hidden')
+            } else if (tabName === 'points') {
+                document.getElementById('tabPoints').classList.add('text-blue-600', 'border-b-2', 'border-blue-600')
+                document.getElementById('tabPoints').classList.remove('text-gray-600')
+                document.getElementById('pointsHistoryContent').classList.remove('hidden')
+            } else if (tabName === 'ranking') {
+                document.getElementById('tabRanking').classList.add('text-blue-600', 'border-b-2', 'border-blue-600')
+                document.getElementById('tabRanking').classList.remove('text-gray-600')
+                document.getElementById('rankingContent').classList.remove('hidden')
+            }
+        }
+        
+        // ポイント残高を読み込み
+        async function loadPointsBalance() {
             try {
                 const token = localStorage.getItem('token')
-                const user = JSON.parse(localStorage.getItem('user') || '{}')
-                
-                const response = await axios.get('/api/posts/my-posts', {
+                const response = await axios.get('/api/points/balance', {
                     headers: { 'Authorization': 'Bearer ' + token }
                 })
                 
                 if (response.data.success) {
-                    const posts = response.data.posts || []
+                    const balanceData = response.data.balance
+                    const balance = balanceData.balance || 0
+                    document.getElementById('totalPoints').textContent = balance.toLocaleString()
+                }
+            } catch (error) {
+                console.error('ポイント残高読み込みエラー:', error)
+                document.getElementById('totalPoints').textContent = '0'
+            }
+        }
+        
+        // いいねした投稿を読み込み
+        async function loadLikedPosts() {
+            try {
+                const token = localStorage.getItem('token')
+                const user = JSON.parse(localStorage.getItem('user') || '{}')
+                
+                // いいねした投稿を取得
+                const response = await axios.get(\`/api/likes/user/posts?subdomain=\${subdomain}\`, {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                })
+                
+                if (response.data.success) {
+                    const likedPosts = response.data.posts || []
                     
                     // 統計を更新
-                    const totalPosts = posts.length
-                    const publishedPosts = posts.filter(p => p.status === 'published').length
-                    const draftPosts = posts.filter(p => p.status === 'draft').length
-                    const totalViews = posts.reduce((sum, p) => sum + (p.view_count || 0), 0)
+                    document.getElementById('totalLikes').textContent = likedPosts.length
                     
-                    document.getElementById('totalPosts').textContent = totalPosts
-                    document.getElementById('publishedPosts').textContent = publishedPosts
-                    document.getElementById('draftPosts').textContent = draftPosts
-                    document.getElementById('totalViews').textContent = totalViews
-                    
-                    // 投稿一覧を表示
-                    const postsList = document.getElementById('postsList')
-                    if (posts.length === 0) {
-                        postsList.innerHTML = '<div class="text-center py-12 text-gray-600">まだ投稿がありません</div>'
+                    // いいねした投稿一覧を表示
+                    const likedPostsList = document.getElementById('likedPostsList')
+                    if (likedPosts.length === 0) {
+                        likedPostsList.innerHTML = '<div class="text-center py-12 text-gray-600">まだいいねした投稿がありません</div>'
                     } else {
-                        postsList.innerHTML = posts.map(post => {
-                            const statusBadge = post.status === 'published' 
-                                ? '<span class="px-2 py-1 bg-green-100 text-green-700 text-xs font-semibold rounded">公開中</span>'
-                                : '<span class="px-2 py-1 bg-yellow-100 text-yellow-700 text-xs font-semibold rounded">下書き</span>'
-                            
-                            const createdDate = new Date(post.created_at).toLocaleDateString('ja-JP')
+                        likedPostsList.innerHTML = likedPosts.map(post => {
+                            const createdDate = new Date(post.liked_at || post.created_at).toLocaleDateString('ja-JP')
                             
                             return \`
                                 <div class="bg-white border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow">
                                     <div class="flex items-start justify-between mb-3">
-                                        <h3 class="text-xl font-bold  flex-1" style="color: var(--commons-text-primary);">\${post.title}</h3>
-                                        \${statusBadge}
+                                        <h3 class="text-xl font-bold flex-1" style="color: var(--commons-text-primary);">\${post.title}</h3>
+                                        <span class="text-pink-500"><i class="fas fa-heart"></i></span>
                                     </div>
                                     <p class="text-gray-600 mb-4">\${(post.excerpt || post.content || '').substring(0, 100)}...</p>
                                     <div class="flex items-center justify-between text-sm text-gray-500">
                                         <div class="flex items-center gap-4">
-                                            <span><i class="fas fa-eye mr-1"></i>\${post.view_count || 0} 閲覧</span>
                                             <span><i class="fas fa-calendar mr-1"></i>\${createdDate}</span>
                                         </div>
                                         <a href="/tenant/posts/\${post.id}?subdomain=\${subdomain}" 
@@ -5907,8 +6108,164 @@ tenantPublic.get('/mypage', async (c) => {
                     }
                 }
             } catch (error) {
-                console.error('投稿読み込みエラー:', error)
-                document.getElementById('postsList').innerHTML = '<div class="text-center py-12 text-red-600">投稿の読み込みに失敗しました</div>'
+                console.error('いいねした投稿読み込みエラー:', error)
+                document.getElementById('likedPostsList').innerHTML = '<div class="text-center py-12 text-red-600">いいねした投稿の読み込みに失敗しました</div>'
+            }
+        }
+        
+        // ポイント履歴を読み込み
+        async function loadPointsHistory() {
+            try {
+                const token = localStorage.getItem('token')
+                const response = await axios.get('/api/points/transactions', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                })
+                
+                if (response.data.success) {
+                    const history = response.data.transactions || []
+                    
+                    const pointsHistoryList = document.getElementById('pointsHistoryList')
+                    if (history.length === 0) {
+                        pointsHistoryList.innerHTML = '<div class="text-center py-8 text-gray-600">ポイント履歴がありません</div>'
+                    } else {
+                        pointsHistoryList.innerHTML = history.map(item => {
+                            const date = new Date(item.created_at).toLocaleDateString('ja-JP', {
+                                year: 'numeric',
+                                month: '2-digit',
+                                day: '2-digit',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                            })
+                            
+                            const pointsClass = item.action_type === 'earn' ? 'text-green-600' : 'text-red-600'
+                            const pointsSign = item.action_type === 'earn' ? '+' : '-'
+                            
+                            return \`
+                                <div class="flex items-center justify-between py-3 border-b border-gray-100">
+                                    <div class="flex-1">
+                                        <div class="font-semibold text-gray-800">\${item.reason || item.action_type}</div>
+                                        <div class="text-xs text-gray-500">\${date}</div>
+                                        \${item.note ? \`<div class="text-xs text-gray-400 mt-1">\${item.note}</div>\` : ''}
+                                    </div>
+                                    <div class="text-right">
+                                        <div class="\${pointsClass} font-bold text-lg">\${pointsSign}\${item.points}</div>
+                                        <div class="text-xs text-gray-500">残高: \${item.balance_after?.toLocaleString() || 0}</div>
+                                    </div>
+                                </div>
+                            \`
+                        }).join('')
+                    }
+                }
+            } catch (error) {
+                console.error('ポイント履歴読み込みエラー:', error)
+                document.getElementById('pointsHistoryList').innerHTML = '<div class="text-center py-8 text-red-600">ポイント履歴の読み込みに失敗しました</div>'
+            }
+        }
+        
+        // ランキングを読み込み
+        async function loadRanking() {
+            try {
+                const token = localStorage.getItem('token')
+                const response = await axios.get('/api/points/ranking', {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                })
+                
+                if (response.data.success) {
+                    const ranking = response.data.ranking || []
+                    const myRank = response.data.myRank || 0
+                    const myInfo = response.data.myInfo
+                    
+                    // 自分の順位カード
+                    const myRankCard = document.getElementById('myRankCard')
+                    if (myInfo) {
+                        // オーナー・管理者の場合
+                        if (myInfo.role === 'owner' || myInfo.role === 'admin') {
+                            const roleLabel = myInfo.role === 'owner' ? 'オーナー' : '管理者'
+                            myRankCard.innerHTML = \`
+                                <div class="text-center py-6">
+                                    <div class="text-4xl mb-3">👑</div>
+                                    <div class="text-lg font-bold text-gray-700 mb-2">\${roleLabel}はランキング対象外です</div>
+                                    <div class="text-sm text-gray-600">一般会員のランキングをご覧ください</div>
+                                    <div class="mt-4">
+                                        <div class="text-sm text-gray-600">保有ポイント</div>
+                                        <div class="text-2xl font-bold text-purple-600">\${myInfo.balance.toLocaleString()}</div>
+                                    </div>
+                                </div>
+                            \`
+                        } else {
+                            // 一般会員の場合
+                            const medalEmoji = myRank === 1 ? '🥇' : myRank === 2 ? '🥈' : myRank === 3 ? '🥉' : '🏅'
+                            myRankCard.innerHTML = \`
+                                <div class="flex items-center justify-between">
+                                    <div class="flex items-center gap-4">
+                                        <div class="text-4xl">\${medalEmoji}</div>
+                                        <div>
+                                            <div class="text-sm text-gray-600">あなたの順位</div>
+                                            <div class="text-3xl font-bold text-blue-600">\${myRank}位</div>
+                                        </div>
+                                    </div>
+                                    <div class="text-right">
+                                        <div class="text-sm text-gray-600">保有ポイント</div>
+                                        <div class="text-2xl font-bold text-purple-600">\${myInfo.balance.toLocaleString()}</div>
+                                    </div>
+                                </div>
+                            \`
+                        }
+                    }
+                    
+                    // ランキングリスト
+                    const rankingList = document.getElementById('rankingList')
+                    if (ranking.length === 0) {
+                        rankingList.innerHTML = '<div class="text-center py-8 text-gray-600">ランキングデータがありません</div>'
+                    } else {
+                        rankingList.innerHTML = ranking.map((user, index) => {
+                            const rank = index + 1
+                            let rankDisplay = rank
+                            let rankClass = 'text-gray-600'
+                            
+                            if (rank === 1) {
+                                rankDisplay = '🥇'
+                                rankClass = 'text-yellow-500'
+                            } else if (rank === 2) {
+                                rankDisplay = '🥈'
+                                rankClass = 'text-gray-400'
+                            } else if (rank === 3) {
+                                rankDisplay = '🥉'
+                                rankClass = 'text-orange-600'
+                            }
+                            
+                            const isMe = user.user_id === myInfo?.user_id
+                            const bgClass = isMe ? 'bg-blue-50 border-2 border-blue-300' : 'bg-white'
+                            
+                            return \`
+                                <div class="\${bgClass} rounded-lg p-4 flex items-center justify-between hover:shadow-md transition">
+                                    <div class="flex items-center gap-4 flex-1">
+                                        <div class="w-12 text-center">
+                                            <span class="text-2xl font-bold \${rankClass}">\${rankDisplay}</span>
+                                        </div>
+                                        <div class="w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white font-bold">
+                                            \${user.nickname?.charAt(0) || 'U'}
+                                        </div>
+                                        <div class="flex-1">
+                                            <div class="font-semibold text-gray-800">
+                                                \${user.nickname || 'ユーザー'}
+                                                \${isMe ? '<span class="ml-2 px-2 py-1 bg-blue-500 text-white text-xs rounded">あなた</span>' : ''}
+                                            </div>
+                                            <div class="text-xs text-gray-500">累計獲得: \${user.total_earned?.toLocaleString() || 0} pt</div>
+                                        </div>
+                                    </div>
+                                    <div class="text-right">
+                                        <div class="text-xl font-bold text-purple-600">\${user.balance.toLocaleString()}</div>
+                                        <div class="text-xs text-gray-500">ポイント</div>
+                                    </div>
+                                </div>
+                            \`
+                        }).join('')
+                    }
+                }
+            } catch (error) {
+                console.error('ランキング読み込みエラー:', error)
+                document.getElementById('rankingList').innerHTML = '<div class="text-center py-8 text-red-600">ランキングの読み込みに失敗しました</div>'
             }
         }
         
@@ -5917,12 +6274,25 @@ tenantPublic.get('/mypage', async (c) => {
             const isAuth = await checkAuth()
             if (isAuth) {
                 updateMemberCard()
-                await loadPosts()
+                await loadPointsBalance()
+                await loadLikedPosts()
+                await loadPointsHistory()
+                await loadRanking()
                 document.getElementById('loading').classList.add('hidden')
             }
+            
+            // タブボタンのイベントリスナー
+            document.getElementById('tabLikes').addEventListener('click', () => switchTab('likes'))
+            document.getElementById('tabPoints').addEventListener('click', () => switchTab('points'))
+            document.getElementById('tabRanking').addEventListener('click', () => switchTab('ranking'))
         }
         
-        init()
+        // DOMContentLoadedではなくwindow.onloadで確実に実行
+        if (document.readyState === 'complete') {
+            init()
+        } else {
+            window.addEventListener('load', init)
+        }
     </script>
 </body>
 </html>`)
@@ -5996,7 +6366,7 @@ tenantPublic.get('/liked-posts', async (c) => {
     <div class="text-center">
         <h1 class="text-3xl font-bold  mb-4" style="color: var(--commons-text-primary);">Login Required</h1>
         <p class="text-gray-600 mb-6">Please login to view your liked posts</p>
-        <a href="/login?subdomain=${subdomain}" class="inline-block px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
+        <a href="/tenant/login?subdomain=${subdomain}" class="inline-block px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
             Login
         </a>
     </div>
@@ -9955,6 +10325,30 @@ tenantPublic.get('/points', async (c) => {
             })
             document.getElementById(tab + 'Tab').className = 'flex-1 py-4 text-center font-semibold border-b-2 border-blue-500 text-blue-600'
             document.getElementById(tab + 'Content').classList.remove('hidden')
+        }
+
+        // 共通ヘッダーの初期化
+        function initializeCommonHeader() {
+            const token = localStorage.getItem('token')
+            const userStr = localStorage.getItem('user')
+            
+            if (token && userStr) {
+                try {
+                    const user = JSON.parse(userStr)
+                    
+                    // ログインボタンを非表示
+                    const loginButtons = document.querySelectorAll('a[href*="/login"]')
+                    loginButtons.forEach(btn => {
+                        if (btn.textContent.includes('ログイン')) {
+                            btn.style.display = 'none'
+                        }
+                    })
+                    
+                    console.log('[Points Page] Common header initialized for user:', user.nickname)
+                } catch (error) {
+                    console.error('[Points Page] Failed to initialize common header:', error)
+                }
+            }
         }
 
         // 認証チェック

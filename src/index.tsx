@@ -44,6 +44,7 @@ import debug from './routes/debug' // デバッグ用
 import tags from './routes/tags' // ユーザータグ機能
 import tenantCustomization from './routes/tenant-customization' // テナントカスタマイズ
 import backup from './routes/backup' // データバックアップ
+import documentation from './routes/documentation' // ドキュメント生成
 
 const app = new Hono<AppContext>()
 
@@ -142,6 +143,9 @@ app.route('/api/tags', tags)
 
 // テナントカスタマイズルート
 app.route('/api/tenant-customization', tenantCustomization)
+
+// ドキュメント生成ルート
+app.route('/api/documentation', documentation)
 
 // --------------------------------------------
 // ルーティングロジック
@@ -3328,7 +3332,6 @@ app.get('/backup-admin', (c) => {
 // テナント公開ページ（Phase 3）
 // --------------------------------------------
 app.route('/tenant', tenantPublic)
-app.route('/', tenantPublic) // ルートパスにもマウント（/login, /register等）
 
 // --------------------------------------------
 // プラットフォーム管理ページ
