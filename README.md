@@ -718,5 +718,169 @@ npm run deploy
 - 支払い失敗時の通知・リマインダーシステム
 - 誕生日メール自動送信機能
 - プロフィールのメールアドレス編集機能
+
+---
+
+## 🔒 開発者専用機能
+
+### ドキュメント生成API
+
+**⚠️ 注意**: この機能は**Commonsプラットフォーム運営者（バリューアーキテクツ社）専用**です。テナント管理者からはアクセスできません。
+
+#### APIエンドポイント
+```bash
+POST /api/documentation/generate
+Content-Type: application/json
+
+{
+  "type": "requirements" | "design" | "all"
+}
+```
+
+#### 使用方法
+
+**1. curlコマンドでダウンロード:**
+```bash
+# 要件定義書のみ
+curl -X POST https://commons-webapp.pages.dev/api/documentation/generate \
+  -H "Content-Type: application/json" \
+  -d '{"type":"requirements"}' \
+  -o requirements_specification.md
+
+# 設計書のみ
+curl -X POST https://commons-webapp.pages.dev/api/documentation/generate \
+  -H "Content-Type: application/json" \
+  -d '{"type":"design"}' \
+  -o design_specification.md
+
+# 両方を取得（JSON形式）
+curl -X POST https://commons-webapp.pages.dev/api/documentation/generate \
+  -H "Content-Type: application/json" \
+  -d '{"type":"all"}' \
+  -o documentation.json
+```
+
+**2. ブラウザからアクセス（Postman等のツールを使用）:**
+- URL: `https://commons-webapp.pages.dev/api/documentation/generate`
+- Method: POST
+- Headers: `Content-Type: application/json`
+- Body: `{"type":"requirements"}` または `{"type":"design"}` または `{"type":"all"}`
+
+#### 生成されるドキュメント
+
+**要件定義書** (`requirements_specification_YYYY-MM-DD.md`):
+- プロジェクト概要（目的、ユーザー、システム構成）
+- 機能要件（全60以上の機能詳細）
+- 非機能要件（パフォーマンス、セキュリティ等）
+- 画面一覧（50以上の画面）
+- データ要件（40以上のテーブル）
+- 外部システム連携
+- 制約事項と今後の拡張予定
+
+**設計書** (`design_specification_YYYY-MM-DD.md`):
+- システムアーキテクチャ（全体構成図、技術スタック）
+- データベース設計（ER図、テーブル詳細）
+- API設計（全エンドポイントの仕様）
+- 画面設計（ワイヤーフレーム）
+- セキュリティ設計
+- エラーハンドリング
+- パフォーマンス最適化
+- デプロイ設計
+- 監視・ログ
+- バックアップ・リカバリ
+
+---
+
+## 🔄 プロジェクト再構築ガイド
+
+このプロジェクトをゼロから再構築したい場合は、以下のドキュメントを参照してください：
+
+### 📚 再構築用ドキュメント
+
+1. **🎯 CLAUDE_CODE_REBUILD_FULL_PROMPT.md** - **完全再構築用プロンプト（推奨）**
+   - **約27,000文字の包括的なプロンプト**
+   - プロジェクト概要・技術スタック・データベース設計
+   - 全機能の実装手順（Step 1〜14）
+   - 実装チェックリスト（100項目以上）
+   - 重要な実装ポイント・セキュリティ設計
+   - トラブルシューティングガイド
+   - **このプロンプトをClaude Codeに貼り付けるだけで、Commonsプラットフォーム全体を再構築できます**
+
+2. **📖 HOW_TO_USE_REBUILD_PROMPT.md** - **再構築手順ガイド**
+   - Claude Codeでの使い方（前提条件・手順）
+   - 段階的な実装フロー（Step 1〜7）
+   - トラブルシューティング（よくある5つの問題と解決方法）
+   - デバッグのコツ・ベストプラクティス
+   - 実装の優先順位（フェーズ1〜4）
+   - **初めて再構築する場合は、まずこのガイドを読んでください**
+
+3. **REBUILD_PROMPT.md** - 詳細な技術仕様書（旧版）
+   - プロジェクト概要・技術スタック
+   - データベース設計・主要機能一覧
+   - 実装手順（Step by Step）
+   - 重要な実装ポイント・テスト手順
+
+4. **REBUILD_GUIDE_SUPPLEMENT.md** - 実装時の具体的なコード例
+   - Package.json テンプレート・Vite設定
+   - TypeScript型定義・Tailwind/CSS設定
+   - 認証ミドルウェア・メールテンプレート
+   - PM2設定・SQLクエリのベストプラクティス
+   - エラーハンドリングパターン・コーディング規約
+
+5. **VISUAL_ASSETS_GUIDE.md** - ビジュアル素材の統合ガイド
+   - 生成されたイラスト一覧（8枚）
+   - Claude Codeへの画像の渡し方（3つの方法）
+   - HTMLへの統合コード例
+   - CSS最適化・配置確認チェックリスト
+
+### 🚀 最速再構築フロー（推奨）
+
+```bash
+# 1. HOW_TO_USE_REBUILD_PROMPT.md を読む
+cat /home/user/webapp/HOW_TO_USE_REBUILD_PROMPT.md
+
+# 2. CLAUDE_CODE_REBUILD_FULL_PROMPT.md をClaude Codeに渡す
+# Claude Codeのチャットに以下を送信：
+# 
+# 「以下のプロンプトに従って、Commonsプラットフォームを完全に構築してください。
+# 
+# 実装の優先順位:
+# 1. 最優先（MVP）: プロジェクト初期化、認証、テナント管理
+# 2. 高優先度: 会員管理、投稿・コメント、画像アップロード
+# 3. 中優先度: いいね、通知、イベント、アンケート
+# 4. 低優先度: ポイント、ショップ、チャット、統計
+# 
+# [ここに CLAUDE_CODE_REBUILD_FULL_PROMPT.md の内容を貼り付け]」
+
+# 3. Claude Codeが実装を進める（3-4時間）
+# - プロジェクト初期化
+# - データベース設計
+# - バックエンド実装
+# - フロントエンド実装
+# - ビジュアル素材統合
+# - ビルド・テスト
+
+# 4. Cloudflareデプロイ
+npm run build
+npx wrangler pages deploy dist --project-name commons-webapp
+
+# 5. 動作確認
+curl https://commons-webapp.pages.dev
+```
+
+### 📊 ドキュメント比較
+
+| ドキュメント | 目的 | 対象者 | 文字数 |
+|------------|------|--------|--------|
+| **CLAUDE_CODE_REBUILD_FULL_PROMPT.md** | **完全再構築用プロンプト** | **Claude Code** | **27,000** |
+| **HOW_TO_USE_REBUILD_PROMPT.md** | **使い方ガイド** | **開発者** | **10,000** |
+| REBUILD_PROMPT.md | 技術仕様書（旧版） | Claude Code | 19,000 |
+| REBUILD_GUIDE_SUPPLEMENT.md | コード例集 | 開発者 | 8,000 |
+| VISUAL_ASSETS_GUIDE.md | 画像統合ガイド | 開発者 | 5,000 |
+
+**💡 推奨**: 初めて再構築する場合は、**HOW_TO_USE_REBUILD_PROMPT.md** を読んでから、**CLAUDE_CODE_REBUILD_FULL_PROMPT.md** をClaude Codeに渡してください。
+
+---
+
 # Trigger production deployment
 # Force new deployment
