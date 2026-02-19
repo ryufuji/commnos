@@ -11,20 +11,87 @@
 1. **Claude Code へのアクセス**
    - Claude Code（AI開発アシスタント）にアクセスできる環境
 
-2. **Cloudflare アカウント**
+2. **既存プロジェクトファイルへのアクセス（重要！）**
+   - **問題**: Claude Codeの新規セッションでは、既存ファイルにアクセスできません
+   - **解決策A（推奨）**: GitHubリポジトリからクローン
+     ```bash
+     cd /home/user
+     git clone https://github.com/USERNAME/commons-webapp.git existing-project
+     # 既存ファイルを参照しながら新規プロジェクトを構築
+     ```
+   - **解決策B**: 必要なファイルを手動でアップロード
+     - `migrations/*.sql` - 36個のマイグレーションファイル
+     - `src/routes/*.ts` - 36個のAPIルートファイル
+     - `public/static/*` - フロントエンドファイル
+     - `src/index.tsx` - メインアプリケーション
+   - **解決策C**: プロンプト内で基本実装のみ行い、詳細は後で追加
+
+3. **Cloudflare アカウント**
    - https://dash.cloudflare.com/ でアカウント作成
    - Cloudflare Pages, D1, R2 を利用可能にする（無料プラン可）
 
-3. **外部サービスのAPIキー（オプション）**
+4. **外部サービスのAPIキー（オプション）**
    - **Stripe**: https://stripe.com/ （決済機能を使う場合）
    - **Resend**: https://resend.com/ （メール送信機能を使う場合）
 
-4. **GitHub アカウント（オプション）**
+5. **GitHub アカウント（オプション）**
    - コードをGitHubで管理する場合
 
 ---
 
 ## 📝 再構築手順
+
+### Step 0: 既存ファイルの準備（重要！）
+
+**Claude Codeは新規セッションでは既存ファイルにアクセスできません。以下のいずれかの方法で準備してください：**
+
+#### 方法A：GitHubからクローン（推奨）
+
+```bash
+# Claude Codeのターミナルで実行
+cd /home/user
+
+# GitHubからクローン（URLは実際のリポジトリに置き換え）
+git clone https://github.com/USERNAME/commons-webapp.git existing-project
+
+# ファイル確認
+ls -la existing-project/
+
+# 既存ファイルを参照できるようになりました：
+# - existing-project/migrations/*.sql (36個)
+# - existing-project/src/routes/*.ts (36個)
+# - existing-project/src/index.tsx
+# - existing-project/public/static/*
+```
+
+#### 方法B：ファイルを手動でアップロード
+
+1. **必要なファイルをローカルマシンにダウンロード**
+   - GitHubリポジトリから ZIP ダウンロード
+   - または既存のプロジェクトフォルダをコピー
+
+2. **Claude Codeにアップロード**
+   - Claude Codeのチャット画面で📎クリップアイコンをクリック
+   - 以下のファイル/フォルダをアップロード：
+     - `migrations/` フォルダ全体（36個のSQLファイル）
+     - `src/routes/` フォルダ全体（36個のTSファイル）
+     - `src/index.tsx`
+     - `public/static/` フォルダ全体
+
+3. **アップロード先を指定**
+   ```
+   「以下のファイルを /home/user/existing-project/ に配置してください：
+   [ここにアップロードしたファイルを列挙]」
+   ```
+
+#### 方法C：基本実装のみ（ファイルアクセスなし）
+
+既存ファイルにアクセスできない場合：
+- プロンプト内に含まれる基本実装のみを行う
+- 詳細な実装は後でユーザーが追加する
+- MVP（最小限の機能）のみを完成させる
+
+---
 
 ### Step 1: プロンプトを準備
 
